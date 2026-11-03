@@ -128,10 +128,10 @@ export class Classroom {
     return s;
   }
 
-  /** 20 chỗ ngồi: điểm cao ngồi bàn đầu, cùng điểm thì ai đạt trước, rồi ai vừa hoạt động */
+  /** 20 chỗ ngồi: điểm cao ngồi bàn đầu, cùng điểm thì ai đạt trước, rồi ai vào lớp trước (chỗ không nhảy lung tung mỗi lần comment) */
   seats(n = GAME.seats): Student[] {
     return [...this.students.values()]
-      .sort((a, b) => b.score - a.score || a.reachedAt - b.reachedAt || b.lastActive - a.lastActive)
+      .sort((a, b) => b.score - a.score || a.reachedAt - b.reachedAt || a.joinedAt - b.joinedAt)
       .slice(0, n);
   }
 
@@ -347,6 +347,18 @@ export class Classroom {
   /** Ảnh chụp trạng thái để vẽ (gọn, gửi được qua mạng cho trang điều khiển xem trước) */
   view(now: number) {
     const showAnswer = this.phase === 'reveal';
+    const seated = this.seats(GAME.seats + GAME.standing);
+    const pub = ({ username, nickname, avatar, girl, score, lastActive, joinedAt }: Student) => ({
+      username,
+      nickname,
+      avatar,
+      girl,
+      score,
+      lastActive,
+      joinedAt,
+      // câu đang hỏi: trả lời đúng / sai / chưa
+      answered: this.correct.some((a) => a.username === username) ? 'right' : this.wrong.has(username) ? 'wrong' : '',
+    });
     return {
       phase: this.phase,
       round: this.round,
@@ -360,17 +372,8 @@ export class Classroom {
       slots: this.slots(showAnswer),
       correctTop: this.correct.slice(0, 3).map(({ username, nickname, avatar, points }) => ({ username, nickname, avatar, points })),
       correctCount: this.correct.length,
-      seats: this.seats().map(({ username, nickname, avatar, girl, score, lastActive, joinedAt }) => ({
-        username,
-        nickname,
-        avatar,
-        girl,
-        score,
-        lastActive,
-        joinedAt,
-        // câu đang hỏi: trả lời đúng / sai / chưa
-        answered: this.correct.some((a) => a.username === username) ? 'right' : this.wrong.has(username) ? 'wrong' : '',
-      })),
+      seats: seated.slice(0, GAME.seats).map(pub),
+      standing: seated.slice(GAME.seats).map(pub), // không có ghế: đứng ngoài cửa hóng, vẫn tính điểm
       classSize: this.students.size,
       stats: this.stats,
       flowers: this.flowers,

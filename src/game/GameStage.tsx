@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { GameState } from './useGame';
 import type { ClassView } from './quiz';
 import { GAME } from './config';
+import { Hair } from './Hair';
 import './stage.css';
 
 /**
@@ -19,7 +20,14 @@ const ROWS = [
   { y: 1257, xs: [113, 296, 479, 661, 840], s: 1.1 },
 ];
 const SPRITE_H = 250; // chiều cao cả người
-const SHOW = 0.56; // chỉ hiện phần trên (đầu tới bụng), phần dưới coi như khuất sau bàn
+const SHOW = 0.5; // ngồi ghế: chỉ hiện phần trên (đầu tới hông)
+// khung đầu đã xoá khỏi ảnh thân sau lưng, tính theo tỉ lệ ảnh (tools/tach-nen.py ghi ra public/assets/nv/*/head.json)
+const HEAD = { nam: { x: 0.136, y: 0, w: 0.682, h: 0.284 }, nu: { x: 0.174, y: 0, w: 0.668, h: 0.248 } };
+// người không có ghế đứng 2 bên cửa lớp: tâm x và chân y (px stage)
+const STAND = [
+  [34, 610], [86, 660], [34, 735], [86, 785], [34, 860], [86, 910],
+  [1046, 610], [994, 660], [1046, 735], [994, 785], [1046, 860], [994, 910],
+];
 
 const POSE = {
   nam: { dung: '01-dung', tay: '02-giong-tay', nghi: '03-suy-nghi', vui: '05-vui-mung', buon: '06-buon', ngac: '07-ngac-nhien', chao: '08-vay-chao' },
@@ -59,10 +67,12 @@ export function GameStage({ game }: { game: GameState }) {
   return (
     <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
       <Header v={v} />
+      <Motto />
       <Board v={v} now={now} />
       <Teacher v={v} now={now} />
       <Podium v={v} />
       <Students v={v} now={now} />
+      <Standing v={v} now={now} />
       <GiftBanner gift={game.lastGift} now={now} />
       {v.clapping && <Claps />}
     </div>
@@ -71,7 +81,7 @@ export function GameStage({ game }: { game: GameState }) {
 
 function Header({ v }: { v: ClassView }) {
   return (
-    <div className="absolute left-1/2 top-[34px] flex w-[470px] -translate-x-1/2 flex-col items-center rounded-[28px] border-[5px] border-[#7a4a1d] bg-[#f6e3b4] px-6 py-3 shadow-[0_8px_0_#5b3512]">
+    <div className="absolute left-1/2 top-[14px] flex w-[470px] -translate-x-1/2 flex-col items-center rounded-[28px] border-[5px] border-[#7a4a1d] bg-[#f6e3b4] px-6 py-3 shadow-[0_8px_0_#5b3512]">
       <div className="text-[46px] font-extrabold leading-none tracking-wide text-[#7a2e0e]">{GAME.title}</div>
       <div className="mt-1 text-[26px] font-semibold text-[#6b4a22]">
         {v.qNo > 0 && v.phase !== 'results' ? `Câu ${v.qNo}/${v.total} · ` : ''}
@@ -85,7 +95,7 @@ function Header({ v }: { v: ClassView }) {
 function Board({ v, now }: { v: ClassView; now: number }) {
   const left = Math.max(0, Math.ceil((v.endsAt - now) / 1000));
   return (
-    <div className="chalk absolute left-[300px] top-[262px] h-[348px] w-[605px] text-[#f4f1e6]">
+    <div className="chalk absolute left-[350px] top-[262px] h-[348px] w-[555px] text-[#f4f1e6]">
       {v.phase === 'intro' && (
         <div className="flex h-full flex-col items-center justify-center text-center">
           <div className="text-[64px] leading-none">Sắp vào học!</div>
@@ -134,7 +144,7 @@ function Timer({ left }: { left: number }) {
 
 function Tiles({ letters, dim }: { letters: string[]; dim: boolean }) {
   const n = letters.length || 1;
-  const size = Math.min(76, Math.floor((605 - 8 * (n - 1)) / n));
+  const size = Math.min(76, Math.floor((555 - 8 * (n - 1)) / n));
   return (
     <div className={`mt-3 flex justify-center gap-2 ${dim ? 'opacity-40' : ''}`}>
       {letters.map((ch, i) => (
@@ -155,7 +165,7 @@ function Tiles({ letters, dim }: { letters: string[]; dim: boolean }) {
 
 function Slots({ slots, reveal }: { slots: (string | null)[]; reveal: boolean }) {
   const n = slots.length || 1;
-  const size = Math.min(56, Math.floor((605 - 6 * (n - 1)) / n));
+  const size = Math.min(56, Math.floor((555 - 6 * (n - 1)) / n));
   return (
     <div className="mt-4 flex justify-center gap-[6px]">
       {slots.map((ch, i) =>
@@ -211,7 +221,7 @@ function Teacher({ v, now }: { v: ClassView; now: number }) {
   else if (v.phase === 'results') pose = '02-giang-bai';
   const gotFlower = now - v.lastFlowerAt < 3000;
   return (
-    <div className="absolute left-[18px] top-[360px] h-[540px] w-[330px]">
+    <div className="absolute left-[96px] top-[410px] h-[490px] w-[300px]">
       <img src={`/assets/nv/co-giao/${pose}.webp`} className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]" />
       <AnimatePresence>
         {gotFlower && (
@@ -220,7 +230,7 @@ function Teacher({ v, now }: { v: ClassView; now: number }) {
             initial={{ scale: 0, y: 80 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="absolute left-[150px] top-[170px] text-[90px]"
+            className="absolute left-[130px] top-[150px] text-[80px]"
           >
             💐
           </motion.div>
@@ -290,9 +300,10 @@ function Students({ v, now }: { v: ClassView; now: number }) {
         const h = SPRITE_H * scale;
         const show = h * SHOW;
         const x = row.xs[i % 5] * K - w / 2;
-        const y = row.y * K + 10 - show;
+        const y = (row.y + 72) * K - show; // ngồi trên ghế, lưng quay ra khán giả, mặt nhìn lên bảng
         const pose = studentPose(s, v, i, now);
         const g = s.girl ? 'nu' : 'nam';
+        const hd = HEAD[g];
         return (
           <motion.div
             key={s.username}
@@ -303,7 +314,10 @@ function Students({ v, now }: { v: ClassView; now: number }) {
             style={{ width: w, height: show, zIndex: 10 + Math.floor(i / 5) }}
           >
             <div className="absolute inset-0 overflow-hidden">
-              <img src={`/assets/nv/${g}/${POSE[g][pose]}.webp`} style={{ width: w, height: h }} className="max-w-none" />
+              <img src={`/assets/nv/${g}/sau-${POSE[g][pose]}.webp`} style={{ width: w, height: h }} className="max-w-none" />
+              <div className="absolute" style={{ left: hd.x * w, top: hd.y * h, width: hd.w * w, height: hd.h * h }}>
+                <Hair username={s.username} girl={s.girl} />
+              </div>
             </div>
             {s.answered === 'right' && <div className="badge bg-[#16a34a]">✓</div>}
             {s.answered === 'wrong' && <div className="badge bg-[#dc2626]">✗</div>}
@@ -316,6 +330,46 @@ function Students({ v, now }: { v: ClassView; now: number }) {
         );
       })}
     </>
+  );
+}
+
+// Hết ghế: đứng ngoài 2 bên cửa nhìn vào (mặt hướng ra ngoài), vẫn có tên và điểm
+function Standing({ v, now }: { v: ClassView; now: number }) {
+  const H = 150;
+  return (
+    <>
+      {v.standing.map((s, i) => {
+        const [cx, foot] = STAND[i];
+        const w = H * 0.47;
+        const g = s.girl ? 'nu' : 'nam';
+        const pose = studentPose(s, v, GAME.seats + i, now);
+        return (
+          <motion.div
+            key={s.username}
+            initial={{ opacity: 0, left: cx - w / 2, top: foot - H + 30 }}
+            animate={{ opacity: 1, left: cx - w / 2, top: foot - H }}
+            className="absolute"
+            style={{ width: w, height: H, zIndex: 5 + Math.floor(foot / 10) }}
+          >
+            <img src={`/assets/nv/${g}/${POSE[g][pose]}.webp`} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
+            {s.answered === 'right' && <div className="badge bg-[#16a34a]" style={{ width: 24, height: 24, fontSize: 15 }}>✓</div>}
+            <div className="nametag" style={{ fontSize: 14, maxWidth: 110, bottom: 'calc(100% - 2px)' }}>
+              <span className="truncate">{s.nickname}</span>
+              {s.score > 0 && <b className="ml-1 text-[#c2410c]">{s.score}</b>}
+            </div>
+          </motion.div>
+        );
+      })}
+    </>
+  );
+}
+
+// Bảng khẩu hiệu đỏ trên bảng đen
+function Motto() {
+  return (
+    <div className="motto absolute left-1/2 top-[168px] -translate-x-1/2 whitespace-nowrap px-10 py-[6px] text-[38px] font-extrabold tracking-wider">
+      TIÊN HỌC LỄ – HẬU HỌC VĂN
+    </div>
   );
 }
 

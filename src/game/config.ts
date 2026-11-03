@@ -28,6 +28,7 @@ export const GAME = {
 
   // ---------- Lớp ----------
   seats: 20, // 4 dãy bàn trên cùng; dãy cuối nằm dưới giao diện TikTok nên để trống
+  standing: 12, // hết ghế: 6 bạn đứng mỗi bên cửa lớp hóng (vẫn tính điểm)
   joinKeywords: ['vaolop'],
 
   // ---------- Quà / tim ----------
