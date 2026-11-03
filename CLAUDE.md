@@ -34,7 +34,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Quà = tặng hoa cô giáo; quà to mở chữ.
 - Chưa làm phần cắt clip.
 - Học sinh ngồi ghế QUAY LƯNG ra khán giả, mặt nhìn cô giáo (2026-11-04). Bộ ảnh chỉ có mặt trước nên thân sau lưng là ảnh gốc lật ngang + xoá đầu (`sau-*.webp`), tóc vẽ bằng SVG ở `src/game/Hair.tsx`: nam 4 kiểu (ngắn, đầu đinh, xoăn, mũ lưỡi trai ngược), nữ 6 kiểu (đuôi ngựa, búi, 2 bím nơ, xoã, bob, 2 chùm), 12 màu tóc có vài màu nhuộm. Kiểu tóc cố định theo tên tài khoản.
-- Hết 20 ghế: 12 bạn tiếp theo (6 mỗi bên) đứng ngoài 2 bên cửa lớp hóng, vẫn tính điểm, có tên + điểm.
+- Hết 20 ghế: tới 60 bạn tiếp theo chen chúc đứng ngoài 2 bên cửa lớp (30 mỗi bên, 10 hàng so le), vẫn tính điểm. Chỉ 6 bạn đứng đầu có bảng tên, còn lại không hiện tên (2026-11-04).
 - Bảng đỏ chữ vàng "TIÊN HỌC LỄ – HẬU HỌC VĂN" phía trên bảng đen.
 - Chỗ ngồi: điểm cao bàn đầu; cùng điểm thì ai vào lớp trước ngồi trước (không đổi chỗ mỗi lần comment).
 - Muốn nhân vật đẹp hơn: làm ảnh học sinh nhìn từ sau lưng cùng nét vẽ, bỏ vào nhan-vat/ rồi sửa tools/tach-nen.py.

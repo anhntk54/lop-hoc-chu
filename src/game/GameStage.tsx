@@ -23,11 +23,17 @@ const SPRITE_H = 250; // chiều cao cả người
 const SHOW = 0.5; // ngồi ghế: chỉ hiện phần trên (đầu tới hông)
 // khung đầu đã xoá khỏi ảnh thân sau lưng, tính theo tỉ lệ ảnh (tools/tach-nen.py ghi ra public/assets/nv/*/head.json)
 const HEAD = { nam: { x: 0.136, y: 0, w: 0.682, h: 0.284 }, nu: { x: 0.174, y: 0, w: 0.668, h: 0.248 } };
-// người không có ghế đứng 2 bên cửa lớp: tâm x và chân y (px stage)
-const STAND = [
-  [34, 610], [86, 660], [34, 735], [86, 785], [34, 860], [86, 910],
-  [1046, 610], [994, 660], [1046, 735], [994, 785], [1046, 860], [994, 910],
-];
+// người không có ghế chen chúc 2 bên ngoài cửa lớp: [tâm x, chân y] (px stage), hàng trước (gần lớp) trước
+const CROWD_ROWS = 10;
+const STAND: [number, number][] = [];
+for (let r = 0; r < CROWD_ROWS; r++) {
+  const foot = 960 - r * 42;
+  for (let c = 0; c < 3; c++) {
+    const dx = c * 40 + (r % 2) * 20 + ((r * 7 + c * 13) % 9) - 4; // so le + lệch nhẹ cho giống đám đông
+    STAND.push([18 + dx, foot], [1062 - dx, foot]);
+  }
+}
+const NAMED_STANDING = 6; // chỉ hiện tên vài bạn đứng trước, còn lại để đám đông cho gọn
 
 const POSE = {
   nam: { dung: '01-dung', tay: '02-giong-tay', nghi: '03-suy-nghi', vui: '05-vui-mung', buon: '06-buon', ngac: '07-ngac-nhien', chao: '08-vay-chao' },
@@ -333,13 +339,13 @@ function Students({ v, now }: { v: ClassView; now: number }) {
   );
 }
 
-// Hết ghế: đứng ngoài 2 bên cửa nhìn vào (mặt hướng ra ngoài), vẫn có tên và điểm
+// Hết ghế: chen chúc đứng ngoài 2 bên cửa nhìn vào, vẫn tính điểm; chỉ vài bạn đứng đầu có bảng tên
 function Standing({ v, now }: { v: ClassView; now: number }) {
-  const H = 150;
   return (
     <>
-      {v.standing.map((s, i) => {
+      {v.standing.slice(0, STAND.length).map((s, i) => {
         const [cx, foot] = STAND[i];
+        const H = 100 + (foot - 540) * 0.12; // xa thì nhỏ
         const w = H * 0.47;
         const g = s.girl ? 'nu' : 'nam';
         const pose = studentPose(s, v, GAME.seats + i, now);
@@ -349,14 +355,16 @@ function Standing({ v, now }: { v: ClassView; now: number }) {
             initial={{ opacity: 0, left: cx - w / 2, top: foot - H + 30 }}
             animate={{ opacity: 1, left: cx - w / 2, top: foot - H }}
             className="absolute"
-            style={{ width: w, height: H, zIndex: 5 + Math.floor(foot / 10) }}
+            style={{ width: w, height: H, zIndex: Math.floor(foot / 20) }}
           >
-            <img src={`/assets/nv/${g}/${POSE[g][pose]}.webp`} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
-            {s.answered === 'right' && <div className="badge bg-[#16a34a]" style={{ width: 24, height: 24, fontSize: 15 }}>✓</div>}
-            <div className="nametag" style={{ fontSize: 14, maxWidth: 110, bottom: 'calc(100% - 2px)' }}>
-              <span className="truncate">{s.nickname}</span>
-              {s.score > 0 && <b className="ml-1 text-[#c2410c]">{s.score}</b>}
-            </div>
+            <img src={`/assets/nv/${g}/${POSE[g][pose]}.webp`} className="h-full w-full drop-shadow-[0_3px_2px_rgba(0,0,0,0.3)]" />
+            {s.answered === 'right' && <div className="badge bg-[#16a34a]" style={{ width: 20, height: 20, fontSize: 13, right: 0 }}>✓</div>}
+            {i < NAMED_STANDING && (
+              <div className="nametag" style={{ fontSize: 14, maxWidth: 104, bottom: 'calc(100% - 2px)', zIndex: 60 }}>
+                <span className="truncate">{s.nickname}</span>
+                {s.score > 0 && <b className="ml-1 text-[#c2410c]">{s.score}</b>}
+              </div>
+            )}
           </motion.div>
         );
       })}
