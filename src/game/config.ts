@@ -12,8 +12,8 @@ export const GAME = {
   // ---------- Nhịp một ván ----------
   questionsPerRound: 10,
   introSec: 8, // cô giới thiệu đầu ván
-  questionSec: 25, // thời gian trả lời (chủ kênh chốt 25 giây)
-  endAfterFirstSec: 0, // 0 = luôn đủ 25 giây cho cả lớp. Đặt vd 10: có người đúng thì 10 giây sau chốt luôn (hợp lúc phòng vắng)
+  questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)
+  endAfterFirstSec: 0, // 0 = luôn đủ giờ cho cả lớp. Đặt vd 10: có người đúng thì 10 giây sau chốt luôn (hợp lúc phòng vắng)
   bonusSec: 10, // hết giờ chưa ai đúng: mở 1 chữ, thêm chừng này giây
   revealSec: 7,
   resultsSec: 15,

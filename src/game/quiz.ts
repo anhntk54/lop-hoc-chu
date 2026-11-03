@@ -44,9 +44,13 @@ export interface ChatIn {
   createTime: number;
 }
 
+// Dấu thanh kiểu cũ/mới ("hóa"/"hoá", "thủy"/"thuỷ") coi là một: đưa về kiểu mới (dấu trên chữ sau) ở cuối từ
+const OLD_OA = /o([\u0300\u0301\u0303\u0309\u0323])([ae])(?!\p{L})/gu;
+const OLD_UY = /u([\u0300\u0301\u0303\u0309\u0323])y(?!\p{L})/gu;
+export const normVi = (s: string) =>
+  s.normalize('NFD').toLowerCase().replace(OLD_OA, 'o$2$1').replace(OLD_UY, 'uy$1').normalize('NFC');
 // Thường hoá: chuẩn Unicode, chữ thường, bỏ khoảng trắng và dấu câu, GIỮ dấu tiếng Việt
-export const compactVi = (s: string) =>
-  s.normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+export const compactVi = (s: string) => normVi(s).replace(/[^\p{L}\p{N}]/gu, '');
 // Bỏ cả dấu: "Vào Lớp" -> "vaolop"
 export const plain = (s: string) =>
   compactVi(s).normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd');
