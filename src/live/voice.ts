@@ -143,9 +143,9 @@ class Voice {
 function readRate() {
   try {
     const r = Number(localStorage.getItem('voice-rate'));
-    return r >= 0.5 && r <= 1.5 ? r : 1.35;
+    return r >= 0.5 && r <= 1.5 ? r : 1.1; // cô giáo đọc đề: chậm hơn MC đám cưới (1.35)
   } catch {
-    return 1.35;
+    return 1.1;
   }
 }
 

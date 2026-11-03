@@ -233,9 +233,9 @@ function localStorageSet(k: string, v: string) {
 function RateSlider() {
   const [rate, setRate] = useState(() => {
     try {
-      return Number(localStorage.getItem('voice-rate')) || 1.35;
+      return Number(localStorage.getItem('voice-rate')) || 1.1;
     } catch {
-      return 1.35;
+      return 1.1;
     }
   });
   const change = (r: number) => {
