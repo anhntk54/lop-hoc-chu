@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { emitTest, sendControl } from '../live/page';
-import type { ClassView } from './quiz';
+import type { StageView } from './useGame';
 
 // Nút riêng của Lớp Học Chữ ở trang điều khiển: điều khiển ván + giả lập phòng đông để thử bot
 const HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'];
@@ -9,7 +9,7 @@ const CHAT = ['khó quá cô ơi', 'chữ gì vậy trời', 'hay quá', 'vào l
 const fake = (i: number) => ({ username: `hs${i}`, nickname: `${HO[i % HO.length]} ${TEN[i % TEN.length]}`, avatar: '' });
 const shuffleWord = (w: string) => [...w].sort(() => Math.random() - 0.5).join('');
 
-export function GameControls({ view, stageCount = 0 }: { view: ClassView | null; stageCount?: number }) {
+export function GameControls({ view, stageCount = 0 }: { view: StageView | null; stageCount?: number }) {
   const [sent, setSent] = useState(0);
   const [running, setRunning] = useState(false);
 
@@ -64,6 +64,11 @@ export function GameControls({ view, stageCount = 0 }: { view: ClassView | null;
         <Btn onClick={() => emitTest('gift', { ...fake(3), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 1 })}>🌹 Tặng hoa</Btn>
         <Btn onClick={() => emitTest('gift', { ...fake(4), giftName: 'Mũ', giftId: 2, diamondCount: 99, repeatCount: 1 })}>🎁 Quà to (mở chữ)</Btn>
         <Btn onClick={() => emitTest('like', { ...fake(5), likeCount: 300 })}>❤️ 300 tim</Btn>
+        <Btn onClick={() => sendControl('custom', 'recess:rps')}>✊ Ra chơi: oẳn tù tì</Btn>
+        <Btn onClick={() => sendControl('custom', 'recess:callup')}>📢 Ra chơi: kiểm tra miệng</Btn>
+        <Btn onClick={() => sendControl('custom', 'recess:pick')}>⚖️ Ra chơi: chọn phe</Btn>
+        <Btn onClick={() => sendControl('custom', 'recess:roll')}>🙋 Ra chơi: điểm danh</Btn>
+        <Btn onClick={() => sendControl('custom', 'recess:heart')}>❤️ Ra chơi: thả tim</Btn>
         <Btn onClick={() => flood(100)} disabled={running}>👥 100 người cùng đoán</Btn>
         <Btn onClick={() => flood(1000)} disabled={running}>👥 1000 người cùng đoán</Btn>
       </div>

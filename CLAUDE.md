@@ -10,7 +10,10 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 ## Luật chơi
 
 - Comment bất kỳ là vào lớp (có tên trên đầu học sinh). Gõ `vào lớp` thì cô chào.
-- Mỗi ván 10 câu. Mỗi câu 25 giây. Hết giờ chưa ai đúng: mở 1 chữ, thêm 10 giây.
+- Mỗi tiết 10 câu: 3 dễ, 4 vừa, 3 khó; câu 10 là câu hỏi vàng (điểm x2). Mỗi câu 20 giây. Hết giờ chưa ai đúng: mở 1 chữ, thêm 10 giây.
+- Cô đọc: "Câu 3. Đây là một món ăn. <gợi ý>" (câu "Đây là..." ghi ở dòng `>` trong file câu hỏi).
+- Sau mỗi tiết là giờ ra chơi 1 phút, bốc 1 trong 5 trò (không lặp trò vừa chơi): oẳn tù tì (+2), kiểm tra miệng gọi 1 bạn đang ngồi (+5), chọn phe (vui, không điểm), điểm danh "có mặt" (10 bạn đầu +3), thả tim 300 trong 30 giây (+1 cả lớp). Xong trò thì hiện "Học sinh giỏi hôm nay".
+- Xếp hạng 3 tầng: điểm tiết (xếp ghế, xoá mỗi tiết) · điểm buổi (👑 lớp trưởng, ⭐ lớp phó) · bảng vàng tuần (lưu file `data/so-lop.json`, tự xoá khi sang tuần mới).
 - Comment dài đúng bằng đáp án (không tính khoảng trắng) mới tính là trả lời; nói chuyện thường không bị tính sai. Mỗi người chỉ tính lần trả lời đầu tiên của câu đó. Phải gõ đủ dấu.
 - Điểm theo thứ tự đúng, xếp theo giờ TikTok gắn lúc gửi (`createTime`), không theo lúc bot nhận: 10 / 7 / 5 / hạng 4–10 được 3 / sau đó 1. Đúng 3 câu liền +5.
 - Quà: luôn là "tặng hoa cô" (cô cầm hoa, cảm ơn). Quà từ 30 xu lúc chưa ai đúng: cô mở thêm 1 chữ cho cả lớp. Quà không cộng điểm.
@@ -19,7 +22,9 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 ## File
 
 - `src/game/quiz.ts`: lõi game (pha, chấm điểm, chỗ ngồi). Test: `npx tsx src/game/quiz.check.ts`.
-- `src/game/questions.ts`: bộ câu hỏi. `src/game/config.ts`: số liệu + câu cô đọc ("F:" = giọng nữ).
+- `src/game/cau-hoi/*.txt`: 1523 câu, 22 chủ đề. Kiểm tra: `npx tsx src/game/bank.check.ts` (gợi ý lộ đáp án, trùng, đáp án quá 14 chữ, thiếu câu "Đây là").
+- `src/game/loi-thoai.ts`: toàn bộ lời cô (khoảng 330 câu, bốc kiểu xáo bài nên ít lặp). `src/game/config.ts`: số liệu.
+- `data/so-lop.json`: câu nào hỏi lúc nào (game ưu tiên câu lâu chưa hỏi; 116 tiết liền không lặp) + điểm tuần. Không đưa lên git.
 - `src/game/GameStage.tsx`: màn hình. Toạ độ bàn đo trên ảnh nền gốc 941x1672 (`ROWS`).
 - `src/game/GameControls.tsx`: nút thử ở trang điều khiển, có "1000 người cùng đoán" để đo bot nhận đủ comment không.
 - `tools/tach-nen.py`: tách nền xám ảnh trong `nhan-vat/` ra `public/assets/nv/`. Thay ảnh thì chạy lại.
@@ -29,7 +34,10 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 
 ## Quyết định của chủ kênh
 
-- 25 giây mỗi câu, luôn chạy đủ 25 giây (`endAfterFirstSec: 0`).
+- 20 giây mỗi câu (đổi từ 25, 2026-11-04), luôn chạy đủ giờ (`endAfterFirstSec: 0`).
+- Tên lớp đổi được ở ô "Tên lớp" trang điều khiển (hiện trên bảng hiệu).
+- Cô cà khịa nhiều: 60% số câu cô gọi tên trêu 1 bạn trả lời sai; đúng trong 4 giây đầu thì nghi "quay cóp"; lớp im 75 giây thì cô nhắc.
+- Dấu kiểu cũ/mới (hóa/hoá, thủy/thuỷ) đều tính đúng; không dấu thì không tính.
 - Điểm giảm dần theo thứ tự đúng để chép đáp án trên khung chat chỉ được 1 điểm.
 - Quà = tặng hoa cô giáo; quà to mở chữ.
 - Chưa làm phần cắt clip.

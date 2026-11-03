@@ -1,30 +1,41 @@
 // =====================================================
-//  CẤU HÌNH LỚP HỌC CHỮ: số liệu + mọi câu cô giáo đọc
-//  "F:" ở đầu câu = giọng nữ (cô giáo). `name` = tên người xem đã làm sạch.
+//  CẤU HÌNH LỚP HỌC CHỮ: số liệu. Câu cô đọc nằm ở loi-thoai.ts, câu hỏi ở cau-hoi/*.txt
 // =====================================================
 
-const F = (s: string) => `F: ${s}`;
-
 export const GAME = {
-  title: 'LỚP HỌC CHỮ',
-  defaultChannelName: 'lớp mình',
+  // Tên lớp mặc định (hiện trên bảng hiệu). Chủ kênh đổi ở ô "Tên lớp" trang điều khiển.
+  defaultChannelName: 'Lớp Học Chữ',
 
-  // ---------- Nhịp một ván ----------
+  // ---------- Một tiết học ----------
   questionsPerRound: 10,
-  introSec: 8, // cô giới thiệu đầu ván
+  // độ khó từng câu: 3 dễ, 4 vừa, 3 khó; câu cuối là câu hỏi vàng nhân đôi điểm
+  roundPlan: ['easy', 'easy', 'easy', 'medium', 'medium', 'medium', 'medium', 'hard', 'hard', 'hard'] as const,
+  introSec: 8, // cô giới thiệu đầu tiết
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)
   endAfterFirstSec: 0, // 0 = luôn đủ giờ cho cả lớp. Đặt vd 10: có người đúng thì 10 giây sau chốt luôn (hợp lúc phòng vắng)
   bonusSec: 10, // hết giờ chưa ai đúng: mở 1 chữ, thêm chừng này giây
-  revealSec: 7,
-  resultsSec: 15,
+  revealSec: 8,
+  resultsSec: 12,
+  superFastSec: 4, // đúng trong 4 giây đầu: cô nghi "quay cóp"
 
   // ---------- Điểm ----------
-  rankPoints: [10, 7, 5, 3, 3, 3, 3, 3, 3, 3], // nhất 10, nhì 7, ba 5, hạng 4–10 được 3
+  rankPoints: [10, 7, 5, 3, 3, 3, 3, 3, 3, 3], // nhất 10, nhì 7, ba 5, hạng 4–10 được 3 (câu hỏi vàng x2)
   latePoints: 1, // đúng sau hạng 10 (thường là chép đáp án trên khung chat)
   streakEvery: 3, // đúng 3 câu liền
   streakBonus: 5, // thưởng thêm
-  requireDiacritics: true, // phải gõ đủ dấu mới tính đúng ("phan" không ăn "phấn")
+  requireDiacritics: true, // phải gõ đủ dấu mới tính đúng ("phan" không ăn "phấn"); dấu kiểu cũ/mới đều được
   keepHiddenLetters: 2, // gợi ý không bao giờ mở quá (số chữ - 2)
+  roastChance: 0.6, // tỉ lệ cô cà khịa 1 bạn trả lời sai lúc hiện đáp án
+
+  // ---------- Giờ ra chơi (sau mỗi tiết) ----------
+  recessPlaySec: { rps: 20, callup: 15, pick: 20, roll: 12, heart: 30 },
+  recessResultSec: 8,
+  recessBoardSec: 10, // bảng "học sinh giỏi hôm nay"
+  rpsPoints: 2, // oẳn tù tì thắng cô
+  callUpPoints: 5, // kiểm tra miệng trả lời đúng
+  rollPoints: 3, // điểm danh nhanh
+  rollWinners: 10,
+  heartTarget: 300, // thử thách thả tim trong 30 giây
 
   // ---------- Lớp ----------
   seats: 20, // 4 dãy bàn trên cùng; dãy cuối nằm dưới giao diện TikTok nên để trống
@@ -38,32 +49,9 @@ export const GAME = {
   giftThanksCooldownMs: 30_000,
   bigGiftCoins: 99,
 
-  // ---------- Chào người vào ----------
+  // ---------- Nói chuyện ----------
   greetEveryMs: 8000,
   namesPerGreeting: 3,
-
   shareReminderEveryMs: 6 * 60_000,
-
-  lines: {
-    intro: F('Cả lớp ổn định nào! Cô đố mười câu, chữ cô xáo lộn hết rồi. Ai gõ đáp án nhanh nhất thì được nhiều điểm nhất nha.'),
-    question: (n: number, clue: string) => F(`Câu ${n}. ${clue}`),
-    firstCorrect: (name: string) => F(`Ôi nhanh ghê! Bạn ${name} đúng đầu tiên rồi.`),
-    bonus: F('Khó quá hả cả lớp? Cô mở thêm một chữ, cho thêm mười giây nữa nè.'),
-    reveal: (answer: string, top: string[], count: number) => {
-      const others = count > top.length ? ` Cả lớp có ${count} bạn đúng.` : '';
-      const rest = top.length > 1 ? `, rồi tới ${top.slice(1).join(' với ')}` : '';
-      return F(`Đáp án là ${answer}. Nhất câu này là ${top[0]}${rest}.${others}`);
-    },
-    revealNobody: (answer: string) => F(`Không ai đoán ra luôn hả? Đáp án là ${answer} đó cả lớp.`),
-    streak: (name: string) => F(`Bạn ${name} đúng ba câu liền, cô thưởng thêm năm điểm.`),
-    results: (name: string, score: number) => F(`Hết giờ rồi! Nhất lớp ván này là bạn ${name}, được ${score} điểm. Cả lớp vỗ tay nào!`),
-    resultsNobody: F('Ván này chưa ai ghi điểm. Ván sau cả lớp cố lên nha.'),
-    outOfQuestions: F('Hết câu hỏi rồi, cô tổng kết luôn nha.'),
-    giftHint: (name: string) => F(`Bạn ${name} xin cô mở thêm một chữ, cả lớp nhờ bạn đó nha.`),
-    thankGift: (name: string, gift: string) => F(`Cô cảm ơn bạn ${name} tặng ${gift} cho cô nha.`),
-    thankFollow: (name: string) => F(`Cô cảm ơn bạn ${name} đã theo dõi kênh nha.`),
-    greeting: (names: string) => F(`Chào ${names} vào lớp. Gõ đáp án vào bình luận là chơi được liền.`),
-    clap: F('Đủ tim rồi, cả lớp vỗ tay nào!'),
-    share: F('Thấy vui thì bấm chia sẻ live rủ bạn bè vào thi với lớp mình nha.'),
-  },
+  idleAfterSec: 75, // không ai comment chừng này giây thì cô nhắc
 };

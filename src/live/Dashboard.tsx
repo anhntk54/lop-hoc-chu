@@ -59,7 +59,7 @@ export function Dashboard({
 
   const saveName = async () => {
     const r = await sendControl('setName', nameText);
-    setMsg(r.success ? `Đã lưu tên kênh: ${nameText.trim()}` : r.error);
+    setMsg(r.success ? `Đã lưu tên lớp: ${nameText.trim()}` : r.error);
     if (r.success) setNameText('');
   };
 
@@ -116,7 +116,7 @@ export function Dashboard({
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
               <RateSlider />
-              <span className="ml-2 text-slate-400">Tên kênh</span>
+              <span className="ml-2 text-slate-400">Tên lớp</span>
               <input
                 className="w-32 rounded-lg bg-slate-800 px-2 py-1"
                 placeholder={channelName}

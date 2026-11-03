@@ -414,6 +414,58 @@ app.post('/api/game/state', (req, res) => {
   res.json({ success: true });
 });
 
+// Sổ lớp lưu ra file (tắt máy vẫn còn): câu nào hỏi lúc nào + bảng vàng tuần
+const SAVE_FILE = path.join(__dirname, 'data', 'so-lop.json');
+interface SoLop {
+  used: Record<string, number>; // id câu -> lần hỏi gần nhất (ms)
+  week: string; // tuần đang tính, vd "2026-W45"
+  scores: Record<string, { nickname: string; points: number }>;
+}
+const weekKey = (d = new Date()) => {
+  // tuần ISO (bắt đầu thứ hai)
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  const y = t.getUTCFullYear();
+  const w = Math.ceil(((t.getTime() - Date.UTC(y, 0, 1)) / 86400000 + 1) / 7);
+  return `${y}-W${String(w).padStart(2, '0')}`;
+};
+let soLop: SoLop = { used: {}, week: weekKey(), scores: {} };
+try {
+  soLop = { ...soLop, ...JSON.parse(fs.readFileSync(SAVE_FILE, 'utf8')) };
+} catch {
+  // chưa có sổ: bắt đầu mới
+}
+const weekTop = () => {
+  if (soLop.week !== weekKey()) soLop = { ...soLop, week: weekKey(), scores: {} }; // sang tuần mới: xoá điểm tuần cũ
+  return Object.entries(soLop.scores)
+    .map(([username, v]) => ({ username, ...v }))
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 10);
+};
+app.get('/api/game/save', (_req, res) => res.json({ used: soLop.used, weekTop: weekTop() }));
+app.post('/api/game/save', (req, res) => {
+  const { used, week } = req.body || {};
+  weekTop();
+  if (Array.isArray(used)) for (const id of used.slice(0, 500)) if (typeof id === 'string') soLop.used[id.slice(0, 200)] = Date.now();
+  if (Array.isArray(week)) {
+    for (const e of week.slice(0, 2000)) {
+      if (!e || typeof e.username !== 'string' || typeof e.points !== 'number' || !Number.isFinite(e.points)) continue;
+      const key = e.username.slice(0, 100);
+      const cur = soLop.scores[key] ?? { nickname: '', points: 0 };
+      cur.nickname = String(e.nickname || cur.nickname).slice(0, 60);
+      cur.points += Math.max(0, Math.min(1000, Math.round(e.points)));
+      soLop.scores[key] = cur;
+    }
+  }
+  try {
+    fs.mkdirSync(path.dirname(SAVE_FILE), { recursive: true });
+    fs.writeFileSync(SAVE_FILE, JSON.stringify(soLop));
+  } catch (err) {
+    console.error('Không lưu được sổ lớp:', err);
+  }
+  res.json({ weekTop: weekTop() });
+});
+
 // ---------- Khởi động ----------
 async function start() {
   if (process.env.NODE_ENV !== 'production') {

@@ -83,3 +83,24 @@
   text-shadow: 0 2px 0 #7a0e0e;
   z-index: 2;
 }
+
+/* Câu hỏi vàng: viền vàng quanh vùng chữ trên bảng */
+.golden-board {
+  outline: 6px solid #ffd84a;
+  outline-offset: 6px;
+  border-radius: 10px;
+  animation: golden-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes golden-pulse {
+  from {
+    outline-color: rgba(255, 216, 74, 0.5);
+  }
+  to {
+    outline-color: rgba(255, 216, 74, 1);
+  }
+}
+
+/* Bạn bị gọi lên bảng kiểm tra miệng */
+.called-up {
+  filter: drop-shadow(0 0 10px #ffd84a) drop-shadow(0 0 4px #ffd84a);
+}

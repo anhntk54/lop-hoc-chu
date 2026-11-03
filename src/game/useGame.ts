@@ -7,24 +7,28 @@ import { NameBatcher } from '../live/scoreboard';
 import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
 import { GAME } from './config';
-import { QUESTIONS } from './questions';
-import { Classroom, plain, type ClassView, type Say } from './quiz';
+import { QUESTIONS } from './bank';
+import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
 
 // ?view=stage&mute=1: xem thử trang stage không phát tiếng
 const MUTED = new URLSearchParams(window.location.search).get('mute') === '1';
 
+export type WeekRow = { username: string; nickname: string; points: number };
+export type StageView = ClassView & { weekTop: WeekRow[] };
+
 /**
- * Trang stage chạy game thật (lõi ở quiz.ts) và gửi ảnh chụp trạng thái lên server.
+ * Trang stage chạy game thật (lõi ở quiz.ts), đọc/ghi sổ lớp trên server và gửi ảnh chụp trạng thái lên.
  * Trang điều khiển không tự chạy game, chỉ vẽ lại ảnh chụp đó, nên xem trước luôn khớp với live.
  */
 export function useGame() {
   const [status, setStatus] = useState<LiveStatus | null>(null);
-  const [view, setView] = useState<ClassView | null>(null);
+  const [view, setView] = useState<StageView | null>(null);
   const [lastGift, setLastGift] = useState<(GiftEvent & { at: number }) | null>(null);
   const [stageCount, setStageCount] = useState(0);
   const [channelName, setChannelName] = useState(GAME.defaultChannelName);
 
-  const [room] = useState(() => (IS_STAGE ? new Classroom(QUESTIONS, Date.now()) : null));
+  const roomRef = useRef<Classroom | null>(null);
+  const weekTop = useRef<WeekRow[]>([]);
   const likeBase = useRef<number | null>(null);
   const dirty = useRef(true);
 
@@ -32,17 +36,17 @@ export function useGame() {
     greeter: new NameBatcher(
       GAME.greetEveryMs,
       GAME.namesPerGreeting,
-      (names) => voice.say(GAME.lines.greeting(joinNames(names))),
-      () => voice.waiting >= 1 || room?.phase === 'question', // đang hỏi thì không chào, để cô đọc đề
+      (names) => roomRef.current && say([roomRef.current.greet(joinNames(names))]),
+      () => voice.waiting >= 1 || roomRef.current?.phase === 'question', // đang hỏi thì không chào, để cô đọc đề
     ),
     gifts: new GiftThanker(GAME.giftThanksCooldownMs, GAME.bigGiftCoins),
     follows: new OncePerPerson(),
   }));
 
-  const say = (lines: Say[]) => {
+  function say(lines: Say[]) {
     for (const l of lines) voice.say(l.text, l.priority);
     dirty.current = true;
-  };
+  }
 
   // Tên an toàn để hiện/đọc: tên có từ cấm thì dùng username
   const person = (e: { nickname: string; username: string; avatar: string }) => {
@@ -54,10 +58,11 @@ export function useGame() {
     onStatus: setStatus,
     onSpeaker: (d) => setStageCount(d.count),
     onGameState: (s) => {
-      if (!IS_STAGE) setView(s as ClassView);
+      if (!IS_STAGE) setView(s as StageView);
     },
 
     onChat: (e) => {
+      const room = roomRef.current;
       if (!room) return;
       const p = person(e);
       const isNew = !room.students.has(e.username);
@@ -66,6 +71,7 @@ export function useGame() {
     },
 
     onGift: (e) => {
+      const room = roomRef.current;
       if (!room) return;
       const p = person(e);
       const coins = e.diamondCount * e.repeatCount;
@@ -73,27 +79,26 @@ export function useGame() {
       const hint = room.gift(p, coins, Date.now());
       say(hint);
       // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
-      if (!hint.length && talk.gifts.shouldThank(e.username, coins, voice.waitingPriority)) {
-        voice.say(GAME.lines.thankGift(p.spoken, e.giftName), true);
-      }
+      if (!hint.length && talk.gifts.shouldThank(e.username, coins, voice.waitingPriority)) say([room.thank(p, e.giftName, coins)]);
     },
 
     onFollow: (e) => {
-      const p = person(e);
-      if (room && talk.follows.first(e.username)) voice.say(GAME.lines.thankFollow(p.spoken));
+      const room = roomRef.current;
+      if (room && talk.follows.first(e.username)) say([room.follow(person(e))]);
     },
 
     onLike: (e) => {
+      const room = roomRef.current;
       if (!room) return;
       if (likeBase.current === null) likeBase.current = e.totalLikes - e.likeCount;
-      if (e.totalLikes - likeBase.current >= GAME.likesPerClap) {
-        likeBase.current = e.totalLikes;
-        say(room.clap(Date.now()));
-      }
+      const reached = e.totalLikes - likeBase.current >= GAME.likesPerClap;
+      if (reached) likeBase.current = e.totalLikes;
+      say(room.like(e.likeCount, Date.now(), reached));
     },
 
     onControl: (c) => {
       if (c.action === 'setName' && c.text) setChannelName(c.text);
+      const room = roomRef.current;
       if (!room) return;
       if (c.action === 'speak' && c.text) voice.say(c.text, true);
       if (c.action === 'setRate' && c.text) voice.rate = Number(c.text) || 1;
@@ -102,31 +107,74 @@ export function useGame() {
         say(room.newRound(Date.now()));
       }
       if (c.action === 'custom' && c.text === 'skip') say(room.skip(Date.now()));
+      if (c.action === 'custom' && c.text?.startsWith('recess:')) say(room.forceRecess(c.text.slice(7) as RecessGame, Date.now()));
     },
   });
 
-  // Nhịp game: 5 lần/giây đẩy đồng hồ, có đổi thì vẽ lại và gửi ảnh chụp cho trang điều khiển
+  // Mở trang stage: đọc sổ lớp (câu đã hỏi, bảng vàng tuần) rồi mới vào học
   useEffect(() => {
-    if (!room) return;
+    if (!IS_STAGE) return;
     if (MUTED) voice.volume = 0;
-    voice.say(GAME.lines.intro);
-    let lastSent = 0;
-    const timer = setInterval(() => {
-      const now = Date.now();
-      say(room.tick(now));
-      if (!dirty.current && now - lastSent < 1000) return;
-      dirty.current = false;
-      const v = room.view(now);
-      setView(v);
-      if (now - lastSent >= 400) {
-        lastSent = now;
-        fetch('/api/game/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) }).catch(() => {});
+    let stop = false;
+    const timers: ReturnType<typeof setInterval>[] = [];
+
+    const save = async () => {
+      const room = roomRef.current;
+      if (!room) return;
+      const used = room.usedLog.splice(0);
+      const week = [...room.weekDelta].map(([username, v]) => ({ username, ...v }));
+      room.weekDelta.clear();
+      try {
+        const r = await fetch('/api/game/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ used, week }) });
+        const d = await r.json();
+        weekTop.current = d.weekTop ?? [];
+        room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
+      } catch {
+        room.usedLog.unshift(...used); // server tắt: giữ lại, lần sau gửi
+        for (const w of week) room.weekDelta.set(w.username, w);
       }
-    }, 200);
-    const share = setInterval(() => voice.say(GAME.lines.share), GAME.shareReminderEveryMs);
+    };
+
+    (async () => {
+      let used: Record<string, number> = {};
+      try {
+        const d = await (await fetch('/api/game/save')).json();
+        used = d.used ?? {};
+        weekTop.current = d.weekTop ?? [];
+      } catch {
+        // server cũ chưa có sổ: chơi bình thường, chỉ không nhớ câu đã hỏi
+      }
+      if (stop) return;
+      const room = new Classroom(QUESTIONS, Date.now(), Math.random, used);
+      room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
+      roomRef.current = room;
+      say(room.newRound(Date.now()));
+
+      // Nhịp game: 5 lần/giây đẩy đồng hồ, có đổi thì vẽ lại và gửi ảnh chụp cho trang điều khiển
+      let lastSent = 0;
+      timers.push(
+        setInterval(() => {
+          const now = Date.now();
+          say(room.tick(now));
+          if (!dirty.current && now - lastSent < 1000) return;
+          dirty.current = false;
+          const v = { ...room.view(now), weekTop: weekTop.current };
+          setView(v);
+          if (now - lastSent >= 400) {
+            lastSent = now;
+            fetch('/api/game/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) }).catch(() => {});
+          }
+        }, 200),
+        setInterval(() => say([room.share()]), GAME.shareReminderEveryMs),
+        setInterval(save, 20_000),
+      );
+    })();
+
+    window.addEventListener('beforeunload', save);
     return () => {
-      clearInterval(timer);
-      clearInterval(share);
+      stop = true;
+      timers.forEach(clearInterval);
+      window.removeEventListener('beforeunload', save);
     };
   }, []);
 
