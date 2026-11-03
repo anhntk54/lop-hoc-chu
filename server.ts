@@ -442,16 +442,19 @@ const weekTop = () => {
     .sort((a, b) => b.points - a.points)
     .slice(0, 10);
 };
+// tên TikTok có thể là "__proto__": không cho làm khoá, tránh phá object sổ lớp
+const safeKey = (k: string) => k !== '__proto__' && k !== 'constructor' && k !== 'prototype';
 app.get('/api/game/save', (_req, res) => res.json({ used: soLop.used, weekTop: weekTop() }));
 app.post('/api/game/save', (req, res) => {
   const { used, week } = req.body || {};
   weekTop();
-  if (Array.isArray(used)) for (const id of used.slice(0, 500)) if (typeof id === 'string') soLop.used[id.slice(0, 200)] = Date.now();
+  if (Array.isArray(used)) for (const id of used.slice(0, 500)) if (typeof id === 'string' && safeKey(id)) soLop.used[id.slice(0, 200)] = Date.now();
   if (Array.isArray(week)) {
     for (const e of week.slice(0, 2000)) {
       if (!e || typeof e.username !== 'string' || typeof e.points !== 'number' || !Number.isFinite(e.points)) continue;
       const key = e.username.slice(0, 100);
-      const cur = soLop.scores[key] ?? { nickname: '', points: 0 };
+      if (!safeKey(key)) continue;
+      const cur = Object.hasOwn(soLop.scores, key) ? soLop.scores[key] : { nickname: '', points: 0 };
       cur.nickname = String(e.nickname || cur.nickname).slice(0, 60);
       cur.points += Math.max(0, Math.min(1000, Math.round(e.points)));
       soLop.scores[key] = cur;
