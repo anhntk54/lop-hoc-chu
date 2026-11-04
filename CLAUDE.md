@@ -46,3 +46,4 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Bảng đỏ chữ vàng "TIÊN HỌC LỄ – HẬU HỌC VĂN" phía trên bảng đen.
 - Chỗ ngồi: điểm cao bàn đầu; cùng điểm thì ai vào lớp trước ngồi trước (không đổi chỗ mỗi lần comment).
 - Muốn nhân vật đẹp hơn: làm ảnh học sinh nhìn từ sau lưng cùng nét vẽ, bỏ vào nhan-vat/ rồi sửa tools/tach-nen.py.
+- Giọng đọc (2026-11-04, sau buổi live đông): câu chính (đề, đáp án, tổng kết, ra chơi) chen lên đọc trước và được tạo giọng sẵn; câu nói thêm (chào, cà khịa) chờ quá 7 giây hoặc đã sang câu mới thì bỏ, cảm ơn quà chờ tối đa 15 giây (`chatterMaxWaitMs`, `giftLineMaxWaitMs`).
