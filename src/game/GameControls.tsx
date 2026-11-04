@@ -104,6 +104,11 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
         <Btn onClick={() => sendControl('custom', 'recess:pick')}>⚖️ Ra chơi: chọn phe</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:roll')}>🙋 Ra chơi: điểm danh</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:heart')}>❤️ Ra chơi: thả tim</Btn>
+        <Btn onClick={() => sendControl('custom', 'show:everest')}>🏔️ Game: Đường lên đỉnh Everest</Btn>
+        <Btn onClick={() => sendControl('custom', 'show:chuong')}>🔔 Game: Rung Chuông Đồng</Btn>
+        <Btn onClick={() => Array.from({ length: 10 }, (_, i) => emitTest('chat', { ...fake(i), comment: view?.show?.step === 'stake' ? ['10', '20'][i % 2] : 'ABCD'[Math.floor(Math.random() * 4)] }))}>
+          🎲 Thử game: 10 bạn gõ A/B/C/D
+        </Btn>
         <Btn onClick={() => flood(100)} disabled={running}>👥 100 người cùng đoán</Btn>
         <Btn onClick={() => flood(1000)} disabled={running}>👥 1000 người cùng đoán</Btn>
       </div>

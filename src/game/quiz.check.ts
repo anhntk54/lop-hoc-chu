@@ -6,6 +6,7 @@ import { Classroom, LineBag, teamOf, tierOf, compactVi, dayPeriod, emptyLife, gr
 import { parseBank, type Question } from './questions';
 import { GAME } from './config';
 import { makeMath } from './math';
+import { choiceOf, parseCodes, parseMc } from './show';
 import { LINES, PICK_TOPICS, POLLS } from './loi-thoai';
 
 const dir = path.join(import.meta.dirname, 'cau-hoi');
@@ -747,6 +748,164 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(v.laterCount, 2);
   assert.equal(v.laterPoints, 1);
   assert.deepEqual(c.correct.slice(5).map((a) => a.points), [1, 1], 'chậm hơn top 5: +1');
+}
+
+// ---------- 2 game lớn (bản cô Ngân): Đường lên đỉnh Everest, Rung Chuông Đồng ----------
+{
+  const sdir = path.join(import.meta.dirname, 'cau-hoi-show');
+  const SHOW = { mc: parseMc(fs.readFileSync(path.join(sdir, 'trac-nghiem.txt'), 'utf8')), codes: parseCodes(fs.readFileSync(path.join(sdir, 'mat-ma.txt'), 'utf8')) };
+  assert.equal(choiceOf('B'), 1);
+  assert.equal(choiceOf('đáp án c'), 2);
+  assert.equal(choiceOf('chọn D'), 3);
+  assert.equal(choiceOf('a.'), 0);
+  assert.equal(choiceOf('ab'), -1);
+  assert.equal(choiceOf('xin chào'), -1);
+  type Sh = { steps: { k: string; tag?: string }[]; i: number; stage: string; mc: { ans: number; tag: string } | null; code: { answer: string } | null; tickets: Set<string>; scores: Map<string, number> };
+  const sh = (c: Classroom) => (c as unknown as { show: Sh }).show;
+  const step = (c: Classroom) => sh(c).steps[sh(c).i];
+  /** chạy tới bước kế tiếp đang chờ trả lời (cô đã hô bắt đầu) */
+  const toAsk = (c: Classroom) => {
+    for (let k = 0; k < 20; k++) {
+      if (c.phase !== 'show' || step(c).k === 'honor') return;
+      const st = step(c);
+      if (sh(c).stage === 'ask' && ['mc', 'stake', 'code'].includes(st.k)) {
+        c.showBoard();
+        return;
+      }
+      c.tick((t = c.phaseEndsAt));
+    }
+  };
+  const wrongOf = (a: number) => 'ABCD'[(a + 1) % 4];
+
+  // --- Everest ---
+  const c = new Classroom(BANK, t, () => 0.3);
+  c.showBank = SHOW;
+  for (let i = 1; i <= 4; i++) chat(c, i, 'hi', t, t);
+  c.forceShow('everest', t);
+  assert.equal(c.phase, 'show');
+  assert.equal(c.view(t).outfit, 'everest', 'chơi Everest thì mặc đồ leo núi');
+  // bước chân đầu tiên: 4 câu, đúng +10, mỗi người 1 đáp án, chưa hô bắt đầu thì chưa nhận
+  for (let q = 0; q < 4; q++) {
+    toAsk(c);
+    assert.equal(step(c).k, 'mc');
+    const a = sh(c).mc!.ans;
+    if (q === 0) {
+      (c as unknown as { boardShown: boolean }).boardShown = false;
+      chat(c, 4, 'ABCD'[a], t, t); // cô chưa hô bắt đầu: không tính
+      c.showBoard();
+    }
+    chat(c, 1, 'ABCD'[a], t, t);
+    chat(c, 2, wrongOf(a), t, t);
+    chat(c, 2, 'ABCD'[a], t, t); // đổi ý: chỉ tính lần đầu
+    c.tick((t = c.phaseEndsAt)); // hiện đáp án
+    assert.equal(sh(c).stage, 'reveal');
+  }
+  assert.equal(sh(c).scores.get('u1'), 40);
+  assert.equal(sh(c).scores.get('u2') ?? 0, 0);
+  assert.equal(sh(c).scores.get('u4') ?? 0, 0, 'gõ trước khi cô hô bắt đầu không tính');
+  assert.equal(c.students.get('u1')!.session, 40, 'điểm game lớn vào điểm buổi / học bạ');
+  // mật mã: bạn 3 giải ở gợi ý 2 được 20, bạn 1 đoán sai ở gợi ý 1 rồi giải ở gợi ý 2
+  toAsk(c);
+  assert.equal(step(c).k, 'code');
+  const code = sh(c).code!.answer;
+  chat(c, 1, 'x'.repeat(code.replace(/\s/g, '').length), t, t); // đoán sai (đủ số chữ)
+  chat(c, 1, code.toLowerCase(), t, t); // gợi ý này đã đoán rồi: không tính
+  c.tick((t = c.phaseEndsAt));
+  toAsk(c);
+  chat(c, 3, code.toLowerCase(), t, t);
+  chat(c, 1, code.toLowerCase(), t, t);
+  assert.equal(sh(c).scores.get('u3'), 20);
+  assert.equal(sh(c).scores.get('u1'), 60);
+  c.tick((t = c.phaseEndsAt)); // gợi ý 3
+  c.tick((t = c.phaseEndsAt)); // đã có người giải: bỏ cứu trợ, tới hiện mật mã
+  assert.equal(step(c).k, 'codeReveal');
+  // bão tốc độ: 4 câu +15 cho bạn 3
+  for (let q = 0; q < 4; q++) {
+    toAsk(c);
+    chat(c, 3, 'ABCD'[sh(c).mc!.ans], t, t);
+    c.tick((t = c.phaseEndsAt));
+  }
+  assert.equal(sh(c).scores.get('u3'), 80);
+  // chạm đỉnh: bạn 1 cược 20 đúng cả 3, bạn 3 không cược (tính 10)
+  for (let q = 0; q < 3; q++) {
+    toAsk(c);
+    assert.equal(step(c).k, 'stake');
+    chat(c, 1, '20', t, t);
+    c.tick((t = c.phaseEndsAt));
+    toAsk(c);
+    assert.equal(sh(c).mc!.tag, 'peak');
+    chat(c, 1, 'ABCD'[sh(c).mc!.ans], t, t);
+    chat(c, 3, 'ABCD'[sh(c).mc!.ans], t, t);
+    c.tick((t = c.phaseEndsAt));
+  }
+  assert.equal(sh(c).scores.get('u1'), 120);
+  assert.equal(sh(c).scores.get('u3'), 110);
+  // không đồng điểm: bỏ câu phụ, vào vinh danh
+  for (let k = 0; k < 5 && step(c).k !== 'honor'; k++) c.tick((t = c.phaseEndsAt));
+  assert.equal(step(c).k, 'honor');
+  const hv = c.view(t).show!;
+  assert.equal(hv.honors[0].username, 'u1');
+  assert.ok(hv.honors[0].title.includes('Everest'));
+  assert.ok(c.view(t).seats.find((s) => s.username === 'u1')!.showIcons.includes('🚩'), 'danh hiệu hiện trên bảng tên');
+  c.tick((t = c.phaseEndsAt));
+  assert.equal(c.phase, 'vote', 'xong game thì bình chọn chủ đề tiết sau');
+  assert.equal(c.show, null);
+
+  // --- Rung Chuông Đồng: phiếu gợi ý, câu phụ khi đồng điểm, rung chuông ---
+  const d = new Classroom(BANK, t, () => 0.3);
+  d.showBank = SHOW;
+  for (let i = 1; i <= 3; i++) chat(d, i, 'hi', t, t);
+  d.forceShow('chuong', t);
+  for (let k = 0; k < 40 && d.phase === 'show' && step(d).k !== 'honor'; k++) {
+    toAsk(d);
+    if (d.phase !== 'show' || step(d).k === 'honor') break;
+    const m = sh(d).mc;
+    if (m) {
+      if (m.tag === 'final' && sh(d).tickets.has('u2') && !d.view(t).show!.ticketUser) {
+        const said = chat(d, 2, 'gợi ý', t, t);
+        assert.ok(said.some((l) => l.warn), 'dùng phiếu: cô nói liền, không dừng đồng hồ');
+        assert.equal(d.view(t).show!.removed.length, 2);
+        assert.ok(!d.view(t).show!.removed.includes(m.ans), 'chỉ bỏ đáp án sai');
+      }
+      // bạn 1 và 2 đúng hết, bạn 3 chỉ đúng câu cứu trợ; câu phụ thì chỉ bạn 2 đúng
+      const right = 'ABCD'[m.ans];
+      if (m.tag === 'tie') {
+        chat(d, 3, right, t, t); // không đồng điểm: không tính
+        chat(d, 2, right, t, t);
+        chat(d, 1, wrongOf(m.ans), t, t);
+      } else {
+        chat(d, 1, right, t, t);
+        chat(d, 2, right, t, t);
+        if (m.tag === 'rescue') chat(d, 3, right, t, t);
+      }
+    }
+    d.tick((t = d.phaseEndsAt));
+  }
+  assert.equal(step(d).k, 'honor');
+  const dv = d.view(t).show!;
+  assert.equal(sh(d).scores.get('u1'), sh(d).scores.get('u2'), 'bạn 1, 2 đồng điểm');
+  assert.equal(dv.honors[0].username, 'u2', 'đúng câu phụ thì xếp trên');
+  assert.ok(dv.honors[0].title.includes('chuông'));
+  assert.deepEqual(dv.bellRingers.length, 2);
+  assert.ok((d.titles.get('u3') ?? []).some((x) => x.includes('tiếp sức')), 'đúng câu cứu trợ: Người tiếp sức');
+
+  // --- cứ 2 tiết 1 game, xen kẽ; hết tiết đổi trang phục ---
+  const e = new Classroom(BANK, t, () => 0.5);
+  e.showBank = SHOW;
+  const outfits = new Set<string>();
+  const kinds: string[] = [];
+  for (let r = 0; r < 4; r++) {
+    e.newRound((t += 1000));
+    const before = e.outfit;
+    for (let k = 0; k < 200 && e.phase !== 'results'; k++) e.tick((t = e.phaseEndsAt));
+    assert.notEqual(e.outfit, before, 'hết 20 câu thì cô thay trang phục');
+    outfits.add(e.outfit);
+    e.tick((t = e.phaseEndsAt));
+    if (e.phase === 'show') kinds.push(e.show!.kind);
+    else assert.equal(e.phase, 'recess');
+  }
+  assert.deepEqual(kinds, ['everest', 'chuong'], 'tiết 2 Everest, tiết 4 Rung Chuông Đồng');
+  assert.ok([...outfits].every((o) => (GAME.outfits as readonly string[]).includes(o)));
 }
 
 console.log('quiz.check: tất cả đều đúng');

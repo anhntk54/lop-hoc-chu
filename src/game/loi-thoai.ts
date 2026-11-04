@@ -296,6 +296,122 @@ export const LINES = {
     'Bốn tổ đều chưa ghi điểm. Cô buồn như thứ hai đầu tuần.',
   ] as L0,
 
+  // ---------- 2 game lớn (bản riêng): Đường lên đỉnh Everest, Rung Chuông Đồng ----------
+  showIntroEverest: [
+    'Cả lớp ơi, hôm nay mình không ra chơi, mình đi leo núi! Chào mừng tới Đường lên đỉnh Everest. Gõ A, B, C hoặc D, ai đúng cũng được điểm, không cần nhanh, cần đúng. Đội leo núi tập hợp nha!',
+    'Đổi gió chút nha các bạn. Cô Ngân mặc đồ leo núi rồi nè, mình chơi Đường lên đỉnh Everest. Mỗi câu gõ một chữ A, B, C hoặc D, gõ một lần thôi. Ai tới đỉnh trước, cô cắm cờ cho!',
+    'Đường lên đỉnh Everest bắt đầu! Câu hỏi khó hơn bình thường một chút, trả lời đúng là leo cao thêm. Mỗi bạn một đáp án mỗi câu, gõ hai lần cô chỉ tính lần đầu nha.',
+  ] as L0,
+  showIntroChuong: [
+    'Giờ ra chơi hôm nay đặc biệt nè, cả lớp cùng chơi Rung Chuông Đồng! Gõ A, B, C hoặc D, ai đúng cũng có điểm, sai không bị loại. Người điểm cao nhất được cầm chuông của cô Ngân!',
+    'Rung Chuông Đồng đây các bạn ơi! Mỗi câu gõ một đáp án A, B, C hoặc D. Không ai bị loại hết, cứ chơi tới cuối là có cơ hội rung chuông.',
+    'Cô Ngân đã cầm chuông lên rồi nè. Rung Chuông Đồng bắt đầu, câu hỏi khó hơn tiết học một chút, mỗi bạn chỉ được trả lời một lần mỗi câu thôi nha.',
+  ] as L0,
+  evWarm: [
+    'Chặng một, Bước chân đầu tiên. Bốn câu khởi động, mỗi câu tám giây, đúng được mười điểm.',
+    'Bước chân đầu tiên nè các bạn, bốn câu dễ thở, đúng là leo lên mười điểm.',
+  ] as L0,
+  evCode: [
+    'Chặng hai, Mật mã trạm. Cô đọc ba gợi ý, đoán ra ở gợi ý đầu được ba mươi điểm, gợi ý hai hai mươi, gợi ý ba mười điểm. Gõ thẳng từ khoá vào bình luận, có dấu nha.',
+    'Tới trạm nghỉ rồi, phải giải mật mã mới được đi tiếp. Ba gợi ý, đoán càng sớm điểm càng cao. Mỗi gợi ý mỗi bạn đoán một lần.',
+  ] as L0,
+  evStorm: [
+    'Chặng ba, Bão tốc độ! Bốn câu, mỗi câu tám giây, đúng được mười lăm điểm. Bám chặt dây leo nha.',
+    'Bão tới rồi các bạn ơi! Bốn câu chớp nhoáng, mười lăm điểm mỗi câu, ai lơ mơ là bị gió thổi xuống chân núi.',
+  ] as L0,
+  evPeak: [
+    'Chặng cuối, Chạm đỉnh! Trước mỗi câu các bạn chọn mức điểm, gõ mười hoặc hai mươi. Đúng thì cộng đúng mức đã chọn, sai không bị trừ. Ai không chọn cô tính mười.',
+    'Sắp tới đỉnh rồi! Ba câu cuối, chọn mức cược trước khi xem câu: gõ mười hoặc hai mươi. Liều thì ăn nhiều nha.',
+  ] as L0,
+  evStake: [
+    'Chọn mức điểm cho câu tiếp theo nè, gõ mười hoặc hai mươi.',
+    'Cược bao nhiêu đây các bạn? Gõ mười hay hai mươi.',
+    'Liều ăn nhiều, gõ hai mươi. Chắc ăn thì gõ mười.',
+  ] as L0,
+  chWarm: [
+    'Phần một, Làm nóng. Bốn câu, mỗi câu tám giây, đúng được mười điểm.',
+    'Khởi động nha cả lớp, bốn câu làm nóng, mười điểm mỗi câu.',
+  ] as L0,
+  chHold: [
+    'Phần hai, Trụ vững. Sáu câu kiến thức phổ thông, mỗi câu mười giây, đúng được mười điểm.',
+    'Giờ là Trụ vững nè, sáu câu liên tiếp. Bình tĩnh, đọc kỹ đáp án rồi hãy gõ.',
+  ] as L0,
+  chRescue: [
+    'Câu Cứu trợ cả phòng! Câu này không có điểm, nhưng ai đúng được một phiếu gợi ý. Tới Thử thách cuối, gõ "gợi ý" là cô bỏ hai đáp án sai cho cả phòng.',
+    'Cứu trợ nè các bạn. Đúng câu này được phiếu gợi ý, lát nữa dùng để tiếp sức cho cả lớp ở câu khó.',
+  ] as L0,
+  chFinal: [
+    'Phần ba, Thử thách cuối. Ba câu khó, mỗi câu mười lăm giây, đúng được hai mươi điểm. Ai có phiếu thì gõ "gợi ý" nha.',
+    'Thử thách cuối tới rồi, hai mươi điểm mỗi câu. Bạn nào có phiếu gợi ý thì cứu cả lớp đi.',
+  ] as L0,
+  chBell: [
+    'Và đây là Câu Chuông Đồng, ba mươi điểm! Ai đúng câu này được rung chuông cùng cô Ngân.',
+    'Câu Chuông Đồng, câu quyết định, ba mươi điểm. Hít thở sâu nha các bạn.',
+  ] as L0,
+  showGo: [
+    'Bắt đầu!',
+    'Gõ đáp án đi nào!',
+    'Chọn đi các bạn!',
+    'Mời cả lớp!',
+  ] as L0,
+  showReveal: [
+    (a, n) => `Đáp án là ${a}. Có ${n} bạn đúng, giỏi quá!`,
+    (a, n) => `Đáp án đúng: ${a}. ${n} bạn trả lời đúng rồi nè.`,
+    (a, n) => `${a} mới là đáp án nha. ${n} bạn đúng, cô thương.`,
+  ] as L2,
+  showNobody: [
+    (a) => `Đáp án là ${a}. Không ai đúng hết, câu này cô lừa được cả lớp rồi.`,
+    (a) => `Không bạn nào đúng luôn. Đáp án là ${a}, ghi vào sổ tay nha.`,
+  ] as L1,
+  codeIntro: [
+    (n) => `Mật mã gồm ${n} chữ cái. Nghe gợi ý một nè.`,
+    (n) => `Từ khoá có ${n} chữ cái, cô đọc gợi ý đầu tiên.`,
+  ] as L1,
+  codeRescue: [
+    (f, n) => `Chưa ai giải được, cô mở cứu trợ mười giây! Mật mã bắt đầu bằng chữ ${f}, gồm ${n} chữ cái.`,
+    (f, n) => `Cứu trợ cả phòng nè! Chữ đầu là ${f}, có ${n} chữ cái. Giải được là người dẫn đường đó.`,
+  ] as L2,
+  codeReveal: [
+    (a, n, x) => `Mật mã là ${a}! ${n} bạn giải được, nhanh nhất có ${x}.`,
+    (a, n, x) => `Từ khoá là ${a}. Cô khen ${x}, tổng cộng ${n} bạn mở được trạm.`,
+  ] as L3,
+  codeNobody: [
+    (a) => `Mật mã là ${a}. Không ai giải được, cả đoàn ngồi nghỉ ở trạm thêm chút.`,
+    (a) => `Đáp án là ${a} nha. Khó quá ha, cô cũng thấy khó.`,
+  ] as L1,
+  ticketWin: [
+    (n) => `${n} bạn nhận được phiếu gợi ý. Nhớ gõ "gợi ý" ở Thử thách cuối nha.`,
+    (n) => `Có ${n} bạn được phiếu tiếp sức rồi, để dành cho câu khó.`,
+  ] as L1,
+  ticketUse: [
+    (x) => `${x} dùng phiếu gợi ý! Cô bỏ hai đáp án sai cho cả phòng.`,
+    (x) => `Cảm ơn ${x} tiếp sức, hai đáp án sai biến mất rồi nè.`,
+  ] as L1,
+  bellRing: [
+    (n) => `${n} bạn trả lời đúng Câu Chuông Đồng, cô Ngân rung chuông cho các bạn nè!`,
+    (n) => `Leng keng! ${n} bạn đủ điều kiện rung chuông rồi!`,
+  ] as L1,
+  showTie: [
+    (x, s) => `Ồ, ${x} đang đồng điểm ${s}. Câu phụ phân định nè, chỉ các bạn đồng điểm trả lời thôi.`,
+    (x, s) => `Hoà điểm rồi! ${x} cùng ${s} điểm, cô ra một câu phụ nha.`,
+  ] as L2,
+  honorEverest: [
+    (x, s) => `Người chạm đỉnh Everest hôm nay là ${x} với ${s} điểm! Cô cắm cờ trên đỉnh cho bạn nè. Top mười vào Đội leo núi!`,
+    (x, s) => `Cờ đã cắm trên đỉnh! Chúc mừng ${x}, ${s} điểm. Cả lớp vỗ tay cho Đội leo núi nào!`,
+  ] as L2,
+  honorChuong: [
+    (x, s) => `Người giữ chuông hôm nay là ${x} với ${s} điểm! Cô trao chuông đồng nè, leng keng!`,
+    (x, s) => `Chúc mừng ${x}, ${s} điểm, rung chuông thôi! Top mười nhận huy hiệu Người chơi bền bỉ.`,
+  ] as L2,
+  honorNobody: [
+    (g) => `${g} kết thúc rồi mà chưa ai có điểm. Lần sau cả lớp cùng chơi với cô nha.`,
+    (g) => `Hết ${g} rồi, lần này chưa ai ghi điểm, lần sau cô đợi.`,
+  ] as L1,
+  honorThanks: [
+    (n) => `Cảm ơn ${n} bạn đã chơi cùng cô.`,
+    (n) => `Hôm nay có ${n} bạn tham gia, cô vui lắm.`,
+  ] as L1,
+
   // ---------- Câu đố mẹo (câu 7, 13) ----------
   riddleReveal: [
     (answer, rest) => `Đáp án là ${answer}! Có ai bị cô lừa không, giơ tay lên coi? ${rest}`,

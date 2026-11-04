@@ -2,6 +2,63 @@ import { GAME } from './config';
 import { LINES, PICK_TOPICS, POLLS, REWARDS, type Poll } from './loi-thoai';
 import { SLOTS, type Question, type Slot } from './questions';
 import { makeMath, type MathLevel } from './math';
+import { LETTERS, choiceOf, type CodeQ, type McLevel, type McQ, type ShowBank, type ShowKind } from './show';
+
+// ---------- 2 game lớn (bản riêng cô Ngân) ----------
+type ShowTag = 'warm' | 'storm' | 'peak' | 'hold' | 'rescue' | 'final' | 'bell' | 'tie';
+type ShowStep =
+  | { k: 'gather' }
+  | { k: 'section'; key: SectionKey }
+  | { k: 'mc'; level: McLevel; sec: number; pts: number; tag: ShowTag }
+  | { k: 'stake' }
+  | { k: 'code'; hint: number } // 0..2 gợi ý, 3 = cứu trợ
+  | { k: 'codeReveal' }
+  | { k: 'honor' };
+type SectionKey = 'evWarm' | 'evCode' | 'evStorm' | 'evPeak' | 'chWarm' | 'chHold' | 'chRescue' | 'chFinal' | 'chBell' | 'showTie';
+/** tên phần chơi hiện trên bảng */
+export const SECTION_TITLE: Record<SectionKey, string> = {
+  evWarm: '👣 Bước chân đầu tiên',
+  evCode: '🔐 Mật mã trạm',
+  evStorm: '🌪️ Bão tốc độ',
+  evPeak: '🏔️ Chạm đỉnh',
+  chWarm: '🔥 Làm nóng',
+  chHold: '💪 Trụ vững',
+  chRescue: '🤝 Cứu trợ cả phòng',
+  chFinal: '⚡ Thử thách cuối',
+  chBell: '🔔 Câu Chuông Đồng',
+  showTie: '⚖️ Phân định đỉnh cao',
+};
+export const SHOW_NAME: Record<ShowKind, string> = { everest: 'Đường lên đỉnh Everest', chuong: 'Rung Chuông Đồng' };
+/** danh hiệu sau game: [hạng nhất, top 10, người cứu trợ] */
+const SHOW_TITLES: Record<ShowKind, [string, string, string]> = {
+  everest: ['🚩 Người chạm đỉnh Everest', '⛰️ Đội leo núi', '🧭 Người dẫn đường'],
+  chuong: ['🔔 Người giữ chuông', '💪 Người chơi bền bỉ', '🤝 Người tiếp sức'],
+};
+interface ShowState {
+  kind: ShowKind;
+  steps: ShowStep[];
+  i: number;
+  stage: 'ask' | 'reveal';
+  qNo: number;
+  scores: Map<string, number>;
+  tieWin: Set<string>; // đúng câu phụ: xếp trên người đồng điểm
+  players: Set<string>;
+  mc: { q: McQ; opts: string[]; ans: number; tag: ShowTag; pts: number } | null;
+  answers: Map<string, number>;
+  removed: number[]; // phiếu gợi ý: 2 đáp án sai bị bỏ
+  ticketUser: string;
+  stakes: Map<string, number>;
+  tickets: Set<string>;
+  code: CodeQ | null;
+  codeTried: Set<string>;
+  codeSolvers: { username: string; pts: number; hint: number }[];
+  tied: string[];
+  bellRingers: string[];
+  helpers: string[];
+  honors: { username: string; nickname: string; score: number; title: string }[];
+  used: Set<string>;
+  lastRight: number; // số bạn đúng câu vừa rồi
+}
 
 /**
  * Lõi game Lớp Học Chữ: không đụng React, không đụng giọng đọc, chạy theo đồng hồ truyền vào.
@@ -10,7 +67,7 @@ import { makeMath, type MathLevel } from './math';
  * Một vòng: intro → 20 câu, có 4 câu toán (question → [bonus] → reveal) → results → recess (giờ ra chơi) → intro ...
  */
 
-export type Phase = 'team' | 'intro' | 'question' | 'bonus' | 'reveal' | 'praise' | 'results' | 'recess' | 'vote';
+export type Phase = 'team' | 'intro' | 'question' | 'bonus' | 'reveal' | 'praise' | 'results' | 'recess' | 'show' | 'vote';
 
 /** "tổ 2", "to2", "t2", "2", "tổ hai" -> 2; không phải chọn tổ thì 0 */
 const TEAM_WORDS: Record<string, number> = { mot: 1, hai: 2, ba: 3, bon: 4 };
@@ -304,6 +361,14 @@ export class Classroom {
   /** tổ thắng tiết vừa xong (hiện ở bảng tổng kết) */
   lastTeamWin: number[] = [];
   private teamReminded = false;
+  /** bộ câu 2 game lớn (useGame nạp từ cau-hoi-show/) và game đang chơi */
+  showBank: ShowBank = { mc: [], codes: [] };
+  show: ShowState | null = null;
+  private showNo = 0;
+  /** trang phục cô Ngân tiết này (đổi ngẫu nhiên khi hết 20 câu); đang chơi game lớn thì mặc bộ của game */
+  outfit: (typeof GAME.outfits)[number] = 'trang';
+  /** danh hiệu nhận trong buổi từ 2 game lớn (hiện icon trên bảng tên) */
+  titles = new Map<string, string[]>();
   /** học bạ cả đời: phần cộng thêm chờ gửi lên server (điểm, câu đúng từng loại) */
   lifeDelta = new Map<string, { nickname: string } & Life>();
   /** tương tác hôm nay (1 bình luận = 1, 1 quà = 10, không nói ra): chờ gửi lên server */
@@ -682,6 +747,7 @@ export class Classroom {
       this.phase === 'praise' ||
       this.phase === 'vote' ||
       this.phase === 'team' ||
+      this.showAsking() ||
       (this.phase === 'recess' && this.recess?.stage === 'play');
     return answering && left > GAME.chatterMinLeftMs;
   }
@@ -758,7 +824,10 @@ export class Classroom {
     }
     // bong bóng chat: không hiện câu trả lời (lộ đáp án cho bạn khác) và câu có từ cấm
     const asking = this.phase === 'question' || this.phase === 'bonus';
-    const answering = (asking && this.isAttempt(this.q, e.comment)) || (this.recess?.game === 'callup' && this.isAttempt(this.recess.callQ, e.comment));
+    const answering =
+      (asking && this.isAttempt(this.q, e.comment)) ||
+      (this.recess?.game === 'callup' && this.isAttempt(this.recess.callQ, e.comment)) ||
+      (this.phase === 'show' && this.isShowAnswer(e.comment));
     if (e.safe !== false && !answering && e.comment.trim()) s.bubble = { text: e.comment.trim().slice(0, 28), at: now };
     // tương tác: 1 bình luận = 1 (mỗi bạn tối đa 1 lần / 2 giây để gõ dồn không leo bảng)
     if (now - (s.lastTalkAt ?? -Infinity) >= GAME.talkGapMs) {
@@ -778,6 +847,7 @@ export class Classroom {
       this.poll.votes.set(s.username, key);
     }
     if (this.phase === 'team') return this.teamChat(s, e);
+    if (this.phase === 'show') return this.showChat(s, e, now);
     if (this.phase === 'vote') return this.voteChat(s, e);
     if (this.phase === 'recess') return this.recessChat(s, e, now);
     if (this.phase !== 'question' && this.phase !== 'bonus') return [];
@@ -995,6 +1065,9 @@ export class Classroom {
 
   private startResults(now: number, outOfQuestions = false): Say[] {
     this.setPhase('results', now, GAME.resultsSec);
+    // hết 20 câu: cô thay bộ trang phục khác (bốc ngẫu nhiên, không trùng bộ đang mặc)
+    const others = GAME.outfits.filter((o) => o !== this.outfit);
+    this.outfit = others[Math.floor(this.rand() * others.length)];
     const best = this.seats(1)[0];
     const lines: Say[] = [];
     // ghi lớp trưởng tiết này vào bảng các tiết trước
@@ -1133,6 +1206,414 @@ export class Classroom {
     return this.mainOf([this.t(times > 1 ? this.line('championAgain', s.spoken, String(times)) : this.line('championBoard', s.spoken))]);
   }
 
+  // ---------- 2 game lớn: Đường lên đỉnh Everest / Rung Chuông Đồng (bản riêng cô Ngân) ----------
+  // Nhịp giọng như tiết học: câu cô đọc là câu chính (đồng hồ dừng), hô bắt đầu (go) mới nhận đáp án và chạy giờ.
+  // Ai đúng trong giờ đều được điểm, không xét nhanh chậm; mỗi tài khoản 1 đáp án mỗi câu.
+
+  /** Bảng điểm + xếp hạng của game đang chơi (đúng câu phụ thì xếp trên người đồng điểm) */
+  private showRank() {
+    const sh = this.show;
+    if (!sh) return [];
+    return [...sh.scores]
+      .map(([username, score]) => ({ username, score, nickname: this.students.get(username)?.nickname ?? username, tie: sh.tieWin.has(username) ? 1 : 0 }))
+      .sort((a, b) => b.score - a.score || b.tie - a.tie || a.nickname.localeCompare(b.nickname));
+  }
+
+  /** Đang chờ người xem trả lời trong game lớn (cô đã hô bắt đầu) */
+  showAsking() {
+    return this.phase === 'show' && this.show?.stage === 'ask' && this.boardShown && ['mc', 'stake', 'code'].includes(this.show.steps[this.show.i]?.k);
+  }
+
+  private showStepSec() {
+    const st = this.show?.steps[this.show.i];
+    return st?.k === 'mc' ? st.sec : 0;
+  }
+
+  /** Bình luận này là đáp án trong game lớn (không hiện bong bóng, không coi là nói chuyện) */
+  private isShowAnswer(comment: string) {
+    const st = this.show?.steps[this.show.i];
+    if (!st) return false;
+    if (st.k === 'mc') return choiceOf(comment) >= 0 || plain(comment) === 'goiy';
+    if (st.k === 'stake') return /^(10|20)$/.test(plain(comment));
+    if (st.k === 'code' && this.show!.code) return compactVi(comment).length === compactVi(this.show!.code.answer).length;
+    return false;
+  }
+
+  /** Bốc câu trắc nghiệm lâu chưa hỏi nhất của nhóm (không lặp trong game), xáo vị trí A B C D */
+  private pickMc(level: McLevel, now: number) {
+    const sh = this.show!;
+    const at = (q: McQ) => this.history[q.id] ?? 0;
+    let pool = this.showBank.mc.filter((q) => q.level === level && !sh.used.has(q.id));
+    if (!pool.length) pool = this.showBank.mc.filter((q) => !sh.used.has(q.id));
+    if (!pool.length) return null;
+    pool = [...pool];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rand() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    pool.sort((a, b) => at(a) - at(b));
+    const q = pool[0];
+    sh.used.add(q.id);
+    this.history[q.id] = now;
+    this.usedLog.push(q.id);
+    const opts = [q.right, ...q.wrong];
+    for (let i = opts.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rand() * (i + 1));
+      [opts[i], opts[j]] = [opts[j], opts[i]];
+    }
+    return { q, opts, ans: opts.indexOf(q.right) };
+  }
+
+  private pickCode(now: number): CodeQ | null {
+    const at = (c: CodeQ) => this.history[c.id] ?? 0;
+    const pool = [...this.showBank.codes];
+    if (!pool.length) return null;
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rand() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    pool.sort((a, b) => at(a) - at(b));
+    this.history[pool[0].id] = now;
+    this.usedLog.push(pool[0].id);
+    return pool[0];
+  }
+
+  /** Nút "Game lớn" ở trang điều khiển: chơi ngay 1 game */
+  forceShow(kind: ShowKind, now: number): Say[] {
+    if (!this.showBank.mc.length) return [];
+    return this.startShow(now, kind);
+  }
+
+  private startShow(now: number, forced?: ShowKind): Say[] {
+    const kind: ShowKind = forced ?? (this.showNo % 2 === 0 ? 'everest' : 'chuong');
+    this.showNo++;
+    this.recess = null;
+    const E = GAME.show.everest;
+    const C = GAME.show.chuong;
+    const mc = (level: McLevel, x: { sec: number; pts: number }, tag: ShowTag): ShowStep => ({ k: 'mc', level, sec: x.sec, pts: x.pts, tag });
+    const times = <T,>(n: number, f: () => T) => Array.from({ length: n }, f);
+    const steps: ShowStep[] =
+      kind === 'everest'
+        ? [
+            { k: 'gather' },
+            { k: 'section', key: 'evWarm' },
+            ...times(E.warm.n, () => mc('de', E.warm, 'warm')),
+            { k: 'section', key: 'evCode' },
+            { k: 'code', hint: 0 },
+            { k: 'code', hint: 1 },
+            { k: 'code', hint: 2 },
+            { k: 'code', hint: 3 },
+            { k: 'codeReveal' },
+            { k: 'section', key: 'evStorm' },
+            ...times(E.storm.n, () => mc('vua', E.storm, 'storm')),
+            { k: 'section', key: 'evPeak' },
+            ...times(E.peak.n, () => [{ k: 'stake' } as ShowStep, mc('kho', { sec: E.peak.sec, pts: 0 }, 'peak')]).flat(),
+            { k: 'section', key: 'showTie' },
+            { k: 'honor' },
+          ]
+        : [
+            { k: 'gather' },
+            { k: 'section', key: 'chWarm' },
+            ...times(C.warm.n, () => mc('de', C.warm, 'warm')),
+            { k: 'section', key: 'chHold' },
+            ...times(C.hold.n, () => mc('vua', C.hold, 'hold')),
+            { k: 'section', key: 'chRescue' },
+            mc('vua', { sec: C.rescue.sec, pts: 0 }, 'rescue'),
+            { k: 'section', key: 'chFinal' },
+            ...times(C.final.n, () => mc('kho', C.final, 'final')),
+            { k: 'section', key: 'chBell' },
+            mc('chuong', C.bell, 'bell'),
+            { k: 'section', key: 'showTie' },
+            { k: 'honor' },
+          ];
+    this.show = {
+      kind,
+      steps,
+      i: 0,
+      stage: 'ask',
+      qNo: 0,
+      scores: new Map(),
+      tieWin: new Set(),
+      players: new Set(),
+      mc: null,
+      answers: new Map(),
+      removed: [],
+      ticketUser: '',
+      stakes: new Map(),
+      tickets: new Set(),
+      code: null,
+      codeTried: new Set(),
+      codeSolvers: [],
+      tied: [],
+      bellRingers: [],
+      helpers: [],
+      honors: [],
+      used: new Set(),
+      lastRight: 0,
+    };
+    return this.showStep(now);
+  }
+
+  /** Vào bước hiện tại của game lớn */
+  private showStep(now: number): Say[] {
+    const sh = this.show!;
+    const st = sh.steps[sh.i];
+    sh.stage = 'ask';
+    this.boardShown = false;
+    const go = (): Say => ({ ...this.line0('showGo'), go: true });
+    switch (st.k) {
+      case 'gather':
+        this.setPhase('show', now, GAME.show.gatherSec);
+        return this.mainOf([this.line0(sh.kind === 'everest' ? 'showIntroEverest' : 'showIntroChuong')]);
+      case 'section': {
+        // câu phụ: chỉ khi top đầu đồng điểm (từ 2 bạn trở lên), không thì bỏ qua
+        if (st.key === 'showTie') {
+          const rank = this.showRank();
+          const top = rank[0]?.score ?? 0;
+          sh.tied = top > 0 ? rank.filter((r) => r.score === top).map((r) => r.username) : [];
+          if (sh.tied.length < 2) return this.showNext(now);
+          sh.steps.splice(sh.i + 1, 0, { k: 'mc', level: 'phu', sec: GAME.show.tieSec, pts: 0, tag: 'tie' });
+          const names = sh.tied.slice(0, 4).map((u) => this.students.get(u)?.spoken ?? 'bạn').join(', ');
+          this.setPhase('show', now, 2);
+          return this.mainOf([this.t(this.line('showTie', names, String(top)))]);
+        }
+        this.setPhase('show', now, 2);
+        return this.mainOf([this.line0(st.key)]);
+      }
+      case 'mc': {
+        const p = this.pickMc(st.level, now);
+        if (!p) return this.showNext(now);
+        sh.qNo++;
+        sh.mc = { ...p, tag: st.tag, pts: st.pts };
+        sh.answers = new Map();
+        sh.removed = [];
+        sh.ticketUser = '';
+        this.setPhase('show', now, st.sec);
+        const opts = p.opts.map((o, i) => `${LETTERS[i]}, ${o}.`).join(' ');
+        const head = st.tag === 'tie' ? 'Câu phụ.' : st.tag === 'bell' ? 'Câu Chuông Đồng.' : `Câu ${sh.qNo}.`;
+        return this.mainOf([this.t(`${head} ${p.q.q}`), this.t(opts), go()]);
+      }
+      case 'stake':
+        sh.stakes = new Map();
+        this.setPhase('show', now, GAME.show.everest.peak.stakeSec);
+        return this.mainOf([this.line0('evStake'), go()]);
+      case 'code': {
+        if (st.hint === 0) {
+          sh.code = this.pickCode(now);
+          sh.codeSolvers = [];
+        }
+        if (!sh.code) return this.showNext(now);
+        // cứu trợ: chỉ mở khi hết 3 gợi ý mà chưa ai giải được
+        if (st.hint === 3 && sh.codeSolvers.length) return this.showNext(now);
+        sh.codeTried = new Set();
+        const C = GAME.show.everest.code;
+        this.setPhase('show', now, st.hint === 3 ? C.rescueSec : C.hintSec);
+        const n = compactVi(sh.code.answer).length;
+        const line =
+          st.hint === 3
+            ? this.t(this.line('codeRescue', sh.code.answer.trim()[0].toUpperCase(), String(n)))
+            : this.t(`Gợi ý ${st.hint + 1}, ${C.pts[st.hint]} điểm. ${sh.code.hints[st.hint]}`);
+        return this.mainOf(st.hint === 0 ? [this.t(this.line('codeIntro', String(n))), line, go()] : [line, go()]);
+      }
+      case 'codeReveal': {
+        sh.stage = 'reveal';
+        this.setPhase('show', now, GAME.show.revealSec);
+        const c = sh.code!;
+        const names = sh.codeSolvers.slice(0, 3).map((x) => this.students.get(x.username)?.spoken ?? 'bạn').join(', ');
+        return this.mainOf([
+          this.t(sh.codeSolvers.length ? this.line('codeReveal', c.answer.toLowerCase(), String(sh.codeSolvers.length), names) : this.line('codeNobody', c.answer.toLowerCase())),
+        ]);
+      }
+      case 'honor':
+        return this.showHonor(now);
+    }
+  }
+
+  private showNext(now: number): Say[] {
+    const sh = this.show!;
+    sh.i++;
+    if (sh.i >= sh.steps.length) return this.endShow(now);
+    return this.showStep(now);
+  }
+
+  private showAdvance(now: number): Say[] {
+    const sh = this.show;
+    if (!sh) return this.startVote(now);
+    const st = sh.steps[sh.i];
+    if (st.k === 'mc' && sh.stage === 'ask') return this.showReveal(now);
+    if (st.k === 'honor') return this.endShow(now);
+    return this.showNext(now);
+  }
+
+  /** Chấm 1 câu trắc nghiệm, cộng điểm, cô đọc đáp án */
+  private showReveal(now: number): Say[] {
+    const sh = this.show!;
+    const m = sh.mc!;
+    sh.stage = 'reveal';
+    this.setPhase('show', now, GAME.show.revealSec);
+    const right = [...sh.answers].filter(([, a]) => a === m.ans).map(([u]) => u);
+    sh.lastRight = right.length;
+    const out: Say[] = [];
+    for (const u of right) {
+      const s = this.students.get(u);
+      if (!s) continue;
+      if (m.tag === 'tie') sh.tieWin.add(u);
+      else if (m.tag === 'rescue') {
+        sh.tickets.add(u);
+        if (!sh.helpers.includes(u)) sh.helpers.push(u);
+      } else {
+        const pts = m.tag === 'peak' ? (sh.stakes.get(u) ?? GAME.show.everest.peak.stakes[0]) : m.pts;
+        sh.scores.set(u, (sh.scores.get(u) ?? 0) + pts);
+        this.award(s, pts, now, false);
+        if (m.tag === 'bell') sh.bellRingers.push(u);
+      }
+    }
+    const answer = `${LETTERS[m.ans]}, ${m.opts[m.ans]}`;
+    out.push({ ...this.t(right.length ? this.line('showReveal', answer, String(right.length)) : this.line('showNobody', answer)), main: true });
+    if (m.tag === 'rescue' && right.length) out.push({ ...this.t(this.line('ticketWin', String(right.length))), main: true });
+    if (m.tag === 'bell' && right.length) {
+      this.clapUntil = now + GAME.clapSec * 1000;
+      out.push({ ...this.t(this.line('bellRing', String(right.length))), main: true });
+    }
+    return out;
+  }
+
+  private showChat(s: Student, e: ChatIn, now: number): Say[] {
+    const sh = this.show;
+    if (!sh || sh.stage !== 'ask' || !this.boardShown) return [];
+    const st = sh.steps[sh.i];
+    if (st.k === 'mc' && sh.mc) {
+      // tiếp sức: thử thách cuối, ai có phiếu gõ "gợi ý" thì cô bỏ 2 đáp án sai cho cả phòng (mỗi câu 1 lần)
+      if (plain(e.comment) === 'goiy') {
+        if (sh.mc.tag !== 'final' || sh.ticketUser || !sh.tickets.has(s.username)) return [];
+        sh.tickets.delete(s.username);
+        sh.ticketUser = s.username;
+        const wrong = [0, 1, 2, 3].filter((i) => i !== sh.mc!.ans);
+        for (let i = wrong.length - 1; i > 0; i--) {
+          const j = Math.floor(this.rand() * (i + 1));
+          [wrong[i], wrong[j]] = [wrong[j], wrong[i]];
+        }
+        sh.removed = wrong.slice(0, 2);
+        return [{ ...this.t(this.line('ticketUse', s.spoken)), warn: true }];
+      }
+      const c = choiceOf(e.comment);
+      if (c < 0 || sh.answers.has(s.username) || sh.removed.includes(c)) return [];
+      if (sh.mc.tag === 'tie' && !sh.tied.includes(s.username)) return [];
+      sh.answers.set(s.username, c);
+      sh.players.add(s.username);
+      return [];
+    }
+    if (st.k === 'stake') {
+      const p = plain(e.comment);
+      if (p === '10' || p === '20') sh.stakes.set(s.username, Number(p));
+      return [];
+    }
+    if (st.k === 'code' && sh.code) {
+      // mỗi gợi ý được đoán 1 lần; giải rồi thì thôi
+      if (!this.isShowAnswer(e.comment) || sh.codeTried.has(s.username) || sh.codeSolvers.some((x) => x.username === s.username)) return [];
+      sh.codeTried.add(s.username);
+      sh.players.add(s.username);
+      const key = GAME.requireDiacritics ? compactVi : plain;
+      if (key(e.comment) !== key(sh.code.answer)) return [];
+      const C = GAME.show.everest.code;
+      const pts = st.hint === 3 ? C.rescuePts : C.pts[st.hint];
+      sh.codeSolvers.push({ username: s.username, pts, hint: st.hint });
+      sh.scores.set(s.username, (sh.scores.get(s.username) ?? 0) + pts);
+      this.award(s, pts, now, false);
+      if (st.hint === 3 && !sh.helpers.includes(s.username)) sh.helpers.push(s.username);
+      return [];
+    }
+    return [];
+  }
+
+  /** Vinh danh: hạng nhất, top 10, người cứu trợ nhận danh hiệu (hiện icon trên bảng tên cả buổi) */
+  private showHonor(now: number): Say[] {
+    const sh = this.show!;
+    sh.stage = 'reveal';
+    this.setPhase('show', now, GAME.show.honorSec);
+    const [first, top, helper] = SHOW_TITLES[sh.kind];
+    const rank = this.showRank().filter((r) => r.score > 0);
+    const give = (u: string, title: string) => this.titles.set(u, [...new Set([...(this.titles.get(u) ?? []), title])]);
+    const best = rank[0];
+    const winners = best ? rank.filter((r) => r.score === best.score && r.tie === best.tie) : [];
+    sh.honors = rank.slice(0, GAME.show.topShown).map((r) => ({ ...r, title: winners.includes(r) ? first : top }));
+    for (const h of sh.honors) give(h.username, h.title);
+    for (const u of sh.helpers) give(u, helper);
+    if (winners.length) this.clapUntil = now + GAME.clapSec * 1000;
+    const names = winners.slice(0, 3).map((w) => this.students.get(w.username)?.spoken ?? 'bạn').join(', ');
+    return this.mainOf([
+      this.t(
+        winners.length
+          ? this.line(sh.kind === 'everest' ? 'honorEverest' : 'honorChuong', names, String(best.score))
+          : this.line('honorNobody', SHOW_NAME[sh.kind]),
+      ),
+      ...(sh.players.size ? [this.t(this.line('honorThanks', String(sh.players.size)))] : []),
+    ]);
+  }
+
+  private endShow(now: number): Say[] {
+    this.show = null;
+    return this.startVote(now);
+  }
+
+  /** Ảnh chụp game lớn cho màn hình */
+  private showView() {
+    const sh = this.show;
+    if (!sh) return null;
+    const st = sh.steps[sh.i];
+    const reveal = sh.stage === 'reveal';
+    const m = sh.mc;
+    const rank = this.showRank();
+    const C = GAME.show.everest;
+    // điểm tối đa (để vẽ độ cao trên núi / thanh điểm)
+    const maxScore =
+      sh.kind === 'everest'
+        ? C.warm.n * C.warm.pts + C.code.pts[0] + C.storm.n * C.storm.pts + C.peak.n * Math.max(...C.peak.stakes)
+        : GAME.show.chuong.warm.n * GAME.show.chuong.warm.pts + GAME.show.chuong.hold.n * GAME.show.chuong.hold.pts + GAME.show.chuong.final.n * GAME.show.chuong.final.pts + GAME.show.chuong.bell.pts;
+    const counts = m ? [0, 1, 2, 3].map((i) => [...sh.answers.values()].filter((a) => a === i).length) : [];
+    const nameOf = (u: string) => this.students.get(u)?.nickname ?? u;
+    const code = sh.code;
+    const codeHint = st.k === 'code' ? st.hint : st.k === 'codeReveal' ? 3 : -1;
+    return {
+      kind: sh.kind,
+      name: SHOW_NAME[sh.kind],
+      step: st.k,
+      section: st.k === 'section' ? SECTION_TITLE[st.key] : '',
+      tag: st.k === 'mc' ? st.tag : '',
+      stage: sh.stage,
+      qNo: sh.qNo,
+      question: st.k === 'mc' && m ? m.q.q : '',
+      opts: st.k === 'mc' && m ? m.opts : [],
+      removed: sh.removed,
+      ans: reveal && m ? m.ans : -1,
+      counts: reveal ? counts : [],
+      answered: st.k === 'mc' ? sh.answers.size : st.k === 'stake' ? sh.stakes.size : st.k === 'code' ? sh.codeTried.size : 0,
+      lastRight: sh.lastRight,
+      ticketUser: sh.ticketUser ? nameOf(sh.ticketUser) : '',
+      tickets: sh.tickets.size,
+      stakes: [10, 20].map((v) => [...sh.stakes.values()].filter((x) => x === v).length),
+      code: code && codeHint >= 0
+        ? {
+            hints: code.hints.slice(0, Math.min(3, codeHint + 1)),
+            rescue: codeHint === 3,
+            len: compactVi(code.answer).length,
+            first: codeHint === 3 ? code.answer.trim()[0].toUpperCase() : '',
+            answer: st.k === 'codeReveal' ? code.answer.toUpperCase() : '',
+            solvers: sh.codeSolvers.slice(0, 5).map((x) => ({ nickname: nameOf(x.username), pts: x.pts })),
+            solved: sh.codeSolvers.length,
+            pts: codeHint < 3 ? C.code.pts[codeHint] : C.code.rescuePts,
+          }
+        : null,
+      top: rank.slice(0, GAME.show.topShown).map((r) => ({ username: r.username, nickname: r.nickname, score: r.score })),
+      maxScore,
+      players: sh.players.size,
+      tied: sh.tied.map(nameOf),
+      bellRingers: sh.bellRingers.slice(0, 8).map(nameOf),
+      honors: sh.honors,
+      sectionNo: sh.steps.slice(0, sh.i + 1).filter((x) => x.k === 'section').length,
+    };
+  }
+
   newRound(now: number): Say[] {
     const voted = this.phase === 'vote' ? this.closeVote() : [];
     if (this.phase !== 'vote') this.topic = '';
@@ -1205,8 +1686,14 @@ export class Classroom {
       this.teamReminded = true;
       extra.push({ ...this.t(this.line('teamRemind', this.teamCountsText(now))), warn: true });
     }
-    // phòng giọng hỏng / tắt tiếng: đồng hồ đã chạy hơn 1 giây (cô đọc xong) thì vẫn hiện bảng chữ
-    if (asking && !this.boardShown && now - this.phaseStartedAt > 1000) this.boardShown = true;
+    // game lớn: câu dài (từ 12 giây) còn 5 giây thì cô nhắc, đồng hồ vẫn chạy; câu 8 giây ngắn quá nên thôi
+    const showAsk = this.phase === 'show' && this.show?.stage === 'ask' && this.boardShown;
+    if (showAsk && !this.warned && this.showStepSec() >= 12 && now < this.phaseEndsAt && this.phaseEndsAt - now <= GAME.warnLeftSec * 1000) {
+      this.warned = true;
+      extra.push({ ...this.line0('timeWarn'), warn: true });
+    }
+    // phòng giọng hỏng / tắt tiếng: đồng hồ đã chạy hơn 1 giây (cô đọc xong) thì vẫn hiện bảng chữ / nhận đáp án
+    if ((asking || (this.phase === 'show' && this.show?.stage === 'ask')) && !this.boardShown && now - this.phaseStartedAt > 1000) this.boardShown = true;
     if (now < this.phaseEndsAt) return extra;
     return [...extra, ...this.advance(now)];
   }
@@ -1233,7 +1720,11 @@ export class Classroom {
       case 'praise':
         return this.startQuestion(now);
       case 'results':
+        // cứ GAME.showEvery tiết thì thay giờ ra chơi bằng 1 game lớn (xen kẽ Everest / Rung Chuông Đồng)
+        if (GAME.showEvery > 0 && this.round % GAME.showEvery === 0 && this.showBank.mc.length) return this.startShow(now);
         return this.startRecess(now);
+      case 'show':
+        return this.showAdvance(now);
       case 'recess':
         if (this.recess?.stage === 'play') return this.recessResult(now);
         if (this.recess?.stage === 'result') return this.recessBoard(now);
@@ -1352,6 +1843,8 @@ export class Classroom {
       lastActive,
       joinedAt,
       title: titles.get(username) ?? '',
+      // danh hiệu từ 2 game lớn: chỉ lấy icon đầu mỗi danh hiệu cho gọn bảng tên
+      showIcons: (this.titles.get(username) ?? []).map((x) => x.split(' ')[0]).join(''),
       // câu đang hỏi: trả lời đúng / sai / chưa (ngoài giờ hỏi thì không hiện)
       answered: !asking ? '' : this.correct.some((a) => a.username === username) ? 'right' : this.wrong.has(username) ? 'wrong' : '',
     });
@@ -1390,7 +1883,7 @@ export class Classroom {
       birthday: this.birthday && now - this.birthday.at < GAME.birthdayBannerSec * 1000 ? this.birthday : null,
       players: this.activePlayers(now),
       // cô đang đọc đề: chưa hiện chữ xáo / phép tính / ô đáp án, hô bắt đầu mới hiện
-      boardShown: this.phase !== 'question' || this.boardShown,
+      boardShown: (this.phase !== 'question' && this.phase !== 'show') || this.boardShown, // game lớn: cô hô bắt đầu mới chạy đồng hồ, nhận đáp án
       // dừng giữa tiết: 3 bạn nhỏ điểm cao nhất kèm quà trên bàn
       praiseTop: this.phase === 'praise' ? this.seats(3).filter((s) => s.score > 0).map(({ username, nickname, score, desk }) => ({ username, nickname, score, desk })) : [],
       correctTop: this.correct.slice(0, 3).map(({ username, nickname, avatar, points }) => ({ username, nickname, avatar, points })),
@@ -1411,6 +1904,9 @@ export class Classroom {
       sessionTop: this.sessionTop(5).map(({ username, nickname, session }) => ({ username, nickname, session })),
       champions: this.champions.slice(0, 5).map((c) => ({ ...c, times: this.champions.filter((x) => x.username === c.username).length })),
       classSize: this.students.size,
+      // trang phục cô Ngân: bộ của tiết, đang chơi game lớn thì bộ của game
+      outfit: this.show ? this.show.kind : this.outfit,
+      show: this.showView(),
       // thi đua tổ (tắt chọn tổ thì rỗng)
       teams: GAME.teamPickSec > 0 ? this.teamStats(now) : [],
       teamWin: this.lastTeamWin,

@@ -87,6 +87,35 @@ export const GAME = {
   teamCount: 4,
   teamRemindLeftSec: 15, // còn chừng này giây thì cô nhắc chọn tổ
 
+  // ---------- Trang phục cô Ngân (bản riêng 2026-11-04) ----------
+  // hết 20 câu (tổng kết tiết) thì cô thay 1 bộ khác, bốc ngẫu nhiên; ảnh ở public/assets/nv/co-ngan/<bộ>/
+  outfits: ['trang', 'so-mi', 'ao-dai-xanh-ngoc'] as const,
+
+  // ---------- 2 game lớn (bản riêng 2026-11-04): Đường lên đỉnh Everest, Rung Chuông Đồng ----------
+  // cứ chừng này tiết thì thay giờ ra chơi bằng 1 game (xen kẽ 2 game), xong game thì bình chọn chủ đề như thường.
+  // Gõ A/B/C/D; ai đúng trong giờ đều được điểm, không xét nhanh chậm. Câu ở src/game/cau-hoi-show/.
+  showEvery: 2,
+  show: {
+    gatherSec: 30, // tập hợp / mời vào sàn
+    revealSec: 5, // hiện đáp án mỗi câu
+    tieSec: 10, // câu phụ phân định khi top đầu đồng điểm
+    honorSec: 30, // vinh danh
+    topShown: 10,
+    everest: {
+      warm: { n: 4, sec: 8, pts: 10 }, // Bước chân đầu tiên
+      code: { hintSec: 15, pts: [30, 20, 10], rescueSec: 10, rescuePts: 5 }, // Mật mã trạm: 3 gợi ý + 10 giây cứu trợ
+      storm: { n: 4, sec: 8, pts: 15 }, // Bão tốc độ
+      peak: { n: 3, stakeSec: 8, sec: 12, stakes: [10, 20] }, // Chạm đỉnh: chọn mức điểm trước khi xem câu
+    },
+    chuong: {
+      warm: { n: 4, sec: 8, pts: 10 }, // Làm nóng
+      hold: { n: 6, sec: 10, pts: 10 }, // Trụ vững
+      rescue: { sec: 10 }, // Cứu trợ cả phòng: đúng thì có 1 phiếu gợi ý
+      final: { n: 3, sec: 15, pts: 20 }, // Thử thách cuối: gõ "gợi ý" dùng phiếu, bỏ 2 đáp án sai cho cả phòng
+      bell: { sec: 15, pts: 30 }, // Câu Chuông Đồng
+    },
+  },
+
   // ---------- Chuyên cần, sinh nhật ----------
   attendMilestones: [3, 5, 7, 10, 14, 21, 30], // đi học liền đủ chừng này ngày thì cô khen to + tặng quà
   birthdayCooldownMs: 60_000, // 2 lần chúc sinh nhật cách nhau ít nhất 1 phút (chống spam)

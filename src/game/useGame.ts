@@ -7,8 +7,9 @@ import { NameBatcher } from '../live/scoreboard';
 import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
 import { GAME } from './config';
-import { QUESTIONS } from './bank';
+import { QUESTIONS, SHOW_BANK } from './bank';
 import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
+import type { ShowKind } from './show';
 import { sfx } from './sfx';
 
 // ?view=stage&mute=1: xem thử trang stage không phát tiếng
@@ -170,6 +171,7 @@ export function useGame() {
         if (name) say(room.celebrate(s ?? person({ username: `kenh:${name}`, nickname: name, avatar: '' }), Date.now()));
       }
       if (c.action === 'custom' && c.text?.startsWith('recess:')) say(room.forceRecess(c.text.slice(7) as RecessGame, Date.now()));
+      if (c.action === 'custom' && c.text?.startsWith('show:')) say(room.forceShow(c.text.slice(5) as ShowKind, Date.now()));
     },
   });
 
@@ -236,6 +238,7 @@ export function useGame() {
       if (stop) return;
       const room = new Classroom(QUESTIONS, Date.now(), Math.random, used, banned);
       room.setFlowersSaved(flowersSaved);
+      room.showBank = SHOW_BANK;
       room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
       roomRef.current = room;
       say(room.newRound(Date.now()));
@@ -254,7 +257,13 @@ export function useGame() {
           lastTick = now;
           say(room.tick(now));
           flushChatter(room, now);
-          sfx.clock(room.phase, room.boardShown, room.phaseEndsAt, now);
+          // game lớn: tích tắc 5 giây cuối như câu hỏi tiết học
+          sfx.clock(room.showAsking() ? 'question' : room.phase, room.boardShown, room.phaseEndsAt, now);
+          // nhạc nền EDM game lớn: cô đang đọc thì nhạc lùi xa cho rõ giọng; chờ trả lời thì sập sình, 5 giây cuối dồn dập
+          const sh = room.show;
+          const step = sh?.steps[sh.i]?.k;
+          const busy = mainSpeaking.current > 0;
+          sfx.music(sh?.kind ?? null, !sh || busy ? 0 : room.showAsking() ? (room.phaseEndsAt - now <= 5000 ? 2 : 1) : step === 'gather' || step === 'honor' ? 1 : 0);
           if (!dirty.current && now - lastSent < 1000) return;
           dirty.current = false;
           const v = { ...room.view(now), weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta), talkTop: dayBoard(talkTop.current, room.talkDelta) };

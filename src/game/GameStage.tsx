@@ -36,6 +36,36 @@ const POSE = {
 };
 type PoseKey = keyof typeof POSE.nam;
 
+// Trang phục cô Ngân (bản riêng): bộ trắng dùng tên tư thế gốc; sơ mi và áo dài xanh ngọc có bộ 16 tư thế khác tên,
+// đổi sang tư thế gần nghĩa nhất. 2 game lớn có bộ đồ + tư thế riêng (showPose).
+const OUTFIT_POSE: Record<string, string> = {
+  '01-dung': '01-dung',
+  '02-gioi-thieu': '02-giang-bai',
+  '03-chi-bang': '04-chi-phai', // bảng đen ở bên phải cô
+  '04-vay-chao': '13-vay-chao',
+  '05-dang-tay': '15-chao-don',
+  '06-cuoi': '06-cuoi-che-mieng',
+  '07-tay-nguc': '05-cuoi-tuoi',
+  '08-ngon-cai': '08-like',
+  '09-mung': '14-co-vu',
+  '10-vo-tay': '07-vo-tay',
+  '11-nhun-vai': '12-nhun-vai',
+  '12-gai-dau': '11-suy-nghi',
+  '13-ngac-nhien': '10-bat-ngo',
+  '14-ngon-tro': '09-nghiem-nhe',
+  '15-chong-hong': '16-tu-tin',
+  '16-chi-trai': '03-chi-trai',
+};
+const EVEREST_POSES = [
+  '01-dung-san-sang', '02-chi-len-dinh', '03-chi-lo-trinh', '04-chao-doan-leo', '05-doc-ban-do', '06-suy-nghi', '07-like', '08-co-vu',
+  '09-bat-ngo', '10-cuoi-vui', '11-nhac-nho-an-toan', '12-vay-chao', '13-cam-co-dinh', '14-dong-vien', '15-vo-tay', '16-tu-tin',
+];
+const CHUONG_POSES = [
+  '01-cam-chuong-san-sang', '02-rung-chuong-ben', '03-rung-chuong-cao', '04-rung-chuong-hai-tay', '05-rung-chuong-nghieng-nguoi',
+  '06-rung-chuong-cuoi-tuoi', '07-rung-chuong-hao-hung', '08-rung-chuong-nghiem-tuc', '09-bao-hieu-bat-dau', '10-mung-chien-thang',
+  '11-bat-ngo-nghe-chuong', '12-moi-thi-sinh', '13-vay-chao-cam-chuong', '14-tu-hao-gio-chuong', '15-chuan-bi-rung', '16-nghi-thang-tran',
+];
+
 // tải trước mọi tư thế để đổi tư thế không bị nháy trắng
 const ALL_IMGS = [
   ...Object.values(POSE.nam).map((p) => `/assets/nv/nam/${p}.webp`),
@@ -44,6 +74,9 @@ const ALL_IMGS = [
     '01-dung', '02-gioi-thieu', '03-chi-bang', '04-vay-chao', '05-dang-tay', '06-cuoi', '07-tay-nguc', '08-ngon-cai',
     '09-mung', '10-vo-tay', '11-nhun-vai', '12-gai-dau', '13-ngac-nhien', '14-ngon-tro', '15-chong-hong', '16-chi-trai',
   ].map((p) => `/assets/nv/co-ngan/${p}.webp`),
+  ...['so-mi', 'ao-dai-xanh-ngoc'].flatMap((o) => Object.values(OUTFIT_POSE).map((p) => `/assets/nv/co-ngan/${o}/${p}.webp`)),
+  ...EVEREST_POSES.map((p) => `/assets/nv/co-ngan/everest/${p}.webp`),
+  ...CHUONG_POSES.map((p) => `/assets/nv/co-ngan/chuong/${p}.webp`),
 ];
 
 function useNow(ms = 250) {
@@ -94,7 +127,7 @@ export function GameStage({ game }: { game: GameState }) {
         <Teacher v={v} now={now} />
         <Punished v={v} />
         <Podium v={v} />
-        <SeatHint now={now} />
+        {v.phase !== 'show' && <SeatHint now={now} />}
         <Students v={v} now={now} />
         <FlowerWalk v={v} />
       </motion.div>
@@ -203,6 +236,8 @@ function Header({ v, name }: { v: StageView; name: string }) {
   const sub =
     v.phase === 'team'
       ? `Chọn tổ · Tiết ${v.round}`
+      : v.phase === 'show' && v.show
+      ? v.show.kind === 'everest' ? '🏔️ Đường lên đỉnh Everest' : '🔔 Rung Chuông Đồng'
       : v.phase === 'recess'
       ? 'Giờ ra chơi'
       : v.phase === 'vote'
@@ -314,6 +349,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
       )}
 
       {v.phase === 'team' && <TeamPick v={v} left={left} />}
+      {v.phase === 'show' && v.show && <ShowBoard v={v} left={left} />}
       {v.phase === 'praise' && <Praise v={v} />}
       {v.phase === 'vote' && v.vote && <Vote v={v} left={left} />}
       {v.phase === 'results' && <Results v={v} />}
@@ -532,6 +568,249 @@ function TeamBoard({ v }: { v: StageView }) {
   );
 }
 
+// ---------- 2 game lớn (bản riêng): Đường lên đỉnh Everest / Rung Chuông Đồng ----------
+// Bảng đen: cô đọc câu thì hiện câu + 4 đáp án để đọc theo; cô hô bắt đầu (boardShown) mới chạy đồng hồ và nhận đáp án
+type ShowView = NonNullable<StageView['show']>;
+const SHOW_ACCENT = { everest: '#7dd3fc', chuong: '#fbbf24' };
+function ShowBoard({ v, left }: { v: StageView; left: number }) {
+  const s = v.show!;
+  const accent = SHOW_ACCENT[s.kind];
+  const answering = s.stage === 'ask' && v.boardShown;
+  const badge =
+    s.tag === 'tie' ? '⚖️ Câu phụ' : s.tag === 'bell' ? '🔔 Câu Chuông Đồng' : s.tag === 'rescue' ? '🤝 Cứu trợ cả phòng' : s.step === 'code' ? '🔐 Mật mã trạm' : s.step === 'stake' ? '🏔️ Chọn mức điểm' : `Câu ${s.qNo}`;
+  return (
+    <div className="flex h-full flex-col">
+      {s.step !== 'gather' && s.step !== 'section' && s.step !== 'honor' && (
+        <div className="flex shrink-0 items-center justify-between">
+          <span className="rounded-full px-4 text-[26px] font-bold text-[#1e1b4b]" style={{ background: accent }}>
+            {badge}
+          </span>
+          {answering ? <Timer left={left} /> : s.stage === 'reveal' ? <span className="text-[30px] text-[#9df29d]">Đáp án</span> : <span className="text-[26px] opacity-80">👂 Nghe cô đọc…</span>}
+        </div>
+      )}
+      {s.step === 'gather' && <ShowGather s={s} left={left} />}
+      {s.step === 'section' && (
+        <motion.div key={s.section} initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex h-full flex-col items-center justify-center text-center">
+          <div className="text-[30px] opacity-80">{s.name}</div>
+          <div className="mt-2 text-[58px] font-extrabold leading-tight" style={{ color: accent }}>
+            {s.section}
+          </div>
+        </motion.div>
+      )}
+      {s.step === 'mc' && <ShowQuestion s={s} answering={answering} />}
+      {s.step === 'stake' && (
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <div className="text-[36px]">Câu tiếp theo cược bao nhiêu?</div>
+          <div className="mt-3 flex gap-6">
+            {[10, 20].map((x, i) => (
+              <div key={x} className="w-[190px] rounded-2xl border-4 py-2" style={{ borderColor: accent }}>
+                <div className="text-[54px] font-extrabold leading-none" style={{ color: accent }}>
+                  {x}
+                </div>
+                <div className="text-[24px]">Gõ "{x}" · {s.stakes[i]} bạn</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 text-[24px] opacity-80">Không chọn thì tính 10 · sai không bị trừ</div>
+        </div>
+      )}
+      {(s.step === 'code' || s.step === 'codeReveal') && s.code && <ShowCode s={s} answering={answering} />}
+      {s.step === 'honor' && <ShowHonor s={s} />}
+      {answering && (s.step === 'mc' || s.step === 'stake') && (
+        <div className="mt-auto shrink-0 text-center text-[24px] opacity-85">
+          {s.step === 'stake' ? 'Gõ 10 hoặc 20' : 'Gõ A, B, C hoặc D'} · {s.answered} bạn đã chọn
+          {s.tag === 'final' && s.tickets > 0 && !s.ticketUser && <span className="text-[#ffe680]"> · 🎟️ có phiếu: gõ "gợi ý"</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShowGather({ s, left }: { s: ShowView; left: number }) {
+  const rules =
+    s.kind === 'everest'
+      ? ['👣 Bước chân đầu tiên · 🔐 Mật mã trạm', '🌪️ Bão tốc độ · 🏔️ Chạm đỉnh', 'Gõ A B C D · ai đúng cũng có điểm']
+      : ['🔥 Làm nóng · 💪 Trụ vững · 🤝 Cứu trợ', '⚡ Thử thách cuối · 🔔 Câu Chuông Đồng', 'Gõ A B C D · sai không bị loại'];
+  return (
+    <div className="flex h-full flex-col items-center justify-center text-center">
+      <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 0.47, repeat: Infinity }} className="text-[64px] leading-none">
+        {s.kind === 'everest' ? '🏔️' : '🔔'}
+      </motion.div>
+      <div className="mt-1 text-[48px] font-extrabold leading-tight" style={{ color: SHOW_ACCENT[s.kind] }}>
+        {s.name}
+      </div>
+      <div className="mt-2 space-y-1 text-[27px] leading-snug">
+        {rules.map((r) => (
+          <div key={r}>{r}</div>
+        ))}
+      </div>
+      <div className="mt-3 text-[26px] opacity-80">Bắt đầu sau {left} giây</div>
+    </div>
+  );
+}
+
+function ShowQuestion({ s, answering }: { s: ShowView; answering: boolean }) {
+  const reveal = s.stage === 'reveal';
+  return (
+    <>
+      <div className="mt-2 line-clamp-3 shrink-0 text-center text-[31px] leading-[38px]">{s.question}</div>
+      <div className="mt-2 grid flex-1 grid-cols-2 content-center gap-2">
+        {s.opts.map((o, i) => {
+          const right = reveal && i === s.ans;
+          const gone = s.removed.includes(i);
+          return (
+            <motion.div
+              key={i}
+              initial={{ x: i % 2 ? 30 : -30, opacity: 0 }}
+              animate={{ x: 0, opacity: gone || (reveal && !right) ? 0.35 : 1, scale: right ? [1, 1.08, 1] : 1 }}
+              transition={{ delay: reveal ? 0 : i * 0.08 }}
+              className={`flex min-h-[54px] items-center gap-2 rounded-xl border-[3px] px-2 text-[25px] leading-tight ${
+                right ? 'border-[#4ade80] bg-[#16a34a]/50' : answering ? 'border-white/60 bg-white/10' : 'border-white/30 bg-white/5'
+              }`}
+            >
+              <b className="w-7 shrink-0 text-center text-[28px]" style={{ color: SHOW_ACCENT[s.kind] }}>
+                {'ABCD'[i]}
+              </b>
+              <span className={`min-w-0 flex-1 ${gone ? 'line-through' : ''}`}>{o}</span>
+              {reveal && <span className="shrink-0 text-[20px] opacity-80">{s.counts[i]}</span>}
+            </motion.div>
+          );
+        })}
+      </div>
+      {s.tag === 'tie' && s.stage === 'ask' && <div className="shrink-0 truncate text-center text-[22px] text-[#ffe680]">Chỉ tính: {s.tied.join(', ')}</div>}
+      {s.ticketUser && s.stage === 'ask' && <div className="shrink-0 truncate text-center text-[22px] text-[#ffe680]">🎟️ {s.ticketUser} tiếp sức: bỏ 2 đáp án sai</div>}
+      {reveal && <div className="shrink-0 text-center text-[24px] text-[#9df29d]">{s.lastRight} bạn trả lời đúng</div>}
+    </>
+  );
+}
+
+function ShowCode({ s, answering }: { s: ShowView; answering: boolean }) {
+  const c = s.code!;
+  const letters = c.answer ? [...c.answer.replace(/\s+/g, '')] : [];
+  return (
+    <div className="flex flex-1 flex-col">
+      <div className="mt-2 flex shrink-0 justify-center gap-1">
+        {Array.from({ length: c.len }, (_, i) => (
+          <div key={i} className="flex h-[48px] w-[38px] items-end justify-center border-b-4 border-[#ffe680] text-[34px] font-bold leading-none text-[#ffe680]">
+            {letters[i] ?? (i === 0 ? c.first : '')}
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex-1 space-y-1 overflow-hidden">
+        {c.hints.map((h, i) => (
+          <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex gap-2 text-[24px] leading-[30px]">
+            <b className="shrink-0 text-[#7dd3fc]">{[30, 20, 10][i]}đ</b>
+            <span className="line-clamp-2">{h}</span>
+          </motion.div>
+        ))}
+        {c.rescue && !c.answer && <div className="text-[24px] text-[#ffe680]">🆘 Cứu trợ 10 giây · chữ đầu là {c.first}</div>}
+      </div>
+      <div className="shrink-0 text-center text-[23px] opacity-90">
+        {c.answer
+          ? c.solvers.length
+            ? `🔓 ${c.solved} bạn giải được: ${c.solvers.map((x) => x.nickname).slice(0, 3).join(', ')}`
+            : '🔒 Không ai giải được'
+          : answering
+            ? `Gõ từ khoá có dấu · đúng được ${c.pts} điểm · ${c.solved} bạn đã giải`
+            : `${c.solved} bạn đã giải`}
+      </div>
+    </div>
+  );
+}
+
+function ShowHonor({ s }: { s: ShowView }) {
+  return (
+    <div className="flex h-full flex-col items-center">
+      <div className="text-[44px] font-extrabold leading-none" style={{ color: SHOW_ACCENT[s.kind] }}>
+        {s.kind === 'everest' ? '🚩 Vinh danh đỉnh Everest' : '🔔 Vinh danh Chuông Đồng'}
+      </div>
+      {s.honors.length === 0 && <div className="mt-16 text-[34px]">Chưa ai ghi điểm</div>}
+      <div className="mt-2 grid w-full grid-cols-2 gap-x-4 px-2 text-[22px] leading-[30px]">
+        {s.honors.map((h, i) => (
+          <motion.div key={h.username} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.12 }} className={`flex min-w-0 gap-1 ${i === 0 ? 'col-span-2 justify-center text-[30px] text-[#ffe680]' : ''}`}>
+            <span className="shrink-0">{i === 0 ? h.title.split(' ')[0] : `${i + 1}.`}</span>
+            <span className="min-w-0 truncate">{h.nickname}</span>
+            <b className="shrink-0">{h.score}đ</b>
+          </motion.div>
+        ))}
+      </div>
+      {s.honors[0] && <div className="mt-auto text-[24px] opacity-85">{s.honors[0].title.slice(s.honors[0].title.indexOf(' ') + 1)} · top 10 nhận huy hiệu</div>}
+    </div>
+  );
+}
+
+// Dưới bảng đen: núi Everest, top 10 leo cao theo điểm (điểm tối đa = đỉnh), người đầu cầm cờ
+function Mountain({ v }: { v: StageView }) {
+  const s = v.show!;
+  const W = 400; // nhỏ lại cho khỏi che bảng Top tương tác bên phải
+  const H = 168;
+  const top = s.top.slice(0, 10);
+  const pos = (i: number, score: number) => {
+    const p = Math.min(1, score / Math.max(1, s.maxScore));
+    const side = i % 2 === 0 ? -1 : 1; // so le 2 sườn núi cho đỡ chồng tên
+    const y = H - 18 - p * (H - 40);
+    const halfWidth = ((y - 20) / (H - 20)) * (W / 2 - 10);
+    return { x: W / 2 + side * Math.max(8, halfWidth * (0.35 + ((i * 37) % 50) / 100)), y };
+  };
+  return (
+    <div className="absolute left-[392px] top-[622px] z-30 overflow-hidden rounded-[16px] border-[3px] border-[#0c4a6e] bg-gradient-to-b from-[#bae6fd] to-[#e0f2fe] shadow-xl" style={{ width: W, height: H }}>
+      <svg width={W} height={H} className="absolute inset-0">
+        <polygon points={`10,${H} ${W / 2},20 ${W - 10},${H}`} fill="#64748b" />
+        <polygon points={`${W / 2 - 46},62 ${W / 2},20 ${W / 2 + 46},62 ${W / 2 + 20},54 ${W / 2},66 ${W / 2 - 22},54`} fill="#f8fafc" />
+        <line x1={W / 2} y1={20} x2={W / 2} y2={2} stroke="#7c2d12" strokeWidth={3} />
+        <polygon points={`${W / 2},2 ${W / 2 + 22},8 ${W / 2},14`} fill="#ef4444" />
+      </svg>
+      <div className="absolute left-2 top-1 text-[18px] font-extrabold text-[#0c4a6e]">⛰️ Top 10 leo núi · {s.players} bạn chơi</div>
+      {top.length === 0 && <div className="absolute inset-x-0 bottom-3 text-center text-[20px] font-bold text-white">Trả lời đúng để leo lên nha!</div>}
+      {top.map((r, i) => {
+        const p = pos(i, r.score);
+        return (
+          <motion.div
+            key={r.username}
+            animate={{ left: p.x, top: p.y }}
+            transition={{ type: 'spring', stiffness: 80, damping: 14 }}
+            className="absolute flex -translate-x-1/2 -translate-y-full items-center gap-[2px] whitespace-nowrap rounded-full bg-white/90 px-[6px] text-[14px] font-bold text-[#0c4a6e] shadow"
+          >
+            {i === 0 ? '🚩' : '🧗'}
+            <span className="max-w-[90px] truncate">{r.nickname}</span>
+            <span className="text-[#c2410c]">{r.score}</span>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Dưới bảng đen: Rung Chuông Đồng, top 5 thanh điểm + người đủ điều kiện rung chuông
+function BellBoard({ v }: { v: StageView }) {
+  const s = v.show!;
+  const top = s.top.slice(0, 5);
+  return (
+    <div className="absolute left-[392px] top-[622px] z-30 w-[400px] overflow-hidden rounded-[16px] border-[3px] border-[#78350f] bg-[#fffbeb]/97 shadow-xl">
+      <div className="flex items-center justify-between bg-gradient-to-r from-[#b45309] to-[#d97706] px-3 py-[2px] text-[19px] font-bold text-[#fff7d6]">
+        <span>🔔 Bảng điểm Chuông Đồng</span>
+        <span>
+          {s.players} bạn chơi{s.tickets > 0 ? ` · 🎟️ ${s.tickets}` : ''}
+        </span>
+      </div>
+      <div className="space-y-[3px] px-2 py-1">
+        {top.length === 0 && <div className="py-3 text-center text-[20px] text-[#92400e]">Trả lời đúng để lên bảng nha!</div>}
+        {top.map((r, i) => (
+          <motion.div key={r.username} layout className="relative h-[26px] overflow-hidden rounded-md bg-[#fde68a]/50">
+            <motion.div className="absolute inset-y-0 left-0 bg-[#f59e0b]/70" animate={{ width: `${Math.min(100, (r.score / Math.max(1, s.maxScore)) * 100)}%` }} />
+            <div className="relative flex h-full items-center gap-2 px-2 text-[18px] font-bold text-[#78350f]">
+              <span>{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
+              <span className="min-w-0 flex-1 truncate">{r.nickname}</span>
+              <span>{r.score}đ</span>
+            </div>
+          </motion.div>
+        ))}
+        {s.bellRingers.length > 0 && <div className="truncate text-[17px] font-semibold text-[#b45309]">🔔 Rung chuông: {s.bellRingers.join(', ')}</div>}
+      </div>
+    </div>
+  );
+}
+
 // ---------- Giờ ra chơi ----------
 const RECESS_TITLE = { rps: 'Oẳn tù tì với cô', callup: 'Kiểm tra miệng', pick: 'Chọn phe', roll: 'Điểm danh siêu tốc', heart: 'Thả tim cả lớp' };
 
@@ -723,12 +1002,65 @@ function teacherPose(v: StageView, now: number): string {
   return '01-dung';
 }
 
+/** 2 game lớn: tư thế theo từng bước (ảnh nhan-vat/co-giao-ngan/duong-len-dinh-everest và Rung-Chuong-Dong) */
+function showPose(v: StageView, now: number): string {
+  const sh = v.show!;
+  const flower = now - v.lastFlowerAt < 3000 || !!v.walk;
+  const alt = now % 6000 < 3000;
+  const answering = sh.stage === 'ask' && v.boardShown;
+  if (sh.kind === 'everest') {
+    if (flower) return '10-cuoi-vui';
+    if (v.clapping) return '15-vo-tay';
+    switch (sh.step) {
+      case 'gather':
+        return alt ? '04-chao-doan-leo' : '12-vay-chao';
+      case 'section':
+        return sh.section.includes('Chạm đỉnh') ? '02-chi-len-dinh' : '03-chi-lo-trinh';
+      case 'stake':
+        return '16-tu-tin';
+      case 'code':
+        return !answering ? '05-doc-ban-do' : sh.code?.rescue ? '14-dong-vien' : alt ? '06-suy-nghi' : '01-dung-san-sang';
+      case 'codeReveal':
+        return sh.code?.solved ? '10-cuoi-vui' : '09-bat-ngo';
+      case 'honor':
+        return '13-cam-co-dinh';
+      default:
+        if (sh.stage === 'reveal') return sh.lastRight > 0 ? '07-like' : '09-bat-ngo';
+        if (!answering) return '05-doc-ban-do';
+        if (Math.max(0, v.endsAt - now) <= 3000) return '11-nhac-nho-an-toan';
+        return alt ? '08-co-vu' : '01-dung-san-sang';
+    }
+  }
+  if (flower) return '06-rung-chuong-cuoi-tuoi';
+  if (v.clapping) return '07-rung-chuong-hao-hung';
+  switch (sh.step) {
+    case 'gather':
+      return alt ? '12-moi-thi-sinh' : '13-vay-chao-cam-chuong';
+    case 'section':
+      return sh.section.includes('Chuông') ? '15-chuan-bi-rung' : '09-bao-hieu-bat-dau';
+    case 'honor':
+      return alt ? '10-mung-chien-thang' : '03-rung-chuong-cao';
+    default:
+      if (sh.stage === 'reveal') {
+        if (sh.lastRight === 0) return '11-bat-ngo-nghe-chuong';
+        return sh.tag === 'bell' ? '04-rung-chuong-hai-tay' : alt ? '02-rung-chuong-ben' : '05-rung-chuong-nghieng-nguoi';
+      }
+      if (!answering) return sh.tag === 'tie' ? '16-nghi-thang-tran' : '08-rung-chuong-nghiem-tuc';
+      return alt ? '01-cam-chuong-san-sang' : '14-tu-hao-gio-chuong';
+  }
+}
+
 function Teacher({ v, now }: { v: StageView; now: number }) {
   const gotFlower = now - v.lastFlowerAt < 3000;
-  const pose = teacherPose(v, now);
+  // trang phục: bộ trắng ở thư mục gốc, bộ khác ở thư mục con; 2 game lớn mặc bộ của game
+  const src = v.show
+    ? `/assets/nv/co-ngan/${v.show.kind}/${showPose(v, now)}.webp`
+    : v.outfit === 'trang' || !v.outfit
+      ? `/assets/nv/co-ngan/${teacherPose(v, now)}.webp`
+      : `/assets/nv/co-ngan/${v.outfit}/${OUTFIT_POSE[teacherPose(v, now)] ?? '01-dung'}.webp`;
   return (
-    <div className="absolute left-[96px] top-[410px] h-[490px] w-[300px]">
-      <img src={`/assets/nv/co-ngan/${pose}.webp`} className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]" />
+    <div className="absolute left-[86px] top-[410px] h-[490px] w-[320px]">
+      <img src={src} className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]" />
       {/* bảng tên cài ngực áo (trên đầu cô là bảng Học sinh xuất sắc nên không đặt ở đó) */}
       <div className="absolute left-1/2 top-[128px] z-10 -translate-x-1/2 -rotate-3 whitespace-nowrap rounded-full border-[3px] border-[#fff6dd] bg-gradient-to-b from-[#ff6b9a] to-[#d63384] px-3 py-[1px] text-[22px] font-extrabold text-white shadow-[0_3px_0_#9d174d]">
         🌸 Cô Ngân
@@ -789,6 +1121,7 @@ function FastestBoard({ v }: { v: StageView }) {
 }
 
 function Podium({ v }: { v: StageView }) {
+  if (v.phase === 'show' && v.show) return v.show.kind === 'everest' ? <Mountain v={v} /> : <BellBoard v={v} />;
   if (v.phase === 'reveal') return <FastestBoard v={v} />;
   if (v.phase !== 'question' && v.phase !== 'bonus') return null;
   return (
@@ -955,6 +1288,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
               )}
               {i < 5 && s.score > 0 && <span className="rank">{i + 1}</span>}
               {s.title && <span className="mr-1">{s.title === 'lop-truong' ? '👑' : '⭐'}</span>}
+              {s.showIcons && <span className="mr-1 whitespace-nowrap">{s.showIcons}</span>}
               {called && <span className="mr-1">📢</span>}
               {s.days >= 2 && <span className="mr-1 whitespace-nowrap">🎒{s.days}</span>}
               {/* học bạ: lớp mấy (lớp 1 thì khỏi hiện cho gọn), tốt nghiệp đội mũ */}
