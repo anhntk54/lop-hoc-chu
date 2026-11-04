@@ -22,8 +22,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3006; // cổng riêng của Lớp Học Chữ
 
-// Giọng đọc. Đổi ở đây nếu game cần giọng khác (vi-VN-HoaiMyNeural = nữ)
-const TTS_VOICE = process.env.TTS_VOICE || 'vi-VN-NamMinhNeural';
+// Giọng đọc mặc định: cô Ngân giọng nữ HoaiMy cho mọi câu, kể cả câu chủ kênh gõ cho cô đọc (chủ kênh chốt 2026-11-04).
+// Muốn giọng nam thì đặt biến môi trường TTS_VOICE=vi-VN-NamMinhNeural
+const TTS_VOICE = process.env.TTS_VOICE || 'vi-VN-HoaiMyNeural';
 // Giọng cô giáo: cao hơn một chút cho tươi
 const TTS_PITCH = process.env.TTS_PITCH || '+6%';
 
