@@ -565,7 +565,8 @@ export class Classroom {
     const asking = this.phase === 'question' || this.phase === 'bonus';
     const answering = (asking && this.isAttempt(this.q, e.comment)) || (this.recess?.game === 'callup' && this.isAttempt(this.recess.callQ, e.comment));
     if (e.safe !== false && !answering && e.comment.trim()) s.bubble = { text: e.comment.trim().slice(0, 28), at: now };
-    if (isBirthday(e.comment)) return this.celebrate(s, now);
+    // đang trả lời câu có đáp án "sinh nhật" thì chấm bài, không coi là báo sinh nhật
+    if (!answering && isBirthday(e.comment)) return this.celebrate(s, now);
     // đang rủ "ai yêu cô gõ số 1": ghi tên (không ảnh hưởng trả lời câu chữ vì đáp án không dài 1 chữ)
     if (this.love && now - this.love.at < GAME.loveWindowMs && plain(e.comment) === '1' && !this.love.fans.includes(s.username)) {
       this.love.fans.push(s.username);

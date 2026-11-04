@@ -104,6 +104,24 @@ for (let i = 0; i < 200; i++) {
   assert.ok(!c.chatterWindow(t), 'đang hiện đáp án: không chào');
 }
 
+// ---------- đáp án có chữ "sinh nhật": chấm bài, không bật chúc mừng sinh nhật ----------
+{
+  const c = new Classroom([mk('SINH NHẬT'), mk('BÁNH SINH NHẬT', 'easy', 'banh')], t);
+  c.newRound(t);
+  c.tick((t += GAME.introSec * 1000));
+  chat(c, 7, c.q!.answer, t, t);
+  assert.equal(c.correct[0]?.username, 'u7', `gõ "${c.q!.answer}" phải được tính đúng`);
+}
+// mỗi câu trong bộ đều gõ đúng đáp án là được tính đúng
+for (const q of BANK) {
+  const c = new Classroom([q], t);
+  c.newRound(t);
+  c.tick((t += GAME.introSec * 1000));
+  if (c.phase !== 'question' || c.q?.id !== q.id) continue; // câu chỉ hỏi ở vị trí riêng (toán, mẹo...) thì bỏ qua
+  chat(c, 1, q.answer, t, t);
+  assert.equal(c.correct.length, 1, `${q.id}: gõ đúng đáp án mà không được tính`);
+}
+
 // ---------- không ai đúng: mở 1 chữ + thêm giờ ----------
 {
   const c = new Classroom([mk('BẢNG ĐEN')], t);
