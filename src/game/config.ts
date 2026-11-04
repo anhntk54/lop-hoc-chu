@@ -83,14 +83,27 @@ export const GAME = {
 
   seatActiveMs: 10 * 60_000, // cùng điểm: bạn im quá chừng này (thường đã rời live) nhường ghế cho bạn đang tương tác
 
+  // ---------- Học bạ cả đời: điểm cộng dồn mãi mãi -> lên lớp ----------
+  // điểm cần để lên lớp 1, 2, ... 12, rồi tốt nghiệp (13). Người chơi giỏi được khoảng 150-250 điểm mỗi tiết.
+  gradePoints: [0, 200, 500, 1000, 1700, 2600, 3700, 5000, 6500, 8200, 10000, 12000, 15000],
+  // bảng Top tương tác hôm nay: 1 bình luận = 1 (mỗi bạn tối đa 1 lần / 2 giây), 1 món quà = 10. Không hiện cách tính trên màn hình.
+  talkGapMs: 2000,
+  talkPerGift: 10,
+  // chịu tải: bạn im quá chừng này thì xoá khỏi lớp lúc sang tiết mới (điểm đã lưu server)
+  forgetAfterMs: 2 * 60 * 60_000,
+
   // ---------- Lớp ----------
   seats: 30, // 4 dãy bàn dài trên cùng (7, 7, 8, 8 bạn); dãy cuối nằm dưới giao diện TikTok nên để trống
   rowSeats: [7, 7, 8, 8], // số bạn mỗi dãy, cộng lại = seats (chủ kênh chốt 2026-11-04: bàn dài, các bạn nhỏ lại)
-  standing: 60, // hết ghế: chen chúc đứng 2 bên ngoài cửa lớp hóng (30 mỗi bên), vẫn tính điểm
+  // hết ghế: không vẽ đám đông đứng 2 bên cửa nữa (chủ kênh bỏ 2026-11-04), các bạn vẫn chơi, tính điểm,
+  // hiện ở bảng "Sĩ số · Đang chờ vào lớp"
+  standing: 0,
   joinKeywords: ['vaolop'],
 
   // ---------- Quà / tim ----------
-  hintGiftCoins: 30, // quà từ 30 xu: cô mở thêm 1 chữ cho cả lớp (khi chưa ai đúng)
+  // 0 = quà KHÔNG cho lợi thế trong game (chủ kênh chốt 2026-11-04): TikTok cấm khuyến khích trẻ em tặng quà,
+  // quà chỉ để cảm ơn. Đặt vd 30 thì quà từ 30 xu lúc chưa ai đúng sẽ mở thêm 1 chữ như trước.
+  hintGiftCoins: 0,
   likesPerClap: 300, // đủ 300 tim: cả lớp vỗ tay
   clapSec: 5,
   giftThanksCooldownMs: 30_000,

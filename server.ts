@@ -519,9 +519,13 @@ interface SoLop {
   banned: Record<string, { answer: string; clue: string; at: number }>;
   // chuyên cần: ngày gần nhất vào lớp, số ngày liền, tổng số ngày
   attend: Record<string, { nickname: string; last: string; streak: number; total: number }>;
-  // điểm hôm nay (cho báo cáo buổi live)
-  today: { date: string; scores: Record<string, { nickname: string; points: number }> };
+  // điểm hôm nay (cho báo cáo buổi live) + tương tác hôm nay (bảng Top tương tác)
+  today: { date: string; scores: Record<string, { nickname: string; points: number }>; talk?: Record<string, { nickname: string; points: number }> };
+  // học bạ cả đời: điểm cộng dồn mãi (lên lớp) + số câu đúng từng loại (huy hiệu)
+  life: Record<string, LifeRow>;
 }
+type LifeRow = { nickname: string; points: number; total: number; toan: number; su: number; meo: number; anh: number };
+const LIFE_KEYS = ['points', 'total', 'toan', 'su', 'meo', 'anh'] as const;
 // ngày theo giờ máy (Việt Nam), vd "2026-11-04"
 const dayKey = (d = new Date()) => d.toLocaleDateString('sv');
 const weekKey = (d = new Date()) => {
@@ -532,7 +536,7 @@ const weekKey = (d = new Date()) => {
   const w = Math.ceil(((t.getTime() - Date.UTC(y, 0, 1)) / 86400000 + 1) / 7);
   return `${y}-W${String(w).padStart(2, '0')}`;
 };
-let soLop: SoLop = { used: {}, week: weekKey(), scores: {}, banned: {}, attend: {}, today: { date: dayKey(), scores: {} } };
+let soLop: SoLop = { used: {}, week: weekKey(), scores: {}, banned: {}, attend: {}, today: { date: dayKey(), scores: {} }, life: {} };
 try {
   soLop = { ...soLop, ...JSON.parse(fs.readFileSync(SAVE_FILE, 'utf8')) };
 } catch {
@@ -564,8 +568,12 @@ const saveSoon = () => {
   }, 2000);
 };
 const todayScores = () => {
-  if (soLop.today.date !== dayKey()) soLop.today = { date: dayKey(), scores: {} };
+  if (soLop.today.date !== dayKey()) soLop.today = { date: dayKey(), scores: {}, talk: {} };
   return soLop.today.scores;
+};
+const todayTalk = () => {
+  todayScores(); // sang ngày mới thì xoá cả tương tác
+  return (soLop.today.talk ??= {});
 };
 const addScore = (book: Record<string, { nickname: string; points: number }>, key: string, nickname: unknown, points: number) => {
   const cur = Object.hasOwn(book, key) ? book[key] : { nickname: '', points: 0 };
@@ -586,14 +594,39 @@ const readReport = (day: string): ReportRow[] => {
 };
 
 // top điểm hôm nay (bảng Học sinh xuất sắc hôm nay ở góc trái stage)
-const todayTop = () =>
-  Object.entries(todayScores())
+const topOf = (book: Record<string, { nickname: string; points: number }>) =>
+  Object.entries(book)
     .map(([username, v]) => ({ username, ...v }))
     .sort((x, y) => y.points - x.points)
     .slice(0, 10);
-app.get('/api/game/save', (_req, res) => res.json({ used: soLop.used, banned: Object.keys(soLop.banned), weekTop: weekTop(), todayTop: todayTop() }));
+const todayTop = () => topOf(todayScores());
+// top tương tác hôm nay (bảng Top tương tác bên phải stage)
+const talkTop = () => topOf(todayTalk());
+const lifeOf = (key: string): LifeRow => (Object.hasOwn(soLop.life, key) ? soLop.life[key] : { nickname: '', points: 0, total: 0, toan: 0, su: 0, meo: 0, anh: 0 });
+app.get('/api/game/save', (_req, res) =>
+  res.json({ used: soLop.used, banned: Object.keys(soLop.banned), weekTop: weekTop(), todayTop: todayTop(), talkTop: talkTop() }),
+);
 app.post('/api/game/save', (req, res) => {
-  const { used, week, banned, report } = req.body || {};
+  const { used, week, banned, report, life, talk } = req.body || {};
+  // học bạ cả đời: cộng phần mới
+  if (Array.isArray(life)) {
+    for (const e of life.slice(0, 2000)) {
+      if (!e || typeof e.username !== 'string') continue;
+      const key = e.username.slice(0, 100);
+      if (!safeKey(key)) continue;
+      const cur = lifeOf(key);
+      cur.nickname = String(e.nickname || cur.nickname).slice(0, 60);
+      for (const k of LIFE_KEYS) cur[k] += Math.max(0, Math.min(5000, Math.round(Number(e[k]) || 0)));
+      soLop.life[key] = cur;
+    }
+  }
+  // tương tác hôm nay
+  if (Array.isArray(talk)) {
+    for (const e of talk.slice(0, 5000)) {
+      if (!e || typeof e.username !== 'string' || !safeKey(e.username.slice(0, 100))) continue;
+      addScore(todayTalk(), e.username.slice(0, 100), e.nickname, Math.max(0, Math.min(10_000, Math.round(Number(e.points) || 0))));
+    }
+  }
   weekTop();
   if (Array.isArray(used)) for (const id of used.slice(0, 500)) if (typeof id === 'string' && safeKey(id)) soLop.used[id.slice(0, 200)] = Date.now();
   if (Array.isArray(week)) {
@@ -632,7 +665,7 @@ app.post('/api/game/save', (req, res) => {
     }
   }
   writeSoLop();
-  res.json({ weekTop: weekTop(), todayTop: todayTop() });
+  res.json({ weekTop: weekTop(), todayTop: todayTop(), talkTop: talkTop() });
 });
 
 // Chuyên cần: trang stage báo mỗi bạn lần đầu bình luận trong buổi, server trả về số ngày đi học liền
@@ -651,7 +684,9 @@ app.post('/api/game/attend', (req, res) => {
   cur.nickname = String(nickname || cur.nickname).slice(0, 60);
   soLop.attend[key] = cur;
   saveSoon();
-  res.json({ days: cur.streak, total: cur.total });
+  // kèm học bạ cả đời để game biết bạn này đang học lớp mấy
+  const { nickname: _n, ...life } = lifeOf(key);
+  res.json({ days: cur.streak, total: cur.total, life });
 });
 
 // Trang báo cáo sau buổi live: http://localhost:3006/bao-cao (thêm ?ngay=2026-11-04 để xem ngày khác)

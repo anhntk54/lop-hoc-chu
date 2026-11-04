@@ -16,7 +16,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Xếp hạng 3 tầng: điểm tiết (xếp ghế, xoá mỗi tiết) · điểm buổi (👑 lớp trưởng, ⭐ lớp phó) · bảng vàng tuần (lưu file `data/so-lop.json`, tự xoá khi sang tuần mới).
 - Comment dài đúng bằng đáp án (không tính khoảng trắng) mới tính là trả lời; nói chuyện thường không bị tính sai. Mỗi người chỉ tính lần trả lời đầu tiên của câu đó. Phải gõ đủ dấu.
 - Điểm theo thứ tự đúng, xếp theo giờ TikTok gắn lúc gửi (`createTime`), không theo lúc bot nhận: 10 / 7 / 5 / hạng 4–10 được 3 / sau đó 1. Đúng 3 câu liền +5.
-- Quà: luôn là "tặng hoa cô" (cô cầm hoa, cảm ơn). Quà từ 30 xu lúc chưa ai đúng: cô mở thêm 1 chữ cho cả lớp. Quà không cộng điểm.
+- Quà: luôn là "tặng hoa cô" (cô cầm hoa, cảm ơn). Quà KHÔNG cho lợi thế gì trong game (bỏ "quà to mở chữ" 2026-11-04, `hintGiftCoins: 0`: TikTok cấm khuyến khích trẻ em tặng quà). Quà không cộng điểm.
 - 300 tim: cả lớp vỗ tay.
 
 ## File
@@ -82,3 +82,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - Bàn dài + ghế băng (2026-11-04, làm ở bản tiếng Anh trước rồi chuyển sang): 4 dãy 7, 7, 8, 8 bạn = 30 ghế (`GAME.rowSeats`), các bạn nhỏ lại (KID = 0.82), bàn vẽ SVG đè lên bàn lẻ của ảnh nền (`LongDesk` trong GameStage.tsx).
 - Giọng Edge bị chặn (lỗi 429) khi gọi dồn (2026-11-04): server cho Edge đọc từng câu một, câu giống nhau dùng chung, bị chặn thì chờ 2/5/10 giây thử lại; vẫn lỗi thì Google ĐÚNG ngôn ngữ (từ tiếng Anh dùng tl=en), không lưu bản dự phòng. Log "[giọng dự phòng]" để xem sau buổi live.
 - Repo GitHub CÔNG KHAI từ 2026-11-04: https://github.com/workaipvlinh-byte/lop-hoc-chu (MIT cho mã nguồn; ảnh nhân vật/nền thuộc tác giả). README có hướng dẫn cài đặt, sửa tính năng thì cập nhật README theo.
+- Học bạ cả đời (2026-11-04): điểm cộng dồn mãi trên server (sổ lớp `life`) -> lên lớp 1..12 rồi tốt nghiệp (`GAME.gradePoints`), nhãn L2, L3.. trên bảng tên, lên lớp thì cô chúc + 🎓 lên bàn. Huy hiệu theo số câu đúng: 50 toán, 30 lịch sử, 30 đố mẹo, 30 tiếng Anh, 300 câu. Gõ "học bạ" thì cô đọc (mỗi bạn 5 phút 1 lần).
+- Bỏ đám đông đứng 2 bên cửa (2026-11-04, `standing: 0`): hết ghế vẫn chơi, bảng "👥 Sĩ số / ⏳ Chờ vào lớp" ở cửa trái. Bảng "💬 Top tương tác" hôm nay bên phải trên hàng ghế đầu: 1 bình luận = 1 (mỗi bạn 2 giây 1 lần), 1 món quà = 10, KHÔNG hiện điểm hay cách tính.
+- Màu (2026-11-04): sàn phủ lớp tối nhẹ, bàn dài hạ vài tông cho tên và quà trên bàn rõ hơn.
+- Phòng đông: bạn im quá 2 tiếng bị xoá khỏi lớp lúc sang tiết mới (điểm đã ở server). Đo 13.000 người: vẽ 0,8 ms.
