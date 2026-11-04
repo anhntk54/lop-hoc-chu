@@ -54,7 +54,10 @@ export const GAME = {
   namesPerGreeting: 3,
   shareReminderEveryMs: 6 * 60_000,
   idleAfterSec: 75, // không ai comment chừng này giây thì cô nhắc
-  // câu nói thêm (chào, cà khịa) chờ quá lâu thì bỏ, nhường chỗ cho câu hỏi; cảm ơn quà được chờ lâu hơn
-  chatterMaxWaitMs: 7000,
-  giftLineMaxWaitMs: 15000,
+  // Nhịp giọng: câu chính (đề, đáp án, tổng kết) đọc theo chương trình, đồng hồ dừng trong lúc cô đọc.
+  // Câu nói thêm (chào, cảm ơn, cà khịa) chỉ nói lúc đang chờ học sinh trả lời và còn hơn 5 giây.
+  chatterMinLeftMs: 5000,
+  chatterMaxWaitMs: 35_000, // câu chào chờ được qua 1 vòng câu hỏi, quá thì bỏ
+  giftLineMaxWaitMs: 45_000, // cảm ơn quà chờ lâu hơn
+  maxHoldMs: 25_000, // mỗi phần dừng đồng hồ tối đa chừng này (phòng giọng bị kẹt)
 };

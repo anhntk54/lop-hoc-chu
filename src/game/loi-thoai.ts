@@ -47,6 +47,17 @@ export const LINES = {
     (n) => `Trời ơi ${n}! Chưa kịp uống ngụm nước đã có người đúng.`,
     (n) => `Bạn ${n} ghi điểm đầu tiên. Ai về nhì nào?`,
     (n) => `Đúng rồi ${n}! Cô thấy em có tố chất làm lớp trưởng.`,
+    // khen như khen bé nhỏ tuổi
+    (n) => `Con ${n} giỏi quá, cô thưởng con một ngôi sao nha.`,
+    (n) => `Ôi bé ${n} ngoan ghê, đúng rồi con! Cô thơm một cái nè.`,
+    (n) => `${n} thông minh quá đi mất. Về khoe ba mẹ liền nha con.`,
+    (n) => `Ai dạy con mà giỏi vậy ${n}? Cả lớp vỗ tay cho bạn nào.`,
+    (n) => `Đúng rồi ${n} ơi! Cô dán cho con một bông hoa điểm tốt.`,
+    (n) => `${n} nhỏ xíu mà nhanh nhẹn ghê. Cô thương con quá.`,
+    (n) => `Giỏi lắm con! ${n} đúng là cháu ngoan của cô.`,
+    (n) => `Hoan hô ${n}! Con làm cô bất ngờ đó nha.`,
+    (n) => `${n} đúng rồi nè. Con vừa dễ thương vừa học giỏi.`,
+    (n) => `Cô khen ${n} nè, con chăm học ghê. Cả lớp học tập bạn nha.`,
   ] as L1,
 
   superFast: [

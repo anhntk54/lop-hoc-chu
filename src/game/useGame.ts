@@ -37,28 +37,37 @@ export function useGame() {
       GAME.greetEveryMs,
       GAME.namesPerGreeting,
       (names) => roomRef.current && say([roomRef.current.greet(joinNames(names))]),
-      () => voice.waiting >= 1 || roomRef.current?.phase === 'question', // đang hỏi thì không chào, để cô đọc đề
+      () => chatter.current.length >= 2, // còn câu nói thêm đang chờ thì gom tên lượt sau
     ),
     gifts: new GiftThanker(GAME.giftThanksCooldownMs, GAME.bigGiftCoins),
     follows: new OncePerPerson(),
   }));
 
-  // Câu chính (đề, đáp án, tổng kết) chen lên đọc trước. Câu nói thêm (chào, cảm ơn, cà khịa) mà chờ quá lâu
-  // hoặc đã có câu chính mới thì bỏ, để giọng không trễ sau câu hỏi khi phòng đông.
-  const turn = useRef(0);
+  // Nhịp giọng bám chương trình:
+  // - Câu chính (đề, đáp án, tổng kết, ra chơi) đọc ngay; trong lúc cô đọc, đồng hồ phần đó dừng lại.
+  // - Câu nói thêm (chào, cảm ơn, cà khịa) giữ ở đây, chỉ nói khi đang chờ học sinh trả lời và còn hơn 5 giây.
+  const mainSpeaking = useRef(0);
+  const chatter = useRef<{ text: string; priority: boolean; until: number }[]>([]);
   function say(lines: Say[]) {
-    if (lines.some((l) => l.main)) turn.current++;
+    const now = Date.now();
     for (const l of lines) {
       if (l.main) {
-        voice.say(l.text, true);
-        continue;
+        mainSpeaking.current++;
+        voice.say(l.text, true, () => mainSpeaking.current--);
+      } else {
+        const ttl = l.ttl ?? (l.priority ? GAME.giftLineMaxWaitMs : GAME.chatterMaxWaitMs);
+        chatter.current.push({ text: l.text, priority: !!l.priority, until: now + ttl });
       }
-      const myTurn = turn.current;
-      const at = Date.now();
-      const maxWait = l.priority ? GAME.giftLineMaxWaitMs : GAME.chatterMaxWaitMs;
-      voice.say(l.text, l.priority, undefined, false, undefined, () => turn.current === myTurn && Date.now() - at < maxWait);
     }
     dirty.current = true;
+  }
+  /** Nhả 1 câu nói thêm nếu đang tới lúc (gọi mỗi nhịp game) */
+  function flushChatter(room: Classroom, now: number) {
+    chatter.current = chatter.current.filter((c) => c.until > now);
+    if (voice.busy || mainSpeaking.current > 0 || !room.chatterWindow(now)) return;
+    const i = Math.max(0, chatter.current.findIndex((c) => c.priority)); // cảm ơn quà trước
+    const next = chatter.current.splice(i, 1)[0];
+    if (next) voice.say(next.text);
   }
 
   // Tên an toàn để hiện/đọc: tên có từ cấm thì dùng username
@@ -92,7 +101,7 @@ export function useGame() {
       const hint = room.gift(p, coins, Date.now());
       say(hint);
       // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
-      if (!hint.length && talk.gifts.shouldThank(e.username, coins, voice.waitingPriority)) say([room.thank(p, e.giftName, coins)]);
+      if (!hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
     },
 
     onFollow: (e) => {
@@ -117,6 +126,7 @@ export function useGame() {
       if (c.action === 'setRate' && c.text) voice.rate = Number(c.text) || 1;
       if (c.action === 'reset' || (c.action === 'custom' && c.text === 'newRound')) {
         voice.stop();
+        chatter.current = [];
         say(room.newRound(Date.now()));
       }
       if (c.action === 'custom' && c.text === 'skip') say(room.skip(Date.now()));
@@ -165,10 +175,18 @@ export function useGame() {
 
       // Nhịp game: 5 lần/giây đẩy đồng hồ, có đổi thì vẽ lại và gửi ảnh chụp cho trang điều khiển
       let lastSent = 0;
+      let lastTick = Date.now();
       timers.push(
         setInterval(() => {
           const now = Date.now();
+          // cô đang đọc câu chính: dừng đồng hồ (vd đọc đề xong mới đếm 20 giây)
+          if (mainSpeaking.current > 0) {
+            room.hold(now - lastTick);
+            dirty.current = true;
+          }
+          lastTick = now;
           say(room.tick(now));
+          flushChatter(room, now);
           if (!dirty.current && now - lastSent < 1000) return;
           dirty.current = false;
           const v = { ...room.view(now), weekTop: weekTop.current };

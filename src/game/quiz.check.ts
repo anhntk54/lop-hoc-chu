@@ -83,6 +83,26 @@ for (let i = 0; i < 200; i++) {
   assert.ok(c.students.get('u299')!.session >= 10);
 }
 
+// ---------- nhịp giọng: dừng giờ lúc cô đọc, chỉ nói thêm lúc chờ trả lời ----------
+{
+  const c = new Classroom([mk('MÈO'), mk('CHÓ', 'easy', 'cho')], t);
+  c.newRound(t);
+  assert.ok(!c.chatterWindow(t), 'đang giới thiệu tiết: không chào');
+  c.tick((t += GAME.introSec * 1000));
+  const end = c.phaseEndsAt;
+  c.hold(4000); // cô đọc đề 4 giây
+  assert.equal(c.phaseEndsAt, end + 4000, 'đọc đề xong mới đếm giờ');
+  assert.ok(c.chatterWindow(t + 4000), 'đang chờ trả lời: được chào');
+  assert.ok(!c.chatterWindow(c.phaseEndsAt - GAME.chatterMinLeftMs + 1), 'sắp hết giờ: không chào');
+  c.hold(GAME.maxHoldMs * 3);
+  assert.equal(c.phaseEndsAt, end + GAME.maxHoldMs, 'dừng giờ có trần');
+  chat(c, 1, c.q!.answer, t + 4000, t + 4000);
+  const reveal = c.tick((t = c.phaseEndsAt));
+  assert.equal(c.phase, 'reveal');
+  assert.ok(reveal.every((l) => l.main), 'lúc hiện đáp án: toàn câu chính, đọc theo chương trình');
+  assert.ok(!c.chatterWindow(t), 'đang hiện đáp án: không chào');
+}
+
 // ---------- không ai đúng: mở 1 chữ + thêm giờ ----------
 {
   const c = new Classroom([mk('BẢNG ĐEN')], t);

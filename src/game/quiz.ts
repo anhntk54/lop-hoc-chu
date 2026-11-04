@@ -41,6 +41,8 @@ export interface Say {
   priority?: boolean;
   /** câu chính (đọc đề, đáp án, tổng kết, ra chơi): chen lên đọc trước, câu nói thêm còn chờ thì bỏ */
   main?: boolean;
+  /** câu nói thêm: quá chừng này ms chưa tới lúc nói thì bỏ (mặc định GAME.chatterMaxWaitMs) */
+  ttl?: number;
 }
 
 export interface ChatIn {
@@ -323,6 +325,23 @@ export class Classroom {
     this.phase = p;
     this.phaseStartedAt = now;
     this.phaseEndsAt = now + sec * 1000;
+    this.heldMs = 0;
+  }
+
+  private heldMs = 0;
+  /** Cô đang đọc câu chính: dừng đồng hồ phần hiện tại (đọc đề xong mới đếm giờ trả lời). Có trần để không kẹt. */
+  hold(ms: number) {
+    const add = Math.max(0, Math.min(ms, GAME.maxHoldMs - this.heldMs));
+    this.heldMs += add;
+    this.phaseStartedAt += add;
+    this.phaseEndsAt += add;
+  }
+
+  /** Lúc được nói thêm (chào, cảm ơn, cà khịa): đang chờ học sinh trả lời và còn đủ giờ */
+  chatterWindow(now: number) {
+    const left = this.phaseEndsAt - now;
+    const answering = this.phase === 'question' || this.phase === 'bonus' || (this.phase === 'recess' && this.recess?.stage === 'play');
+    return answering && left > GAME.chatterMinLeftMs;
   }
 
   private startQuestion(now: number): Say[] {
@@ -379,7 +398,7 @@ export class Classroom {
     if (this.correct.length === 1) {
       if (GAME.endAfterFirstSec > 0) this.phaseEndsAt = Math.min(this.phaseEndsAt, now + GAME.endAfterFirstSec * 1000);
       const fast = now - this.phaseStartedAt < GAME.superFastSec * 1000;
-      return [this.t(this.line(fast ? 'superFast' : 'firstCorrect', e.spoken))];
+      return [{ ...this.t(this.line(fast ? 'superFast' : 'firstCorrect', e.spoken)), ttl: 6000 }];
     }
     return [];
   }
@@ -391,7 +410,7 @@ export class Classroom {
     this.lastFlowerAt = now;
     const asking = this.phase === 'question' || this.phase === 'bonus';
     if (asking && coins >= GAME.hintGiftCoins && this.correct.length === 0 && this.revealOne()) {
-      return [this.t(this.line('giftHint', e.spoken), true)];
+      return this.mainOf([this.t(this.line('giftHint', e.spoken), true)]);
     }
     return [];
   }
@@ -453,7 +472,7 @@ export class Classroom {
     // cà khịa 1 bạn trả lời sai (60% số câu, tên đọc được)
     const wrongs = [...this.wrong].map((u) => this.students.get(u)).filter((s): s is Student => !!s && s.spoken !== 'bạn');
     if (wrongs.length && this.rand() < GAME.roastChance) out.push(this.t(this.line('roastWrong', wrongs[Math.floor(this.rand() * wrongs.length)].spoken)));
-    return [...out, ...this.checkMonitor()];
+    return this.mainOf([...out, ...this.checkMonitor()]);
   }
 
   private startResults(now: number, outOfQuestions = false): Say[] {
@@ -577,14 +596,14 @@ export class Classroom {
         this.clapUntil = now + GAME.clapSec * 1000;
       } else out.push(this.t(this.line('heartFail', String(r.hearts))));
     }
-    return [...this.mainOf(out), ...this.checkMonitor()];
+    return this.mainOf([...out, ...this.checkMonitor()]);
   }
 
   private recessBoard(now: number): Say[] {
     this.recess!.stage = 'board';
     this.setPhase('recess', now, GAME.recessBoardSec);
     const top = this.sessionTop(1)[0];
-    return top ? [this.t(this.line('sessionBoard', top.spoken, String(top.session)))] : [];
+    return top ? this.mainOf([this.t(this.line('sessionBoard', top.spoken, String(top.session)))]) : [];
   }
 
   newRound(now: number): Say[] {
@@ -619,11 +638,11 @@ export class Classroom {
     // lớp im quá lâu: cô nhắc 1 câu
     if (now - this.lastChatAt > GAME.idleAfterSec * 1000 && now - this.lastIdleAt > GAME.idleAfterSec * 1000) {
       this.lastIdleAt = now;
-      extra.push(this.line0('idle'));
+      extra.push({ ...this.line0('idle'), ttl: 15000 });
     }
     if (this.phase === 'question' && !this.quietSaid && this.correct.length === 0 && now - this.phaseStartedAt > GAME.questionSec * 500) {
       this.quietSaid = true;
-      if (this.rand() < 0.5) extra.push(this.line0('quietHalfway'));
+      if (this.rand() < 0.5) extra.push({ ...this.line0('quietHalfway'), ttl: 5000 });
     }
     if (now < this.phaseEndsAt) return extra;
     return [...extra, ...this.advance(now)];
