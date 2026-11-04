@@ -536,13 +536,13 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
 function Podium({ v }: { v: StageView }) {
   if (v.phase !== 'question' && v.phase !== 'bonus' && v.phase !== 'reveal') return null;
   return (
-    <div className="absolute left-[330px] top-[636px] w-[600px]">
-      <div className="flex items-center justify-between rounded-t-[20px] bg-[#7a2e0e] px-5 py-1 text-[26px] font-bold text-[#ffe9b8]">
+    <div className="absolute left-[417px] top-[634px] w-[420px]">
+      <div className="flex items-center justify-between rounded-t-[14px] bg-[#7a2e0e] px-3 py-[1px] text-[19px] font-bold text-[#ffe9b8]">
         <span>⚡ Nhanh nhất</span>
         <span>{v.correctCount} bạn đã đúng</span>
       </div>
-      <div className="flex h-[74px] items-center gap-2 rounded-b-[20px] bg-[#fff6dd]/95 px-3 shadow-lg">
-        {v.correctTop.length === 0 && <div className="w-full text-center text-[28px] text-[#8a6a3a]">Chưa ai đoán ra…</div>}
+      <div className="flex h-[48px] items-center gap-1 rounded-b-[14px] bg-[#fff6dd]/95 px-2 shadow-lg">
+        {v.correctTop.length === 0 && <div className="w-full text-center text-[20px] text-[#8a6a3a]">Chưa ai đoán ra…</div>}
         <AnimatePresence initial={false}>
           {v.correctTop.map((a, i) => (
             <motion.div
@@ -550,9 +550,9 @@ function Podium({ v }: { v: StageView }) {
               layout
               initial={{ opacity: 0, scale: 0.6 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex w-1/3 min-w-0 items-center gap-1 text-[24px] text-[#4a2c0e]"
+              className="flex w-1/3 min-w-0 items-center gap-1 text-[17px] text-[#4a2c0e]"
             >
-              <span className="text-[30px]">{['🥇', '🥈', '🥉'][i]}</span>
+              <span className="text-[20px]">{['🥇', '🥈', '🥉'][i]}</span>
               <div className="min-w-0 flex-1 leading-tight">
                 <div className="truncate font-semibold">{a.nickname}</div>
                 <div className="font-extrabold text-[#c2410c]">+{a.points}</div>
@@ -570,14 +570,14 @@ const SEAT_HINTS = ['⭐ Đoán nhanh, điểm cao được vào lớp ngồi!',
 function SeatHint({ now }: { now: number }) {
   const i = Math.floor(now / 8000) % SEAT_HINTS.length;
   return (
-    <div className="pointer-events-none absolute left-[360px] top-[770px] z-[9] flex w-[560px] justify-center">
+    <div className="pointer-events-none absolute left-[397px] top-[718px] z-[9] flex w-[460px] justify-center">
       <AnimatePresence mode="wait">
         <motion.div
           key={i}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
-          className="whitespace-nowrap rounded-full bg-[#7a2e0e]/85 px-5 py-1 text-[26px] font-bold text-[#ffe9b8] shadow-md"
+          className="whitespace-nowrap rounded-full bg-[#7a2e0e]/80 px-3 py-[1px] text-[18px] font-bold text-[#ffe9b8] shadow-md"
         >
           {SEAT_HINTS[i]}
         </motion.div>
