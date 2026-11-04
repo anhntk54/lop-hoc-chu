@@ -38,7 +38,6 @@ SÂN BAY | Nơi máy bay cất cánh, hạ cánh. | 2
 NHÀ GA | Nơi tàu hỏa dừng đón khách. | 2
 BẾN CẢNG | Nơi tàu biển cập bờ. | 2 | CẢNG
 TRẠM XĂNG | Đổ xăng cho xe. | 2 | CÂY XĂNG
-KẸT XE | Đường đông cứng, không nhúc nhích. | 1 | TẮC ĐƯỜNG
 BẰNG LÁI | Giấy phép được lái xe. | 2 | BẰNG LÁI XE
 VÔ LĂNG | Tay quay điều khiển ô tô. | 2
 PHANH | Bóp vào cho xe dừng lại. | 2 | THẮNG

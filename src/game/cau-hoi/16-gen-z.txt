@@ -1,76 +1,76 @@
 # Gen Z, mạng xã hội
 > Đây là từ của giới trẻ, dân mạng.
-TIKTOK | Ứng dụng video ngắn mình đang xem live. | 1
-FACEBOOK | Mạng xã hội màu xanh, có nút like ngón cái. | 1
-ZALO | Ứng dụng nhắn tin của Việt Nam, bố mẹ hay dùng. | 1
-INSTAGRAM | Mạng đăng ảnh sống ảo, có story. | 2
-YOUTUBE | Trang xem video có nút play đỏ. | 1
-LIVESTREAM | Phát trực tiếp như kênh mình đang làm. | 2 | LIVE
-THẢ TIM | Bấm liên tục vào màn hình live. | 1
-FOLLOW | Bấm theo dõi kênh. | 1 | THEO DÕI
-SHARE | Chia sẻ cho bạn bè cùng xem. | 1 | CHIA SẺ
-HASHTAG | Dấu thăng đứng trước từ khóa. | 2
-XU HƯỚNG | Thứ ai cũng làm theo trên mạng, còn gọi trend. | 2 | TREND
-VIRAL | Video lan truyền chóng mặt. | 2
-SỐNG ẢO | Đăng ảnh đẹp lung linh khác ngoài đời. | 2
-SELFIE | Tự chụp ảnh mình. | 1 | TỰ SƯỚNG
-FILTER | Hiệu ứng làm đẹp khi chụp ảnh. | 2 | BỘ LỌC
-STORY | Đăng hai mươi bốn giờ là mất. | 2 | TIN
-EMOJI | Biểu tượng mặt cười. | 1 | ICON
-MEME | Ảnh chế hài hước lan truyền. | 2
-IDOL | Thần tượng được fan hâm mộ. | 1 | THẦN TƯỢNG
-FAN | Người hâm mộ. | 1
-ANTI FAN | Người chuyên đi ghét thần tượng. | 2
-KPOP | Nhạc Hàn Quốc có BTS, Blackpink. | 2
-CRUSH | Người mình thầm thương trộm nhớ. | 1
-THẢ THÍNH | Nói ngọt để làm quen. | 1
-ĐỘC THÂN | Chưa có người yêu, ế. | 1 | Ế
-NGƯỜI YÊU CŨ | Người từng yêu, giờ là quá khứ. | 2 | NYC
-FRIENDZONE | Thích người ta mà người ta chỉ coi là bạn. | 3
-TOXIC | Mối quan hệ độc hại. | 2
-FLEX | Khoe khoang của cải. | 2
-CHILL | Thư giãn, thoải mái. | 1
-SLAY | Đỉnh, xuất sắc, cực cháy. | 2
-GHOST | Đang nói chuyện thì biến mất, không trả lời. | 2 | SEEN KHÔNG REP
-SEEN | Đã xem mà không trả lời. | 1
-TRÀ XANH | Cô gái chen vào chuyện tình người khác. | 2
-SỐNG CHẬM | Lối sống không vội vàng, healing. | 2
-HEALING | Đi đâu đó chữa lành tâm hồn. | 2 | CHỮA LÀNH
-CHECK IN | Chụp ảnh đánh dấu nơi mình tới. | 2
-OOTD | Bộ đồ hôm nay mặc. | 3
-SKINCARE | Chăm sóc da mỗi tối, mười bước. | 2
-MAKEUP | Trang điểm. | 1 | TRANG ĐIỂM
-NAIL | Sơn vẽ móng tay. | 1
-BUBBLE TEA | Tên tiếng Anh của trà sữa trân châu. | 3
-MÌ CAY BẢY CẤP ĐỘ | Thử thách ăn cay nổi tiếng. | 3
-GAME THỦ | Người chơi game chuyên nghiệp. | 2
-GANK | Rình phục kích đánh lén trong game. | 2
-FEED | Chết liên tục cho đối thủ ăn mạng. | 2
-CARRY | Gánh team một mình. | 2 | GÁNH TEAM
-NOOB | Gà mờ, chơi dở. | 1 | GÀ
-PRO | Cao thủ. | 1 | CAO THỦ
-AFK | Treo máy, bỏ đi giữa trận. | 2
-LAG | Mạng chậm, giật hình. | 1
-WIFI | Mạng không dây, câu đầu tiên hỏi khi vào quán. | 1
-PASS WIFI | Thứ đầu tiên hỏi khi vào quán cà phê. | 2 | MẬT KHẨU WIFI
-SẠC DỰ PHÒNG | Cục pin mang theo cứu điện thoại. | 3 | PIN DỰ PHÒNG
-ẢNH ĐẠI DIỆN | Hình hiện cạnh tên tài khoản. | 2 | AVATAR
-BÌNH LUẬN | Gõ chữ vào khung chat dưới video. | 1 | COMMENT
-NHẮN TIN | Gửi chữ qua điện thoại. | 1 | CHAT
-GỌI VIDEO | Gọi điện mà nhìn thấy mặt nhau. | 2 | VIDEO CALL
-BẠN GÁI | Người yêu là nữ. | 1 | NGƯỜI YÊU
-FOMO | Sợ bị bỏ lỡ, thấy ai cũng đi thì cũng muốn đi. | 3
-OVERTHINKING | Nghĩ quá nhiều đến mất ngủ. | 3 | NGHĨ NHIỀU
-DEADLINE | Hạn chót nộp bài. | 1
-CÀY PHIM | Xem liền mấy tập phim thâu đêm. | 2
-CHỐT ĐƠN | Người bán hàng online hay nói. | 2
-SĂN SALE | Canh giờ mua hàng giảm giá. | 2
-FREESHIP | Miễn phí vận chuyển. | 2
-GIỎ HÀNG | Nơi để đồ định mua mà chưa mua. | 2
-ĐẶT ĐỒ ĂN | Bấm điện thoại là shipper mang tới. | 2
-CHỤP ẢNH THẺ | Chụp kiểu photobooth bốn tấm dọc. | 3 | PHOTOBOOTH
-MBTI | Bài test tính cách mười sáu nhóm. | 3
-CUNG HOÀNG ĐẠO | Bạch Dương, Kim Ngưu, Song Tử... | 2
-TAROT | Bói bài vẽ hình phương Tây. | 2
-FAN CỨNG | Người theo dõi lâu năm, trung thành. | 2
-GEN Z | Thế hệ sinh khoảng năm 1997 tới 2012. | 2
+TIKTOK | Ứng dụng các bạn đang mở để xem cô dạy, lướt một cái là mất hai tiếng. | 1
+FACEBOOK | Mạng xã hội màu xanh, nơi họ hàng vào bình luận "dạo này mập ra hả con". | 1
+ZALO | Ứng dụng nhắn tin bố mẹ dùng để gửi ảnh hoa sen chúc buổi sáng. | 1
+INSTAGRAM | Mạng đăng ảnh sống ảo, chụp ba trăm tấm chọn một tấm đăng. | 2
+YOUTUBE | Trang xem video có nút đỏ, vào tìm một video hướng dẫn rồi xem tới video mèo. | 1
+LIVESTREAM | Việc cô Ngân đang làm ngay lúc này, phát hình trực tiếp. | 2 | LIVE
+THẢ TIM | Chạm liên tục vào màn hình để cô vui, miễn phí mà ít ai làm. | 1
+FOLLOW | Bấm một cái để mai không bỏ lỡ tiết của cô. | 1 | THEO DÕI
+SHARE | Gửi video cho đứa bạn kèm câu "y chang mày". | 1 | CHIA SẺ
+HASHTAG | Dấu thăng đứng trước từ khoá, viết dài hơn cả nội dung bài đăng. | 2
+XU HƯỚNG | Thứ ai cũng làm theo trên mạng, hôm nay hot mai đã cũ. | 2 | TREND
+VIRAL | Video lan nhanh như tin đồn trong nhóm chat công ty. | 2
+SỐNG ẢO | Ảnh trên mạng ở Đà Lạt mộng mơ, ngoài đời đang nằm ăn mì gói. | 2
+SELFIE | Tự giơ điện thoại chụp mình, nghiêng bốn mươi lăm độ cho mặt thon. | 1 | TỰ SƯỚNG
+FILTER | Hiệu ứng làm mặt mịn như trứng gà bóc, gặp ngoài đời không nhận ra. | 2 | BỘ LỌC
+STORY | Đăng lên mạng, hai mươi bốn giờ sau tự biến mất, ai xem cũng biết. | 2 | TIN
+EMOJI | Mặt cười, mặt khóc, quả đào, quả cà tím, dùng thay lời muốn nói. | 1 | ICON
+MEME | Ảnh chế hài hước, gửi vào nhóm chat là cả nhóm cười. | 2
+IDOL | Người được fan hâm mộ, lên sân khấu là cả khán đài hét. | 1 | THẦN TƯỢNG
+FAN | Người hâm mộ, sẵn sàng thức trắng để săn vé. | 1
+ANTI FAN | Người ghét một ngôi sao mà còn theo dõi kỹ hơn cả người hâm mộ. | 2
+KPOP | Dòng nhạc xứ kim chi, nhóm nhạc nhảy đều tăm tắp như máy. | 2
+CRUSH | Người mình thầm thích, họ chỉ cần thả tim là mình vui cả tuần. | 1
+THẢ THÍNH | Nói câu ngọt ngào để làm quen, "cậu có mệt không, chạy trong đầu tớ cả ngày". | 1
+ĐỘC THÂN | Tình trạng được hỏi nhiều nhất mỗi dịp Tết, "bao giờ có người yêu". | 1 | Ế
+NGƯỜI YÊU CŨ | Người từng nắm tay mình, giờ thấy nhau trên mạng thì lướt nhanh qua. | 2 | NYC
+FRIENDZONE | Thích người ta mà người ta gọi mình là "bạn thân nhất". | 3
+TOXIC | Mối quan hệ độc hại, càng ở lâu càng mệt. | 2
+FLEX | Khoe khoang của cải, chụp ảnh vô tình lộ chìa khoá xe. | 2
+CHILL | Thoải mái, thư thả, cuối tuần nằm nghe nhạc không nghĩ gì. | 1
+SLAY | Đỉnh, xuất sắc, mặc gì cũng đẹp, làm gì cũng cháy. | 2
+GHOST | Đang nói chuyện vui vẻ thì biến mất như ma, không trả lời nữa. | 2 | SEEN KHÔNG REP
+SEEN | Tin nhắn hiện chữ đã xem, mà chờ hoài không thấy trả lời. | 1
+TRÀ XANH | Người chen vào chuyện tình người khác, nói ngọt như mía lùi. | 2
+SỐNG CHẬM | Không vội vàng, pha trà, đọc sách, đăng ảnh nắng chiều. | 2
+HEALING | Đi Đà Lạt ba ngày để chữa lành, về đi làm lại tổn thương. | 2 | CHỮA LÀNH
+CHECK IN | Tới đâu cũng phải chụp ảnh đánh dấu địa điểm, chưa đăng là chưa tới. | 2
+OOTD | Bốn chữ cái tiếng Anh viết tắt cho bộ đồ hôm nay mặc. | 3
+SKINCARE | Mười bước dưỡng da mỗi tối, bước nào cũng tốn tiền. | 2
+MAKEUP | Tô vẽ mặt mũi, trước và sau như hai người khác nhau. | 1 | TRANG ĐIỂM
+NAIL | Làm móng tay vẽ hoa, gắn đá, gõ phím kêu lạch cạch. | 1
+BUBBLE TEA | Cách gọi tiếng Anh của trà sữa trân châu, nghe sang hơn hẳn. | 3
+MÌ CAY BẢY CẤP ĐỘ | Thử thách ăn cay, tới cấp cuối là khóc mà vẫn ăn. | 3
+GAME THỦ | Người chơi game tới quên ăn quên ngủ, có người còn kiếm ra tiền. | 2
+GANK | Rình trong bụi rồi nhảy ra đánh lén trong game, từ tiếng Anh. | 2
+FEED | Chết liên tục cho đối thủ ăn mạng, đồng đội muốn báo cáo. | 2
+CARRY | Một mình đánh cả trận, đồng đội chỉ việc đi theo. | 2 | GÁNH TEAM
+NOOB | Chơi dở, mới tập, bị cả đội chửi. | 1 | GÀ
+PRO | Cao thủ, chơi tới đâu thắng tới đó. | 1 | CAO THỦ
+AFK | Bỏ đi giữa trận, để lại đồng đội chiến đấu một mình. | 2
+LAG | Mạng chậm, nhân vật đứng im, ra lệnh xong năm giây mới chạy. | 1
+WIFI | Thứ quan trọng nhất ở quán cà phê, quan trọng hơn cả cà phê. | 1
+PASS WIFI | Câu đầu tiên hỏi khi ngồi xuống quán, trước cả khi gọi món. | 2 | MẬT KHẨU WIFI
+SẠC DỰ PHÒNG | Cục pin mang theo cứu điện thoại, quên ở nhà là cả ngày lo âu. | 3 | PIN DỰ PHÒNG
+ẢNH ĐẠI DIỆN | Hình nhỏ cạnh tên tài khoản, chọn mất một tuần mới đổi. | 2 | AVATAR
+BÌNH LUẬN | Việc các bạn đang làm để trả lời cô, gõ vào ô dưới màn hình. | 1 | COMMENT
+NHẮN TIN | Soạn xong xoá, xoá xong soạn, cuối cùng gửi một chữ "ừ". | 1 | CHAT
+GỌI VIDEO | Gọi điện thấy mặt nhau, mẹ hay gọi lúc mình vừa ngủ dậy. | 2 | VIDEO CALL
+BẠN GÁI | Người có thể hỏi "em béo không" và chỉ có một đáp án đúng. | 1
+FOMO | Thấy bạn bè đi chơi mà mình không đi là thấy bồn chồn, sợ bỏ lỡ. | 3
+OVERTHINKING | Người ta trả lời "ok" mà mình nghĩ tới ba giờ sáng xem có ý gì. | 3 | NGHĨ NHIỀU
+DEADLINE | Hạn chót nộp bài, đến gần mới bắt đầu làm, càng gần càng chạy nhanh. | 1
+CÀY PHIM | Định xem một tập rồi ngủ, ngẩng lên thì trời đã sáng. | 2
+CHỐT ĐƠN | Hai chữ người bán hàng online hô to nhất trên live. | 2
+SĂN SALE | Canh đúng mười hai giờ đêm để bấm mua đồ giảm giá, mua đồ không cần. | 2
+FREESHIP | Mua thêm đồ không cần cho đủ tiền để được miễn phí giao hàng. | 2
+GIỎ HÀNG | Nơi chứa toàn đồ định mua, chờ lương về rồi... vẫn để đó. | 2
+ĐẶT ĐỒ ĂN | Lười nấu, bấm điện thoại, ba mươi phút sau shipper gọi. | 2
+CHỤP ẢNH THẺ | Vào buồng nhỏ tạo dáng bốn kiểu, in ra một dải bốn tấm dọc. | 3 | PHOTOBOOTH
+MBTI | Bài test tính cách mười sáu nhóm, bốn chữ cái, dân mạng lấy làm cớ để lười. | 3
+CUNG HOÀNG ĐẠO | Bạch Dương, Kim Ngưu, Song Tử... đổ lỗi cho sao trời khi mình nóng tính. | 2
+TAROT | Bói bằng lá bài có hình vẽ, hỏi "khi nào có người yêu" nhiều nhất. | 2
+FAN CỨNG | Người theo dõi lâu năm, ngày nào live cũng có mặt, giống mấy bạn trong lớp mình. | 2
+GEN Z | Thế hệ sinh khoảng năm 1997 tới 2012, nói chuyện toàn từ mà bố mẹ không hiểu. | 2

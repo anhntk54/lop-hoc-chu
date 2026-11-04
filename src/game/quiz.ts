@@ -534,6 +534,11 @@ export class Classroom {
     else {
       const nice = pool.filter((q) => q.category !== prev && perCat(q.category) < 2);
       if (nice.length) pool = nice;
+      // bản riêng: phần lớn câu chữ thường lấy từ bộ Gen Z / công sở / ăn uống yêu đương
+      if (!slot && this.rand() < GAME.hotShare) {
+        const hot = pool.filter((x) => (GAME.hotTopics as readonly string[]).includes(x.id.split(':')[0]));
+        if (hot.length) pool = hot;
+      }
     }
     if (!pool.length) pool = this.bank.filter((q) => kind(q));
     if (!pool.length) return null;
@@ -721,7 +726,7 @@ export class Classroom {
     if (this.golden) out.push(this.line0('goldenIntro'));
     else if (this.q.math) out.push(this.line0('mathIntro'));
     // đuổi hình bắt chữ: không đọc emoji, chỉ mời nhìn hình
-    const clue = this.q.slot === 'dh' ? 'Nhìn hình đoán chữ nha các bạn nhỏ.' : this.q.clue;
+    const clue = this.q.slot === 'dh' ? 'Nhìn hình đoán chữ nha cả lớp.' : this.q.clue;
     out.push(this.t(`Câu ${this.qNo}. ${this.intro(this.q)} ${clue}`));
     // đọc đề xong cô hô bắt đầu (lúc đó mới hiện bảng chữ); đồng hồ dừng trong lúc cô nói nên hô xong mới đếm giờ
     out.push({ ...this.line0('go'), go: true });
@@ -1247,7 +1252,7 @@ export class Classroom {
       const n = this.love.fans.length;
       this.love = null;
       if (n === 0) return [];
-      const names = fans.slice(0, 3).join(', ') || 'các bạn nhỏ';
+      const names = fans.slice(0, 3).join(', ') || 'các bạn';
       return [{ ...this.t(this.line('loveThanks', String(n), names)), ttl: 12_000 }];
     }
     if (this.poll && now - this.poll.at >= GAME.loveWindowMs) {

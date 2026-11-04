@@ -24,7 +24,6 @@ TRƯỢT BĂNG | Đi giày lưỡi dao lướt trên băng. | 3
 LƯỚT SÓNG | Đứng trên ván cưỡi sóng biển. | 3
 LEO NÚI | Chinh phục đỉnh cao. | 2
 YOGA | Bài tập dẻo dai, thở sâu, ngồi thiền. | 2
-GYM | Phòng tập tạ cho cơ bắp to. | 1
 SEA GAMES | Đại hội thể thao Đông Nam Á. | 3
 WORLD CUP | Giải bóng đá lớn nhất hành tinh. | 2
 OLYMPIC | Thế vận hội năm vòng tròn. | 2 | THẾ VẬN HỘI
@@ -73,4 +72,3 @@ POKEMON | Thu phục quái thú vào quả bóng đỏ trắng. | 2
 TRƯỢT PATIN | Đi giày có bánh xe. | 3 | PATIN
 ĐUA THUYỀN | Cả đội cùng chèo về đích. | 3
 BOXING | Đấm bốc đeo găng. | 2 | ĐẤM BỐC, QUYỀN ANH
-PICKLEBALL | Môn vợt đang hot, sân nhỏ, bóng nhựa có lỗ. | 3

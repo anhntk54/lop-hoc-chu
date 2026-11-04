@@ -76,6 +76,9 @@ export const GAME = {
   // ---------- Sau giờ ra chơi: cả lớp chọn chủ đề tiết sau ----------
   voteSec: 15, // gõ 1 hoặc 2
   voteTopicQuestions: 5, // chủ đề thắng chiếm chừng này câu chữ thường của tiết sau
+  // bản riêng (2026-11-04): khán giả Gen Z + người đi làm, nên phần lớn câu chữ thường lấy từ các bộ này
+  hotTopics: ['16-gen-z', '32-cong-so', '33-gen-z-trend', '34-an-uong-tinh-yeu'],
+  hotShare: 0.75, // tỉ lệ câu chữ thường bốc từ hotTopics (chủ đề cả lớp bình chọn vẫn được ưu tiên trước)
 
   // ---------- Chia tổ (bản riêng cô Ngân) ----------
   // Trước mỗi tiết có chừng này giây chọn tổ (gõ "tổ 1".."tổ 4", "t2", "3", "tổ ba"). Ai chưa chọn thì máy xếp vào tổ ít người nhất.

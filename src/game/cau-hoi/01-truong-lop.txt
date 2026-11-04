@@ -23,12 +23,10 @@ HỌC BẠ | Cuốn sổ ghi điểm tổng kết cả năm, có lời phê củ
 GIẤY KHEN | Học sinh giỏi cuối năm được phát tờ này. | 2
 HỌC SINH GIỎI | Danh hiệu cuối năm của bạn điểm cao nhất lớp. | 3
 HIỆU TRƯỞNG | Người đứng đầu cả trường. | 2
-BẢO VỆ | Chú ngồi ở cổng trường, mở cổng đóng cổng. | 2
 CĂNG TIN | Chỗ trong trường bán đồ ăn, nước uống. | 2
 THƯ VIỆN | Phòng trong trường đầy sách cho học sinh mượn. | 2
 SÂN TRƯỜNG | Chỗ chào cờ thứ hai đầu tuần. | 2
 CHÀO CỜ | Sáng thứ hai cả trường đứng nghiêm làm việc này. | 2
-ĐỒNG PHỤC | Quần áo giống nhau cả trường phải mặc. | 2
 KHAI GIẢNG | Ngày năm tháng chín, mở đầu năm học mới. | 2
 BẾ GIẢNG | Lễ cuối năm học trước khi nghỉ hè. | 3
 NGHỈ HÈ | Ba tháng không phải đi học. | 1

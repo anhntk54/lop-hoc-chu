@@ -30,22 +30,18 @@ ROBOT | Máy móc biết làm việc như người. | 1 | RÔ BỐT
 TRÍ TUỆ NHÂN TẠO | Máy biết suy nghĩ, viết tắt AI. | 3 | AI
 CHATGPT | Trợ lý AI trò chuyện nổi tiếng. | 2
 MÁY ẢNH | Chụp hình, có ống kính. | 2
-MÁY IN | In tài liệu ra giấy. | 2
 MÁY PHOTO | Sao chép tài liệu. | 2
 INTERNET | Mạng toàn cầu. | 1 | MẠNG
-EMAIL | Thư điện tử. | 1 | THƯ ĐIỆN TỬ
 MẬT KHẨU | Dãy ký tự bí mật để đăng nhập. | 2 | PASSWORD
 ỨNG DỤNG | Phần mềm tải về điện thoại. | 2 | APP
 PHẦN MỀM | Chương trình chạy trên máy tính. | 2
 VIRUS MÁY TÍNH | Chương trình độc hại. | 3
 ĐIỆN TOÁN ĐÁM MÂY | Lưu dữ liệu trên mạng. | 3 | CLOUD
-BLUETOOTH | Kết nối không dây tai nghe. | 2
 USB | Thanh nhỏ cắm máy tính lưu dữ liệu. | 2
 MÀN HÌNH | Phần hiển thị hình ảnh. | 1
 CẢM ỨNG | Chạm tay vào màn hình là dùng được. | 2
 CAMERA | Ống kính trên điện thoại. | 1
 QR CODE | Ô vuông đen trắng quét để chuyển khoản. | 2 | MÃ QR
-CHUYỂN KHOẢN | Gửi tiền qua ngân hàng bằng điện thoại. | 2
 GPS | Định vị chỉ đường. | 2 | ĐỊNH VỊ
 VỆ TINH | Bay quanh trái đất, truyền sóng. | 2
 ĐIỆN GIÓ | Cánh quạt khổng lồ ven biển. | 2

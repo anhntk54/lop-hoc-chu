@@ -721,7 +721,7 @@ h1{margin:0 0 4px}h2{margin-top:28px;border-bottom:2px solid #e9d8a6;padding-bot
 <h1>📊 Báo cáo buổi live</h1><div class="muted">Ngày ${esc(day)} · đổi ngày: thêm <code>?ngay=YYYY-MM-DD</code> vào link</div>
 <div class="stats" style="margin-top:12px">
 <div class="stat"><b>${rows.length}</b>câu đã hỏi</div>
-<div class="stat"><b>${attended.length}</b>bạn nhỏ vào lớp</div>
+<div class="stat"><b>${attended.length}</b>bạn vào lớp</div>
 <div class="stat"><b>${hard.length}</b>câu không ai đúng</div>
 <div class="stat"><b>${easy.length}</b>câu quá dễ</div></div>
 <h2>❌ Câu không ai trả lời đúng</h2><p class="muted">Có nhiều bạn thử mà vẫn sai: có thể câu quá khó hoặc gợi ý chưa rõ, nên xem lại.</p>

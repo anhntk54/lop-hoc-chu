@@ -75,7 +75,7 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
         <input
           value={bdName}
           onChange={(e) => setBdName(e.target.value)}
-          placeholder="Tên bạn nhỏ sinh nhật"
+          placeholder="Tên bạn sinh nhật"
           className="w-48 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white"
         />
         <Btn
