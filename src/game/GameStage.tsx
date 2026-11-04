@@ -26,17 +26,6 @@ const SPRITE_H = 250; // chiều cao cả người
 const SHOW = 0.5; // ngồi ghế: chỉ hiện phần trên (đầu tới hông)
 // khung đầu đã xoá khỏi ảnh thân sau lưng, tính theo tỉ lệ ảnh (tools/tach-nen.py ghi ra public/assets/nv/*/head.json)
 const HEAD = { nam: { x: 0.136, y: 0, w: 0.682, h: 0.284 }, nu: { x: 0.174, y: 0, w: 0.668, h: 0.248 } };
-// người không có ghế chen chúc 2 bên ngoài cửa lớp: [tâm x, chân y] (px stage), hàng trước (gần lớp) trước
-const CROWD_ROWS = 10;
-const STAND: [number, number][] = [];
-for (let r = 0; r < CROWD_ROWS; r++) {
-  const foot = 960 - r * 42;
-  for (let c = 0; c < 3; c++) {
-    const dx = c * 40 + (r % 2) * 20 + ((r * 7 + c * 13) % 9) - 4; // so le + lệch nhẹ cho giống đám đông
-    STAND.push([18 + dx, foot], [1062 - dx, foot]);
-  }
-}
-const NAMED_STANDING = 6; // chỉ hiện tên vài bạn đứng trước, còn lại để đám đông cho gọn
 // màu 4 tổ (bản riêng cô Ngân): tổ 1 đỏ, tổ 2 xanh dương, tổ 3 xanh lá, tổ 4 vàng
 const TEAM_COLOR = ['#ef4444', '#3b82f6', '#16a34a', '#f59e0b'];
 const TEAM_ICON = ['🔴', '🔵', '🟢', '🟡'];
@@ -78,18 +67,21 @@ export function GameStage({ game }: { game: GameState }) {
   }
   return (
     <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
+      {/* sàn lớp trong ảnh nền hơi chói: phủ 1 lớp tối nhẹ từ chân bảng trở xuống (chủ kênh chỉnh 2026-11-04) */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[600px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/20 to-[#3b1d07]/28 mix-blend-multiply" />
       <Header v={v} name={game.channelName} />
       <Motto />
       <Board v={v} now={now} />
       <DayTop v={v} />
       <TeamBoard v={v} />
+      <TalkTop v={v} />
+      <Roster v={v} />
       <Vase v={v} />
       <Teacher v={v} now={now} />
       <Punished v={v} />
       <Podium v={v} />
       <SeatHint now={now} />
       <Students v={v} now={now} />
-      <Standing v={v} now={now} />
       <FlowerWalk v={v} />
       <GiftBanner gift={game.lastGift} now={now} />
       <BirthdayBanner v={v} />
@@ -116,9 +108,7 @@ function Header({ v, name }: { v: StageView; name: string }) {
       <div className="max-w-full truncate font-extrabold leading-none tracking-wide text-[#7a2e0e]" style={{ fontSize: name.length > 14 ? 34 : 46 }}>
         {name.toUpperCase()}
       </div>
-      <div className="mt-1 text-[26px] font-semibold text-[#6b4a22]">
-        {sub} · {v.classSize} bạn
-      </div>
+      <div className="mt-1 text-[26px] font-semibold text-[#6b4a22]">{sub}</div>
     </div>
   );
 }
@@ -554,13 +544,13 @@ function WeekBoard({ v, left }: { v: StageView; left: number }) {
 function DayTop({ v }: { v: StageView }) {
   const rows = v.todayTop ?? [];
   return (
-    <div className="absolute left-[14px] top-[238px] z-20 w-[320px] -rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-3 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+    <div className="absolute left-[10px] top-[232px] z-20 w-[332px] -rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-3 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[30px]">📌</div>
-      <div className="whitespace-nowrap text-center text-[20px] font-extrabold leading-tight text-[#b45309]">🏆 Học sinh xuất sắc hôm nay</div>
+      <div className="whitespace-nowrap text-center text-[21px] font-extrabold leading-tight text-[#b45309]">🏆 Học sinh xuất sắc hôm nay</div>
       {rows.length === 0 && <div className="py-3 text-center text-[20px] text-[#8a6a3a]">Chưa có ai, trả lời đúng là lên bảng!</div>}
       <div className="mt-1 space-y-[2px]">
         {rows.map((r, i) => (
-          <motion.div key={r.username} layout className="flex items-center gap-2 text-[21px] leading-[26px]">
+          <motion.div key={r.username} layout className="flex items-center gap-2 text-[22px] leading-[27px]">
             <span className="w-7 text-center">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
             <span className="min-w-0 flex-1 truncate font-semibold">{r.nickname}</span>
             <b className="text-[#c2410c]">{r.points}</b>
@@ -701,24 +691,25 @@ function LongDesk({ ri }: { ri: number }) {
   const Y = (f: number) => r.y + f * h;
   const nLegs = Math.max(2, Math.floor((r.n || 8) / 2) + 1);
   const legs = Array.from({ length: nLegs }, (_, j) => x1 + 22 + (j * (x2 - x1 - 44)) / (nLegs - 1));
-  const line = { stroke: '#6b3f17', strokeWidth: 3, strokeLinejoin: 'round' as const };
+  // màu gỗ hạ vài tông so với bản đầu (chủ kênh chỉnh 2026-11-04: bàn sáng quá, tên và quà trên bàn khó nhìn)
+  const line = { stroke: '#57320f', strokeWidth: 3, strokeLinejoin: 'round' as const };
   return (
     <svg className="pointer-events-none absolute left-0 top-0" width={1080} height={1920} viewBox="0 0 941 1672" style={{ zIndex: 9 + ri }}>
       {/* bóng dưới bàn ghế: che chân bàn lẻ trong ảnh nền */}
-      <rect x={x1 - 2} y={Y(0.5)} width={x2 - x1 + 4} height={h * 0.52} rx={10} fill="#c27640" />
+      <rect x={x1 - 2} y={Y(0.5)} width={x2 - x1 + 4} height={h * 0.52} rx={10} fill="#9c5a2c" />
       {/* chân bàn 2 đầu */}
-      <rect x={x1 + 6} y={Y(0.34)} width={14} height={h * 0.62} fill="#8b5426" {...line} />
-      <rect x={x2 - 20} y={Y(0.34)} width={14} height={h * 0.62} fill="#8b5426" {...line} />
+      <rect x={x1 + 6} y={Y(0.34)} width={14} height={h * 0.62} fill="#70411b" {...line} />
+      <rect x={x2 - 20} y={Y(0.34)} width={14} height={h * 0.62} fill="#70411b" {...line} />
       {/* mặt bàn + cạnh trước + tấm chắn trước bàn */}
-      <rect x={x1 + 14} y={Y(0.36)} width={x2 - x1 - 28} height={h * 0.26} fill="#b8762f" {...line} />
-      <polygon points={`${x1 + 8},${r.y} ${x2 - 8},${r.y} ${x2},${Y(0.28)} ${x1},${Y(0.28)}`} fill="#f3c068" {...line} />
-      <rect x={x1} y={Y(0.28)} width={x2 - x1} height={h * 0.08} fill="#d9953f" {...line} />
+      <rect x={x1 + 14} y={Y(0.36)} width={x2 - x1 - 28} height={h * 0.26} fill="#965c22" {...line} />
+      <polygon points={`${x1 + 8},${r.y} ${x2 - 8},${r.y} ${x2},${Y(0.28)} ${x1},${Y(0.28)}`} fill="#cf9a4c" {...line} />
+      <rect x={x1} y={Y(0.28)} width={x2 - x1} height={h * 0.08} fill="#b5772f" {...line} />
       {/* ghế băng */}
       {legs.map((lx) => (
-        <rect key={lx} x={lx - 5} y={Y(0.74)} width={10} height={h * 0.24} fill="#7a4a1e" />
+        <rect key={lx} x={lx - 5} y={Y(0.74)} width={10} height={h * 0.24} fill="#5f3816" />
       ))}
-      <rect x={x1 + 16} y={Y(0.6)} width={x2 - x1 - 32} height={h * 0.1} rx={4} fill="#ebae52" {...line} />
-      <rect x={x1 + 16} y={Y(0.7)} width={x2 - x1 - 32} height={h * 0.06} fill="#c9863a" {...line} />
+      <rect x={x1 + 16} y={Y(0.6)} width={x2 - x1 - 32} height={h * 0.1} rx={4} fill="#c68a3c" {...line} />
+      <rect x={x1 + 16} y={Y(0.7)} width={x2 - x1 - 32} height={h * 0.06} fill="#a5692b" {...line} />
     </svg>
   );
 }
@@ -779,6 +770,10 @@ function Students({ v, now }: { v: StageView; now: number }) {
               {s.title && <span className="mr-1">{s.title === 'lop-truong' ? '👑' : '⭐'}</span>}
               {called && <span className="mr-1">📢</span>}
               {s.days >= 2 && <span className="mr-1 whitespace-nowrap">🎒{s.days}</span>}
+              {/* học bạ: lớp mấy (lớp 1 thì khỏi hiện cho gọn), tốt nghiệp đội mũ */}
+              {s.grade >= 2 && (
+                <span className="mr-1 shrink-0 rounded-full bg-[#2563eb] px-[5px] font-extrabold text-white">{s.grade > 12 ? '🎓' : `L${s.grade}`}</span>
+              )}
               <span className="truncate">{s.nickname}</span>
               {s.score > 0 && <b className="ml-1 text-[#c2410c]">{s.score}</b>}
             </div>
@@ -914,37 +909,41 @@ function DeskGifts({ desk, x, y, w, show, scale }: { desk: StageView['seats'][nu
   );
 }
 
-// Hết ghế: chen chúc đứng ngoài 2 bên cửa nhìn vào, vẫn tính điểm; chỉ vài bạn đứng đầu có bảng tên
-function Standing({ v, now }: { v: StageView; now: number }) {
+// Cửa trái (chỗ đám đông đứng trước đây): sĩ số trong lớp và số bạn đang chờ vào (hết ghế vẫn chơi, tính điểm)
+function Roster({ v }: { v: StageView }) {
+  const r = v.roster;
   return (
-    <>
-      {v.standing.slice(0, STAND.length).map((s, i) => {
-        const [cx, foot] = STAND[i];
-        const H = 100 + (foot - 540) * 0.12; // xa thì nhỏ
-        const w = H * 0.47;
-        const g = s.girl ? 'nu' : 'nam';
-        const pose = studentPose(s, v, GAME.seats + i, now);
-        return (
-          <motion.div
-            key={s.username}
-            initial={{ opacity: 0, left: cx - w / 2, top: foot - H + 30 }}
-            animate={{ opacity: 1, left: cx - w / 2, top: foot - H }}
-            className="absolute"
-            style={{ width: w, height: H, zIndex: Math.floor(foot / 20) }}
-          >
-            <img src={`/assets/nv/${g}/${POSE[g][pose]}.webp`} className="h-full w-full drop-shadow-[0_3px_2px_rgba(0,0,0,0.3)]" />
-            {s.answered === 'right' && <div className="badge bg-[#16a34a]" style={{ width: 20, height: 20, fontSize: 13, right: 0 }}>✓</div>}
-            {i < NAMED_STANDING && (
-              <div className="nametag" style={{ fontSize: 14, maxWidth: 104, bottom: 'calc(100% - 2px)', zIndex: 60 }}>
-                {s.title && <span className="mr-1">{s.title === 'lop-truong' ? '👑' : '⭐'}</span>}
-                <span className="truncate">{s.nickname}</span>
-                {s.score > 0 && <b className="ml-1 text-[#c2410c]">{s.score}</b>}
-              </div>
-            )}
+    <div className="absolute left-[8px] top-[760px] z-[8] w-[134px] rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-1 py-1 text-center text-[#4a2c0e] shadow-[0_5px_8px_rgba(0,0,0,0.3)]">
+      <div className="text-[17px] font-bold leading-tight text-[#b45309]">👥 Sĩ số</div>
+      <div className="text-[30px] font-extrabold leading-none">
+        {r.seated}
+        <span className="text-[18px] font-semibold opacity-70">/{r.seats}</span>
+      </div>
+      <div className="mt-1 whitespace-nowrap border-t border-[#e9d8a6] pt-1 text-[16px] font-bold leading-tight text-[#b45309]">⏳ Chờ vào lớp</div>
+      <motion.div key={r.waiting} initial={{ scale: 1.3 }} animate={{ scale: 1 }} className="text-[26px] font-extrabold leading-none">
+        {r.waiting}
+      </motion.div>
+    </div>
+  );
+}
+
+// Bên phải, trên hàng ghế đầu: top tương tác hôm nay (cách tính không hiện ra màn hình)
+function TalkTop({ v }: { v: StageView }) {
+  const rows = (v.talkTop ?? []).slice(0, 5);
+  return (
+    <div className="absolute left-[852px] top-[612px] z-[8] w-[220px] rotate-1 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+      <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[28px]">📌</div>
+      <div className="whitespace-nowrap text-center text-[19px] font-extrabold leading-tight text-[#b45309]">💬 Top tương tác</div>
+      {rows.length === 0 && <div className="py-2 text-center text-[17px] text-[#8a6a3a]">Bình luận để lên bảng nha!</div>}
+      <div className="mt-1 space-y-[1px]">
+        {rows.map((r, i) => (
+          <motion.div key={r.username} layout className="flex items-center gap-1 text-[19px] leading-[25px]">
+            <span className="w-6 text-center">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
+            <span className="min-w-0 flex-1 truncate font-semibold">{r.nickname}</span>
           </motion.div>
-        );
-      })}
-    </>
+        ))}
+      </div>
+    </div>
   );
 }
 

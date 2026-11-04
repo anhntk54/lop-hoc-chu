@@ -9,8 +9,11 @@ Game tương tác cho TikTok LIVE. Màn hình là một lớp học 2D: cô giá
 - Phải gõ có dấu; kiểu bỏ dấu cũ và mới ("hóa" / "hoá") đều tính đúng. Nói chuyện thường không bị tính là trả lời sai.
 - Game nhớ câu nào đã hỏi (lưu ra file) để nhiều buổi live liền ít lặp.
 - Cô giáo nói bằng giọng Edge TTS tiếng Việt, vài trăm câu thoại để khen, trêu, cảm ơn quà. Đồng hồ dừng trong lúc cô đọc đề; câu chào, câu cảm ơn chỉ chen vào lúc đang chờ người xem trả lời.
-- Tương tác: bình luận là có ghế (30 ghế trên 4 dãy bàn dài, hết ghế thì đứng ngoài cửa lớp, vẫn tính điểm), tặng quà thì học sinh lên bục tặng hoa cô, thả tim thì cả lớp vỗ tay, gõ "sinh nhật" thì có bánh kem, đi học nhiều ngày liền thì cô nhớ mặt.
-- Giờ ra chơi sau mỗi tiết (oẳn tù tì, kiểm tra miệng, chọn phe, điểm danh, thả tim), lớp trưởng mỗi tiết, bảng học sinh xuất sắc trong ngày, bảng vàng tuần.
+- Tương tác: bình luận là có ghế (30 ghế trên 4 dãy bàn dài; hết ghế thì vào hàng chờ, vẫn chơi và tính điểm, bảng "Sĩ số" ghi số bạn đang chờ vào lớp), tặng quà thì học sinh lên bục tặng hoa cô, thả tim thì cả lớp vỗ tay, gõ "sinh nhật" thì có bánh kem, đi học nhiều ngày liền thì cô nhớ mặt.
+- Quà chỉ để cảm ơn, không cho lợi thế trong game (TikTok không cho khuyến khích trẻ em tặng quà).
+- Học bạ cả đời: điểm cộng dồn mãi để lên lớp 1 tới lớp 12 rồi tốt nghiệp (nhãn L2, L3... trên bảng tên), huy hiệu theo số câu đúng (toán, lịch sử, đố mẹo, tiếng Anh). Gõ "học bạ" thì cô đọc thành tích.
+- Giờ ra chơi sau mỗi tiết (oẳn tù tì, kiểm tra miệng, chọn phe, điểm danh, thả tim), lớp trưởng mỗi tiết, bảng học sinh xuất sắc trong ngày, bảng top tương tác trong ngày, bảng vàng tuần.
+- Chịu được phòng đông: đo với 13.000 người trong lớp, mỗi lần vẽ màn hình dưới 1 ms; bạn rời live quá 2 tiếng được dọn khỏi lớp (điểm đã lưu).
 - Treo live cả ngày: rớt kết nối TikTok thì tự nối lại, server tắt thì file BAT tự bật lại. Sau buổi live có trang báo cáo câu khó, câu quá dễ.
 - Trang điều khiển có nút giả lập (1 bạn trả lời, tặng quà, 1000 người cùng đoán...) để thử trước khi lên live.
 

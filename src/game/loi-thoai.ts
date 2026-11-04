@@ -188,6 +188,17 @@ export const LINES = {
     'Giờ này các bạn nhỏ phải đi ngủ rồi nè. Ai còn thức thì chơi nhỏ nhỏ với cô thôi nha.',
   ] as L0,
 
+  // ---------- Học bạ: lên lớp (g = "lớp 3" / "tốt nghiệp"), huy hiệu mới (b = "🧮 Thần đồng toán") ----------
+  gradeUp: [
+    (n, g) => `Chúc mừng bạn nhỏ ${n} đã lên ${g}! Cả lớp vỗ tay nào!`,
+    (n, g) => `Ôi ${n} học giỏi quá, lên ${g} rồi đó! Cô tặng mũ tốt nghiệp nè.`,
+    (n, g) => `${n} vừa lên ${g}! Học chăm là lên lớp nhanh lắm các bạn nhỏ ơi.`,
+  ] as L2,
+  badgeNew: [
+    (n, b) => `Bạn nhỏ ${n} vừa nhận huy hiệu ${b}! Giỏi quá trời.`,
+    (n, b) => `Huy hiệu mới cho ${n} nè: ${b}. Cả lớp vỗ tay!`,
+  ] as L2,
+
   // ---------- Chúc mừng sinh nhật (bạn nhỏ gõ "hôm nay sinh nhật con") ----------
   birthday: [
     (n) => `Ôi hôm nay sinh nhật bạn nhỏ ${n}! Cả lớp cùng chúc mừng sinh nhật bạn nhỏ nào! Cô tặng bạn nhỏ một cái bánh kem nè.`,

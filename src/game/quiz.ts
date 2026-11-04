@@ -20,6 +20,35 @@ export function teamOf(comment: string): number {
   return n >= 1 && n <= GAME.teamCount ? n : 0;
 }
 
+/** Học bạ cả đời (server lưu): điểm, số câu đúng từng loại -> lên lớp, huy hiệu */
+export interface Life {
+  points: number;
+  total: number; // tổng câu trả lời đúng
+  toan: number;
+  su: number;
+  meo: number;
+  anh: number;
+}
+export const emptyLife = (): Life => ({ points: 0, total: 0, toan: 0, su: 0, meo: 0, anh: 0 });
+/** Lớp mấy theo điểm cả đời: 1..12, 13 = tốt nghiệp (mốc ở GAME.gradePoints) */
+export function gradeOf(points: number) {
+  let g = 1;
+  GAME.gradePoints.forEach((p, i) => {
+    if (points >= p) g = i + 1;
+  });
+  return g;
+}
+export const gradeLabel = (g: number) => (g > 12 ? 'tốt nghiệp' : `lớp ${g}`);
+/** Huy hiệu: đúng đủ số câu từng loại */
+export const BADGES = [
+  { key: 'toan', need: 50, icon: '🧮', name: 'Thần đồng toán' },
+  { key: 'su', need: 30, icon: '📜', name: 'Sử gia nhí' },
+  { key: 'meo', need: 30, icon: '🤪', name: 'Vua đố mẹo' },
+  { key: 'anh', need: 30, icon: '🔤', name: 'Siêu tiếng Anh' },
+  { key: 'total', need: 300, icon: '⭐', name: 'Học sinh chăm chỉ' },
+] as const;
+export const badgesOf = (l: Life) => BADGES.filter((b) => l[b.key] >= b.need);
+
 /** 1 dòng báo cáo sau buổi live: câu nào khó quá / dễ quá */
 export interface ReportRow {
   id: string;
@@ -49,6 +78,8 @@ export interface Student {
   bubble?: { text: string; at: number }; // bình luận gần nhất hiện thành bong bóng trên đầu
   standUntil: number; // bị cô phạt lên bục đứng (học sinh cá biệt) tới lúc này
   team: number; // tổ 1..4 (0 = chưa có tổ, chỉ trong lúc đang chọn tổ)
+  life: Life; // học bạ cả đời (server gửi về lúc vào lớp, cộng dồn trong buổi)
+  lastTalkAt?: number; // lần cuối được tính 1 tương tác (chống gõ dồn)
 }
 
 export interface DeskGift {
@@ -254,6 +285,14 @@ export class Classroom {
   /** tổ thắng tiết vừa xong (hiện ở bảng tổng kết) */
   lastTeamWin: number[] = [];
   private teamReminded = false;
+  /** học bạ cả đời: phần cộng thêm chờ gửi lên server (điểm, câu đúng từng loại) */
+  lifeDelta = new Map<string, { nickname: string } & Life>();
+  /** tương tác hôm nay (1 bình luận = 1, 1 quà = 10, không nói ra): chờ gửi lên server */
+  talkDelta = new Map<string, { nickname: string; points: number }>();
+  /** câu chúc mừng lên lớp / huy hiệu mới: nói ở nhịp kế tiếp */
+  private announce: Say[] = [];
+  private cardAt = new Map<string, number>();
+  private lastCardAt = -Infinity;
 
   readonly lines: LineBag;
 
@@ -300,7 +339,7 @@ export class Classroom {
     this.clock = Math.max(this.clock, now);
     let s = this.students.get(e.username);
     if (!s) {
-      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standUntil: 0, team: 0 };
+      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standUntil: 0, team: 0, life: emptyLife() };
       // vào lớp giữa tiết: xếp ngay vào tổ ít người (đang giờ chọn tổ thì để bạn tự chọn, hết giờ cô xếp)
       if (GAME.teamPickSec > 0 && this.phase !== 'team') s.team = this.smallestTeam(now);
       this.students.set(e.username, s);
@@ -324,6 +363,51 @@ export class Classroom {
     w.nickname = s.nickname;
     w.points += points;
     this.weekDelta.set(s.username, w);
+    // học bạ cả đời: đủ điểm thì lên lớp, cô chúc mừng + đội mũ tốt nghiệp 🎓 lên bàn
+    const before = gradeOf(s.life.points);
+    this.addLife(s, { points });
+    const after = gradeOf(s.life.points);
+    if (after > before && s.spoken !== 'bạn') {
+      s.desk = [...s.desk, { icon: '🎓', at: now }].slice(-GAME.deskGifts);
+      this.clapUntil = now + GAME.clapSec * 1000;
+      this.announce.push({ ...this.t(this.line('gradeUp', s.spoken, gradeLabel(after)), true), ttl: 60_000 });
+    }
+  }
+
+  /** Cộng vào học bạ (của bạn trong lớp và phần chờ gửi lên server) */
+  private addLife(s: Student, add: Partial<Life>) {
+    const d = this.lifeDelta.get(s.username) ?? { nickname: s.nickname, ...emptyLife() };
+    d.nickname = s.nickname;
+    for (const k of Object.keys(add) as (keyof Life)[]) {
+      s.life[k] += add[k]!;
+      d[k] += add[k]!;
+    }
+    this.lifeDelta.set(s.username, d);
+  }
+
+  /** Trả lời đúng 1 câu: đếm vào học bạ theo loại câu, đủ số thì có huy hiệu mới */
+  private countCorrect(s: Student, q: Question) {
+    const kind: keyof Life | null = q.math ? 'toan' : q.slot === 'su' || q.slot === 'meo' || q.slot === 'anh' ? q.slot : null;
+    const had = new Set(badgesOf(s.life).map((b) => b.key));
+    this.addLife(s, kind ? { total: 1, [kind]: 1 } : { total: 1 });
+    for (const b of badgesOf(s.life)) {
+      if (!had.has(b.key) && s.spoken !== 'bạn') this.announce.push({ ...this.t(this.line('badgeNew', s.spoken, `${b.icon} ${b.name}`), true), ttl: 60_000 });
+    }
+  }
+
+  /** Gõ "học bạ": cô đọc lớp mấy, điểm, số câu đúng, huy hiệu (mỗi bạn 5 phút 1 lần, cả lớp 15 giây 1 lần) */
+  private reportCard(s: Student, now: number): Say[] {
+    if (now - (this.cardAt.get(s.username) ?? -Infinity) < 5 * 60_000 || now - this.lastCardAt < 15_000 || s.spoken === 'bạn') return [];
+    this.cardAt.set(s.username, now);
+    this.lastCardAt = now;
+    const l = s.life;
+    const badges = badgesOf(l).map((b) => b.name);
+    const days = s.days >= 2 ? ` Đi học ${s.days} ngày liền.` : '';
+    const text =
+      `Học bạ của ${s.spoken} nè: đang học ${gradeLabel(gradeOf(l.points))}, ${l.points} điểm, trả lời đúng ${l.total} câu.` +
+      days +
+      (badges.length ? ` Huy hiệu: ${badges.join(', ')}.` : ' Chưa có huy hiệu, cố lên nha.');
+    return [{ ...this.t(text, true), ttl: 30_000 }];
   }
 
   /** Cô tặng 1 món quà: đặt lên bàn bạn nhỏ, trả về tên quà để cô đọc */
@@ -343,10 +427,6 @@ export class Classroom {
     return first ? [] : [this.t(this.line('newMonitor', top.spoken))];
   }
 
-  /** Lớp trưởng, lớp phó: 3 bạn điểm tiết cao nhất (chỉ tính 20 câu của tiết này) */
-  private titleHolders() {
-    return this.seats(3).filter((s) => s.score > 0);
-  }
 
   /**
    * 20 ghế: điểm tiết cao ngồi đầu; cùng điểm thì bạn còn tương tác (bình luận trong 10 phút) ngồi trước bạn đã im lâu
@@ -635,8 +715,14 @@ export class Classroom {
     const asking = this.phase === 'question' || this.phase === 'bonus';
     const answering = (asking && this.isAttempt(this.q, e.comment)) || (this.recess?.game === 'callup' && this.isAttempt(this.recess.callQ, e.comment));
     if (e.safe !== false && !answering && e.comment.trim()) s.bubble = { text: e.comment.trim().slice(0, 28), at: now };
+    // tương tác: 1 bình luận = 1 (mỗi bạn tối đa 1 lần / 2 giây để gõ dồn không leo bảng)
+    if (now - (s.lastTalkAt ?? -Infinity) >= GAME.talkGapMs) {
+      s.lastTalkAt = now;
+      this.addTalk(s, 1);
+    }
     // đang trả lời câu có đáp án "sinh nhật" thì chấm bài, không coi là báo sinh nhật
     if (!answering && isBirthday(e.comment)) return this.celebrate(s, now);
+    if (!answering && plain(e.comment) === 'hocba') return this.reportCard(s, now);
     // đang rủ "ai yêu cô gõ số 1": ghi tên (không ảnh hưởng trả lời câu chữ vì đáp án không dài 1 chữ)
     if (this.love && now - this.love.at < GAME.loveWindowMs && plain(e.comment) === '1' && !this.love.fans.includes(s.username)) {
       this.love.fans.push(s.username);
@@ -697,9 +783,14 @@ export class Classroom {
   }
 
   /** Chuyên cần: server báo bạn này đi học mấy ngày liền. Ngày thứ 2 trở đi cô nhận ra, mốc đẹp thì tặng quà */
-  attendance(e: Person, days: number, now: number): Say[] {
+  attendance(e: Person, days: number, now: number, life?: Life): Say[] {
     const s = this.touch(e, now);
     s.days = days;
+    // học bạ cả đời từ server (cộng thêm phần đã có trong buổi mà server chưa nhận)
+    if (life) {
+      const pending = this.lifeDelta.get(s.username);
+      for (const k of Object.keys(s.life) as (keyof Life)[]) s.life[k] = (Number(life[k]) || 0) + (pending?.[k] ?? 0);
+    }
     if (days < 2 || s.spoken === 'bạn') return [];
     if (GAME.attendMilestones.includes(days) || (days > 30 && days % 10 === 0)) {
       return [{ ...this.t(this.line('attendMilestone', s.spoken, String(days), this.giveGift(s, now)), true), ttl: 60_000 }];
@@ -718,15 +809,24 @@ export class Classroom {
     return [...this.mainOf([this.line0('banned')]), ...this.afterQuestion(now)];
   }
 
-  /** Quà: luôn là hoa tặng cô; quà to lúc chưa ai đúng thì cô mở thêm 1 chữ cho cả lớp */
-  gift(e: Person, coins: number, now: number): Say[] {
-    this.touch(e, now);
+  /** Cộng tương tác hôm nay (bảng Top tương tác, không hiện cách tính) */
+  private addTalk(s: Student, n: number) {
+    const d = this.talkDelta.get(s.username) ?? { nickname: s.nickname, points: 0 };
+    d.nickname = s.nickname;
+    d.points += n;
+    this.talkDelta.set(s.username, d);
+  }
+
+  /** Quà: luôn là hoa tặng cô, mỗi món quà = 10 tương tác (không nói ra). `count` = số món (combo) */
+  gift(e: Person, coins: number, now: number, count = 1): Say[] {
+    const s = this.touch(e, now);
+    this.addTalk(s, GAME.talkPerGift * Math.max(1, count));
     this.flowers++;
     this.lastFlowerAt = now;
     // bạn nhỏ đi lên bục đưa hoa cho cô (đang có bạn đi thì thôi, tránh combo quà chen nhau)
     if (!this.walk || now - this.walk.at > GAME.walkMs) this.walk = { username: e.username, at: now };
     const asking = this.phase === 'question' || this.phase === 'bonus';
-    if (asking && coins >= GAME.hintGiftCoins && this.correct.length === 0 && this.revealOne()) {
+    if (asking && GAME.hintGiftCoins > 0 && coins >= GAME.hintGiftCoins && this.correct.length === 0 && this.revealOne()) {
       return this.mainOf([this.t(this.line('giftHint', e.spoken), true)]);
     }
     return [];
@@ -767,6 +867,7 @@ export class Classroom {
     for (const a of this.correct) {
       const s = this.students.get(a.username);
       if (!s) continue;
+      this.countCorrect(s, this.q!);
       this.award(s, a.points, now + a.seq / 1e6, true);
       s.streak++;
       if (s.streak % GAME.streakEvery === 0) {
@@ -973,6 +1074,9 @@ export class Classroom {
       s.streak = 0;
       s.reachedAt = 0;
       s.desk = [];
+      // chịu tải hàng ngàn người: bạn đã rời live lâu (im quá GAME.forgetAfterMs) thì xoá khỏi lớp cho nhẹ.
+      // Điểm hôm nay, tuần, học bạ đã lưu trên server; quay lại thì vào lớp như bạn mới, học bạ lấy lại từ server
+      if (now - s.lastActive > GAME.forgetAfterMs && !this.lifeDelta.has(s.username) && !this.weekDelta.has(s.username)) this.students.delete(s.username);
     }
     // lớp vắng lâu: tiết này ôn bài bằng câu cũ (có bạn vào thì đổi sang câu mới ngay câu kế)
     this.review = this.isEmpty(now);
@@ -1016,6 +1120,7 @@ export class Classroom {
       if (this.rand() < 0.5) extra.push({ ...this.line0('quietHalfway'), ttl: 5000 });
     }
     extra.push(...this.engageTick(now));
+    extra.push(...this.announce.splice(0)); // chúc mừng lên lớp / huy hiệu mới
     // còn 5 giây: cô nhắc sắp hết giờ (đồng hồ vẫn chạy)
     const asking = this.phase === 'question' || this.phase === 'bonus';
     if (asking && !this.warned && now < this.phaseEndsAt && this.phaseEndsAt - now <= GAME.warnLeftSec * 1000) {
@@ -1155,11 +1260,13 @@ export class Classroom {
     const showAnswer = this.phase === 'reveal';
     const asking = this.phase === 'question' || this.phase === 'bonus' || this.phase === 'reveal';
     const seated = this.seats(GAME.seats + GAME.standing);
-    const titles = new Map(this.titleHolders().map((s, i) => [s.username, i === 0 ? 'lop-truong' : 'lop-pho']));
-    const pub = ({ username, nickname, avatar, girl, score, session, lastActive, joinedAt, desk, days, bubble, standUntil, team }: Student) => ({
+    // lớp trưởng, lớp phó: 3 bạn điểm tiết cao nhất (chỉ tính 20 câu của tiết này); dùng lại danh sách ghế, khỏi xếp lại
+    const titles = new Map(seated.slice(0, 3).filter((s) => s.score > 0).map((s, i) => [s.username, i === 0 ? 'lop-truong' : 'lop-pho']));
+    const pub = ({ username, nickname, avatar, girl, score, session, lastActive, joinedAt, desk, days, bubble, standUntil, life, team }: Student) => ({
       team,
       desk,
       days,
+      grade: gradeOf(life.points), // học bạ: lớp mấy (13 = tốt nghiệp)
       bubble: bubble && now - bubble.at < GAME.bubbleMs ? bubble.text : '',
       standing: standUntil > now, // bị phạt lên bục đứng: ghế trống, đứng cạnh bảng
       sleeping: now - lastActive > GAME.sleepAfterMs,
@@ -1225,6 +1332,14 @@ export class Classroom {
       teamWin: this.lastTeamWin,
       // giờ chọn tổ: số bạn chưa có tổ (hết giờ cô xếp)
       noTeam: this.phase === 'team' ? [...this.students.values()].filter((s) => !s.team).length : 0,
+      // sĩ số: bạn đang ngồi trong lớp / bạn còn tương tác (10 phút) mà chưa có ghế, đang chờ vào lớp
+      roster: (() => {
+        const inClass = Math.min(GAME.seats, seated.length);
+        let active = 0;
+        for (const s of this.students.values()) if (now - s.lastActive <= GAME.seatActiveMs) active++;
+        const activeSeated = seated.slice(0, GAME.seats).filter((s) => now - s.lastActive <= GAME.seatActiveMs).length;
+        return { seated: inClass, seats: GAME.seats, waiting: Math.max(0, active - activeSeated) };
+      })(),
       stats: this.stats,
       flowers: this.flowers,
       lastFlowerAt: this.lastFlowerAt,

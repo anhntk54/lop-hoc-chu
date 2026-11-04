@@ -15,7 +15,7 @@ import { sfx } from './sfx';
 const MUTED = new URLSearchParams(window.location.search).get('mute') === '1';
 
 export type WeekRow = { username: string; nickname: string; points: number };
-export type StageView = ClassView & { weekTop: WeekRow[]; todayTop: WeekRow[] };
+export type StageView = ClassView & { weekTop: WeekRow[]; todayTop: WeekRow[]; talkTop: WeekRow[] };
 
 /** Top 5 hôm nay: điểm server đã lưu + điểm vừa ghi chưa kịp gửi lên (bảng cập nhật ngay, không chờ 20 giây) */
 function dayBoard(saved: WeekRow[], pending: Map<string, { nickname: string; points: number }>): WeekRow[] {
@@ -43,6 +43,7 @@ export function useGame() {
   const roomRef = useRef<Classroom | null>(null);
   const weekTop = useRef<WeekRow[]>([]);
   const todayTop = useRef<WeekRow[]>([]); // điểm cả ngày (server), cho bảng Học sinh xuất sắc hôm nay
+  const talkTop = useRef<WeekRow[]>([]); // tương tác cả ngày (server), cho bảng Top tương tác
   const likeBase = useRef<number | null>(null);
   const dirty = useRef(true);
 
@@ -117,7 +118,7 @@ export function useGame() {
       if (isNew && IS_STAGE) {
         fetch('/api/game/attend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: e.username, nickname: p.nickname }) })
           .then((r) => r.json())
-          .then((d) => roomRef.current && say(roomRef.current.attendance(p, Number(d.days) || 0, Date.now())))
+          .then((d) => roomRef.current && say(roomRef.current.attendance(p, Number(d.days) || 0, Date.now(), d.life)))
           .catch(() => {});
       }
     },
@@ -128,7 +129,7 @@ export function useGame() {
       const p = person(e);
       const coins = e.diamondCount * e.repeatCount;
       setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
-      const hint = room.gift(p, coins, Date.now());
+      const hint = room.gift(p, coins, Date.now(), e.repeatCount);
       say(hint);
       // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
       if (!hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
@@ -192,17 +193,24 @@ export function useGame() {
       room.weekDelta.clear();
       const banned = room.banLog.splice(0);
       const report = room.reportLog.splice(0);
+      const life = [...room.lifeDelta].map(([username, v]) => ({ username, ...v }));
+      room.lifeDelta.clear();
+      const talk = [...room.talkDelta].map(([username, v]) => ({ username, ...v }));
+      room.talkDelta.clear();
       try {
-        const r = await fetch('/api/game/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ used, week, banned, report }) });
+        const r = await fetch('/api/game/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ used, week, banned, report, life, talk }) });
         const d = await r.json();
         weekTop.current = d.weekTop ?? [];
         todayTop.current = d.todayTop ?? [];
+        talkTop.current = d.talkTop ?? [];
         room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
       } catch {
         room.usedLog.unshift(...used); // server tắt: giữ lại, lần sau gửi
         for (const w of week) room.weekDelta.set(w.username, w);
         room.banLog.unshift(...banned);
         room.reportLog.unshift(...report);
+        for (const l of life) room.lifeDelta.set(l.username, l);
+        for (const w of talk) room.talkDelta.set(w.username, w);
       }
     };
 
@@ -215,6 +223,7 @@ export function useGame() {
         banned = d.banned ?? [];
         weekTop.current = d.weekTop ?? [];
         todayTop.current = d.todayTop ?? [];
+        talkTop.current = d.talkTop ?? [];
       } catch {
         // server cũ chưa có sổ: chơi bình thường, chỉ không nhớ câu đã hỏi
       }
@@ -241,7 +250,7 @@ export function useGame() {
           sfx.clock(room.phase, room.boardShown, room.phaseEndsAt, now);
           if (!dirty.current && now - lastSent < 1000) return;
           dirty.current = false;
-          const v = { ...room.view(now), weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta) };
+          const v = { ...room.view(now), weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta), talkTop: dayBoard(talkTop.current, room.talkDelta) };
           sfx.watch(prevView, v);
           prevView = v;
           setView(v);
