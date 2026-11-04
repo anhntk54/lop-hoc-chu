@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { emitTest, sendControl } from '../live/page';
 import type { StageView } from './useGame';
+import { GAME } from './config';
 
 // Nút riêng của Lớp Học Chữ ở trang điều khiển: điều khiển ván + giả lập phòng đông để thử bot
 const HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'];
@@ -12,6 +13,7 @@ const shuffleWord = (w: string) => [...w].sort(() => Math.random() - 0.5).join('
 export function GameControls({ view, stageCount = 0 }: { view: StageView | null; stageCount?: number }) {
   const [sent, setSent] = useState(0);
   const [running, setRunning] = useState(false);
+  const [bdName, setBdName] = useState('');
 
   /** Giả lập n người xem cùng bình luận trong 20 giây: 15% đúng, 20% đoán sai, còn lại nói chuyện */
   const flood = async (n: number) => {
@@ -53,9 +55,41 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
           <div>
             Bot nhận câu này: <b>{view.stats.received}</b> comment · {view.stats.attempts} lượt trả lời · {view.correctCount} đúng
           </div>
+          <div>
+            Đang chơi: <b>{view.players}</b> bạn
+            {view.players < GAME.smallRoomPlayers && <span className="text-amber-300"> · phòng vắng: có người đúng là {GAME.smallRoomEndAfterSec} giây sau chốt câu</span>}
+          </div>
+          {view.topic && <div>Chủ đề cả lớp chọn: {view.topic}</div>}
           {sent > 0 && <div>Giả lập đã gửi: {sent}</div>}
         </div>
       )}
+      {/* Chủ kênh dùng trong lúc live */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => confirm(`Bỏ câu "${view?.answer}"? Câu này sẽ không bao giờ được hỏi lại.`) && sendControl('custom', 'ban')}
+          disabled={!view?.answer || !!view.math || !['question', 'bonus', 'reveal'].includes(view.phase)}
+          className="rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-40"
+        >
+          🚫 Bỏ câu này
+        </button>
+        <input
+          value={bdName}
+          onChange={(e) => setBdName(e.target.value)}
+          placeholder="Tên bạn nhỏ sinh nhật"
+          className="w-48 rounded-lg bg-slate-900 px-3 py-2 text-sm text-white"
+        />
+        <Btn
+          onClick={() => {
+            if (bdName.trim()) sendControl('custom', `birthday:${bdName.trim()}`);
+            setBdName('');
+          }}
+        >
+          🎂 Chúc sinh nhật
+        </Btn>
+        <a href="/bao-cao" target="_blank" className="rounded-lg bg-emerald-700 px-3 py-2 text-sm text-white hover:bg-emerald-600">
+          📊 Báo cáo hôm nay
+        </a>
+      </div>
       <div className="flex flex-wrap gap-2">
         <Btn onClick={() => sendControl('custom', 'skip')}>⏭ Qua phần tiếp</Btn>
         <Btn onClick={() => sendControl('custom', 'newRound')}>🔄 Ván mới</Btn>
@@ -64,6 +98,7 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
         <Btn onClick={() => emitTest('gift', { ...fake(3), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 1 })}>🌹 Tặng hoa</Btn>
         <Btn onClick={() => emitTest('gift', { ...fake(4), giftName: 'Mũ', giftId: 2, diamondCount: 99, repeatCount: 1 })}>🎁 Quà to (mở chữ)</Btn>
         <Btn onClick={() => emitTest('like', { ...fake(5), likeCount: 300 })}>❤️ 300 tim</Btn>
+        <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: 'hôm nay sinh nhật con cô ơi' })}>🎂 Thử: 1 bạn báo sinh nhật</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:rps')}>✊ Ra chơi: oẳn tù tì</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:callup')}>📢 Ra chơi: kiểm tra miệng</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:pick')}>⚖️ Ra chơi: chọn phe</Btn>

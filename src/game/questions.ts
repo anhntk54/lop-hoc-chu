@@ -11,9 +11,17 @@ export interface Question {
   category: string;
   kind: string; // câu cô nói trước gợi ý, vd "Đây là một món ăn." (dòng "> ..." đầu file)
   difficulty: 'easy' | 'medium' | 'hard';
+  /** câu toán nhẩm (math.ts): phép tính hiện trên bảng và cách cô đọc, không có trong file câu hỏi */
+  math?: { show: string; say: string };
+  /** câu có chỗ riêng trong tiết, theo đuôi tên file: "-meo" câu đố mẹo, "-su" câu lịch sử.
+   *  Chỉ hỏi ở đúng vị trí đó trong GAME.roundPlan, không lẫn vào câu chữ thường */
+  slot?: Slot;
 }
 
 const LEVEL = { '1': 'easy', '2': 'medium', '3': 'hard' } as const;
+
+export const SLOTS = ['meo', 'su', 'anh'] as const;
+export type Slot = (typeof SLOTS)[number];
 
 /** Đọc các file câu hỏi. `errors` gom dòng sai cú pháp để script kiểm tra báo ra */
 export function parseBank(files: Record<string, string>, errors: string[] = []): Question[] {
@@ -46,6 +54,7 @@ export function parseBank(files: Record<string, string>, errors: string[] = []):
         category,
         kind,
         difficulty,
+        slot: SLOTS.find((s) => file.endsWith(`-${s}`)),
         acceptedAnswers: alts ? alts.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
       });
     });

@@ -7,6 +7,7 @@ import { containsBanned } from './bannedWords';
  *   voice.say('Cảm ơn quà', true)      -> ưu tiên, chen lên đầu (dùng cho quà)
  *   voice.say('Trời ơi! | ^Hoan hô!') -> "|" tách đoạn; "^" hô to hơn một chút
  *   voice.say('M: Anh nói | F: Em nói')  -> 2 MC: "M:" giọng nam, "F:" giọng nữ (giữ tới khi đổi)
+ *   voice.say('F: Đáp án là | E: cat')   -> "E:" giọng tiếng Anh, đọc từ tiếng Anh cho chuẩn
  * Câu nào chờ quá lâu (mặc định 60 giây) thì bỏ, để không đọc chuyện đã cũ.
  */
 interface Line {
@@ -17,6 +18,9 @@ interface Line {
   valid?: () => boolean; // tới lượt đọc mà trả về false thì bỏ câu (chuyện đã cũ, vd. đã bị cướp mà vẫn "sắp trả lời")
   keep?: boolean; // không bỏ dù chờ lâu (lời dẫn khai mạc dài)
 }
+
+// M nam, F nữ, E tiếng Anh (cô đọc từ tiếng Anh)
+type Who = 'M' | 'F' | 'E';
 
 const MAX_WAIT_MS = 60_000;
 const MAX_QUEUE = 30;
@@ -78,13 +82,13 @@ class Voice {
 
   // "M: Trời ơi! | ^Hoan hô!" -> từng đoạn: ai nói (M nam, F nữ), có hô to không
   private parts(text: string) {
-    let who: 'M' | 'F' = 'M';
-    const out: { who: 'M' | 'F'; hype: boolean; text: string }[] = [];
+    let who: Who = 'M';
+    const out: { who: Who; hype: boolean; text: string }[] = [];
     for (let raw of text.split('|')) {
       raw = raw.trim();
-      const sp = /^(M|F):\s*/.exec(raw);
+      const sp = /^(M|F|E):\s*/.exec(raw);
       if (sp) {
-        who = sp[1] as 'M' | 'F';
+        who = sp[1] as Who;
         raw = raw.slice(sp[0].length);
       }
       const t = raw.replace(/^\^+/, '');
@@ -93,8 +97,9 @@ class Voice {
     return out;
   }
 
-  private urlOf(p: { who: 'M' | 'F'; hype: boolean; text: string }) {
-    return `/api/tts?rate=${this.rate}${p.hype ? '&hype=1' : ''}${p.who === 'F' ? '&v=f' : ''}&text=${encodeURIComponent(p.text)}`;
+  private urlOf(p: { who: Who; hype: boolean; text: string }) {
+    const v = p.who === 'F' ? '&v=f' : p.who === 'E' ? '&v=en' : '';
+    return `/api/tts?rate=${this.rate}${p.hype ? '&hype=1' : ''}${v}&text=${encodeURIComponent(p.text)}`;
   }
 
   private async next() {
@@ -114,7 +119,7 @@ class Voice {
     line.start?.();
     try {
       for (const part of this.parts(line.text)) {
-        this.onSpeaker?.(part.who);
+        this.onSpeaker?.(part.who === 'E' ? 'F' : part.who); // giọng tiếng Anh là cô đọc
         const audio = new Audio(this.urlOf(part));
         audio.volume = this.volume;
         this.current = audio;

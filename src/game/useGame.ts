@@ -9,12 +9,25 @@ import { IS_STAGE } from '../live/page';
 import { GAME } from './config';
 import { QUESTIONS } from './bank';
 import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
+import { sfx } from './sfx';
 
 // ?view=stage&mute=1: xem thử trang stage không phát tiếng
 const MUTED = new URLSearchParams(window.location.search).get('mute') === '1';
 
 export type WeekRow = { username: string; nickname: string; points: number };
-export type StageView = ClassView & { weekTop: WeekRow[] };
+export type StageView = ClassView & { weekTop: WeekRow[]; todayTop: WeekRow[] };
+
+/** Top 5 hôm nay: điểm server đã lưu + điểm vừa ghi chưa kịp gửi lên (bảng cập nhật ngay, không chờ 20 giây) */
+function dayBoard(saved: WeekRow[], pending: Map<string, { nickname: string; points: number }>): WeekRow[] {
+  const all = new Map(saved.map((r) => [r.username, { ...r }]));
+  for (const [username, p] of pending) {
+    const cur = all.get(username) ?? { username, nickname: p.nickname, points: 0 };
+    cur.points += p.points;
+    cur.nickname = p.nickname || cur.nickname;
+    all.set(username, cur);
+  }
+  return [...all.values()].sort((a, b) => b.points - a.points).slice(0, 5);
+}
 
 /**
  * Trang stage chạy game thật (lõi ở quiz.ts), đọc/ghi sổ lớp trên server và gửi ảnh chụp trạng thái lên.
@@ -29,6 +42,7 @@ export function useGame() {
 
   const roomRef = useRef<Classroom | null>(null);
   const weekTop = useRef<WeekRow[]>([]);
+  const todayTop = useRef<WeekRow[]>([]); // điểm cả ngày (server), cho bảng Học sinh xuất sắc hôm nay
   const likeBase = useRef<number | null>(null);
   const dirty = useRef(true);
 
@@ -53,7 +67,16 @@ export function useGame() {
     for (const l of lines) {
       if (l.main) {
         mainSpeaking.current++;
-        voice.say(l.text, true, () => mainSpeaking.current--);
+        // câu hô bắt đầu: cô vừa mở miệng hô thì hiện bảng chữ
+        const onStart = l.go
+          ? () => {
+              roomRef.current?.showBoard();
+              dirty.current = true;
+            }
+          : undefined;
+        voice.say(l.text, true, () => mainSpeaking.current--, false, onStart);
+      } else if (l.warn) {
+        voice.say(l.text, true); // nhắc sắp hết giờ: chen lên đọc liền, đồng hồ vẫn chạy
       } else {
         const ttl = l.ttl ?? (l.priority ? GAME.giftLineMaxWaitMs : GAME.chatterMaxWaitMs);
         chatter.current.push({ text: l.text, priority: !!l.priority, until: now + ttl });
@@ -88,8 +111,15 @@ export function useGame() {
       if (!room) return;
       const p = person(e);
       const isNew = !room.students.has(e.username);
-      say(room.chat({ ...p, comment: e.comment, createTime: e.createTime ?? e.timestamp }, Date.now()));
+      say(room.chat({ ...p, comment: e.comment, createTime: e.createTime ?? e.timestamp, safe: !containsBanned(e.comment) }, Date.now()));
       if (isNew && p.spoken !== 'bạn' && GAME.joinKeywords.includes(plain(e.comment))) talk.greeter.add(e.username, p.spoken);
+      // chuyên cần: lần đầu bình luận trong buổi thì báo server, server trả về số ngày đi học liền
+      if (isNew && IS_STAGE) {
+        fetch('/api/game/attend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: e.username, nickname: p.nickname }) })
+          .then((r) => r.json())
+          .then((d) => roomRef.current && say(roomRef.current.attendance(p, Number(d.days) || 0, Date.now())))
+          .catch(() => {});
+      }
     },
 
     onGift: (e) => {
@@ -113,7 +143,8 @@ export function useGame() {
       const room = roomRef.current;
       if (!room) return;
       if (likeBase.current === null) likeBase.current = e.totalLikes - e.likeCount;
-      const reached = e.totalLikes - likeBase.current >= GAME.likesPerClap;
+      // tim thật x GAME.heartBoost: đủ 300 tim (60 tim thật) là cả lớp vỗ tay
+      const reached = (e.totalLikes - likeBase.current) * GAME.heartBoost >= GAME.likesPerClap;
       if (reached) likeBase.current = e.totalLikes;
       say(room.like(e.likeCount, Date.now(), reached));
     },
@@ -130,6 +161,13 @@ export function useGame() {
         say(room.newRound(Date.now()));
       }
       if (c.action === 'custom' && c.text === 'skip') say(room.skip(Date.now()));
+      if (c.action === 'custom' && c.text === 'ban') say(room.banCurrent(Date.now()));
+      // chủ kênh tự bấm chúc sinh nhật: tên trùng bạn đang trong lớp thì bánh kem đặt lên bàn bạn đó
+      if (c.action === 'custom' && c.text?.startsWith('birthday:')) {
+        const name = c.text.slice(9).trim().slice(0, 40);
+        const s = [...room.students.values()].find((x) => x.nickname.toLowerCase() === name.toLowerCase());
+        if (name) say(room.celebrate(s ?? person({ username: `kenh:${name}`, nickname: name, avatar: '' }), Date.now()));
+      }
       if (c.action === 'custom' && c.text?.startsWith('recess:')) say(room.forceRecess(c.text.slice(7) as RecessGame, Date.now()));
     },
   });
@@ -137,7 +175,12 @@ export function useGame() {
   // Mở trang stage: đọc sổ lớp (câu đã hỏi, bảng vàng tuần) rồi mới vào học
   useEffect(() => {
     if (!IS_STAGE) return;
-    if (MUTED) voice.volume = 0;
+    if (MUTED) {
+      voice.volume = 0;
+      sfx.volume = 0;
+    }
+    sfx.loadFiles();
+    let prevView: StageView | null = null;
     let stop = false;
     const timers: ReturnType<typeof setInterval>[] = [];
 
@@ -147,28 +190,36 @@ export function useGame() {
       const used = room.usedLog.splice(0);
       const week = [...room.weekDelta].map(([username, v]) => ({ username, ...v }));
       room.weekDelta.clear();
+      const banned = room.banLog.splice(0);
+      const report = room.reportLog.splice(0);
       try {
-        const r = await fetch('/api/game/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ used, week }) });
+        const r = await fetch('/api/game/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ used, week, banned, report }) });
         const d = await r.json();
         weekTop.current = d.weekTop ?? [];
+        todayTop.current = d.todayTop ?? [];
         room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
       } catch {
         room.usedLog.unshift(...used); // server tắt: giữ lại, lần sau gửi
         for (const w of week) room.weekDelta.set(w.username, w);
+        room.banLog.unshift(...banned);
+        room.reportLog.unshift(...report);
       }
     };
 
     (async () => {
       let used: Record<string, number> = {};
+      let banned: string[] = [];
       try {
         const d = await (await fetch('/api/game/save')).json();
         used = d.used ?? {};
+        banned = d.banned ?? [];
         weekTop.current = d.weekTop ?? [];
+        todayTop.current = d.todayTop ?? [];
       } catch {
         // server cũ chưa có sổ: chơi bình thường, chỉ không nhớ câu đã hỏi
       }
       if (stop) return;
-      const room = new Classroom(QUESTIONS, Date.now(), Math.random, used);
+      const room = new Classroom(QUESTIONS, Date.now(), Math.random, used, banned);
       room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
       roomRef.current = room;
       say(room.newRound(Date.now()));
@@ -187,9 +238,12 @@ export function useGame() {
           lastTick = now;
           say(room.tick(now));
           flushChatter(room, now);
+          sfx.clock(room.phase, room.boardShown, room.phaseEndsAt, now);
           if (!dirty.current && now - lastSent < 1000) return;
           dirty.current = false;
-          const v = { ...room.view(now), weekTop: weekTop.current };
+          const v = { ...room.view(now), weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta) };
+          sfx.watch(prevView, v);
+          prevView = v;
           setView(v);
           if (now - lastSent >= 400) {
             lastSent = now;
