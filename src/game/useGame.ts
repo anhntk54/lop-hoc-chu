@@ -90,9 +90,14 @@ export function useGame() {
   function flushChatter(room: Classroom, now: number) {
     chatter.current = chatter.current.filter((c) => c.until > now);
     if (voice.busy || mainSpeaking.current > 0 || !room.chatterWindow(now)) return;
-    const i = Math.max(0, chatter.current.findIndex((c) => c.priority)); // cảm ơn quà trước
+    // cảm ơn quà trước; câu thường mỗi phần chỉ nói GAME.chatterPerPhase câu, còn lại chờ phần sau hoặc hết hạn thì bỏ
+    const p = chatter.current.findIndex((c) => c.priority);
+    const i = p >= 0 ? p : room.chatterAllowed(false) ? 0 : -1;
+    if (i < 0) return;
     const next = chatter.current.splice(i, 1)[0];
-    if (next) voice.say(next.text);
+    if (!next) return;
+    if (!next.priority) room.chatterUsed++;
+    voice.say(next.text);
   }
 
   // Tên an toàn để hiện/đọc: tên có từ cấm thì dùng username
@@ -131,7 +136,7 @@ export function useGame() {
       const coins = e.diamondCount * e.repeatCount;
       setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
       const hint = room.gift(p, coins, Date.now(), e.repeatCount);
-      say(hint); // cận cảnh cô nhận hoa: cảm ơn ngay, quà đạt mốc quỹ hoa: cô cảm ơn cả lớp
+      say(hint); // bạn nhỏ lên bục đưa hoa: cô cảm ơn ngay, quà đạt mốc quỹ hoa: cô cảm ơn cả lớp
       // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
       if (!hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
     },

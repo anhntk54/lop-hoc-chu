@@ -6,7 +6,7 @@ import { Hair } from './Hair';
 import './stage.css';
 
 /**
- * Màn hình lớp học 1080x1920. Nền là ảnh public/assets/bg/lop.webp (941x1672 phóng lên 1080 ngang),
+ * Màn hình lớp học 1080x1920. Nền là ảnh public/assets/bg/lop.webp (gốc 941x1672, tach-nen.py phóng sẵn lên 1080 ngang),
  * nên mọi toạ độ dưới đây = toạ độ trên ảnh gốc x K.
  */
 const K = 1080 / 941;
@@ -101,18 +101,10 @@ export function GameStage({ game }: { game: GameState }) {
       </div>
     );
   }
-  // cận cảnh cô nhận hoa: lúc bạn nhỏ tới bục. Ngoài giờ trả lời thì zoom cả lớp vào cô;
-  // đang hỏi thì hiện khung cận cảnh phía dưới để bảng đen vẫn đọc được
-  const closeUp = !!v.walk && now - v.walk.at >= GAME.closeUpFromMs && now - v.walk.at <= GAME.closeUpToMs;
-  const asking = v.phase === 'question' || v.phase === 'bonus';
   return (
     <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
-      <motion.div
-        className="absolute inset-0"
-        style={{ transformOrigin: '330px 700px' }}
-        animate={{ scale: closeUp && !asking ? 1.9 : 1 }}
-        transition={{ duration: 0.7, ease: 'easeInOut' }}
-      >
+      {/* tặng hoa: chỉ có bạn nhỏ đi lên bục đưa cô (FlowerWalk), không zoom, không khung cận cảnh (chủ kênh bỏ 2026-11-04) */}
+      <div className="absolute inset-0">
         {/* sàn lớp trong ảnh nền hơi chói: phủ 1 lớp tối nhẹ từ chân bảng trở xuống (chủ kênh chỉnh 2026-11-04) */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[600px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/20 to-[#3b1d07]/28 mix-blend-multiply" />
         <Header v={v} name={game.channelName} />
@@ -131,8 +123,7 @@ export function GameStage({ game }: { game: GameState }) {
         {v.phase !== 'show' && <SeatHint now={now} />}
         <Students v={v} now={now} />
         <FlowerWalk v={v} />
-      </motion.div>
-      {closeUp && asking && <CloseUpInset v={v} />}
+      </div>
       <GiftBanner gift={game.lastGift} now={now} />
       <BirthdayBanner v={v} />
       <FundParty v={v} />
@@ -159,7 +150,7 @@ function GiftPile({ v }: { v: StageView }) {
             key={i}
             initial={i === pile.length - 1 ? { scale: 0, x: 220, y: -40 } : false}
             animate={{ scale: 1, x: 0, y: 0 }}
-            transition={{ delay: i === pile.length - 1 ? GAME.closeUpToMs / 1000 - 1.2 : 0, type: 'spring', stiffness: 140, damping: 14 }}
+            transition={{ delay: i === pile.length - 1 ? (GAME.walkMs * 0.65) / 1000 : 0, type: 'spring', stiffness: 140, damping: 14 }}
             className="absolute leading-none drop-shadow-[0_3px_2px_rgba(0,0,0,0.35)]"
             style={{ fontSize: size, left: 6 + col * 26 + (row % 2) * 12 - size / 4, top: 210 - size - row * 24 }}
           >
@@ -185,31 +176,6 @@ function ClassFund({ v }: { v: StageView }) {
       </div>
       <div className="mt-1 text-[16px] font-semibold leading-tight">Mục tiêu hôm nay {f.goal} 🌹</div>
     </div>
-  );
-}
-
-// Khung cận cảnh (đang hỏi bài thì không zoom cả lớp, hiện khung này dưới bảng đen)
-function CloseUpInset({ v }: { v: StageView }) {
-  const w = v.walk!;
-  const tier = GAME.giftTiers[w.tier];
-  const g = w.girl ? 'nu' : 'nam';
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.6 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="absolute left-1/2 top-[930px] z-[60] h-[430px] w-[820px] -translate-x-1/2 overflow-hidden rounded-[30px] border-[6px] border-white bg-gradient-to-b from-[#fde7c3] to-[#e8b77a] shadow-2xl"
-    >
-      <div className="absolute left-4 top-3 rounded-full bg-red-600 px-3 text-[22px] font-bold text-white">🎥 Cận cảnh</div>
-      <img src={v.show ? `/assets/nv/co-ngan/${v.show.kind}/${v.show.kind === "everest" ? "10-cuoi-vui" : "06-rung-chuong-cuoi-tuoi"}.webp` : v.outfit && v.outfit !== "trang" ? `/assets/nv/co-ngan/${v.outfit}/06-cuoi-che-mieng.webp` : "/assets/nv/co-ngan/06-cuoi.webp"} className="absolute bottom-[-40px] left-[120px] h-[470px]" />
-      <img src={`/assets/nv/${g}/${POSE[g].vui}.webp`} className="absolute bottom-[-20px] left-[430px] h-[330px]" />
-      <motion.div animate={{ rotate: [-8, 8, -8] }} transition={{ duration: 1, repeat: Infinity }} className="absolute left-[380px] top-[150px]" style={{ fontSize: 60 * tier.size }}>
-        {tier.icon}
-      </motion.div>
-      <div className="absolute right-6 top-14 w-[300px] text-center">
-        <div className="truncate text-[40px] font-extrabold text-[#9d174d]">{w.nickname}</div>
-        <div className="text-[30px] font-bold text-[#7a2e0e]">tặng cô {tier.label}</div>
-      </div>
-    </motion.div>
   );
 }
 
@@ -1004,7 +970,7 @@ function DayTop({ v }: { v: StageView }) {
 // ---------- Cô giáo (cô Ngân, bản riêng: 16 tư thế, ảnh gốc trong nhan-vat/co-giao-ngan, tách nền ra public/assets/nv/co-ngan) ----------
 function teacherPose(v: StageView, now: number): string {
   // có bạn cầm hoa đi lên: ngạc nhiên, tới bục đưa hoa thì cười che miệng
-  if (v.walk) return now - v.walk.at < GAME.closeUpFromMs ? '13-ngac-nhien' : '06-cuoi';
+  if (v.walk) return now - v.walk.at < GAME.walkMs * 0.35 ? '13-ngac-nhien' : '06-cuoi';
   if (now - v.lastFlowerAt < 3000) return '06-cuoi'; // được tặng hoa
   if (v.birthday) return '09-mung';
   if (v.clapping) return '10-vo-tay';

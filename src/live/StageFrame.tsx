@@ -18,7 +18,8 @@ export function StageFrame({ children, maxHeight }: { children: ReactNode; maxHe
     <div style={{ width: STAGE_W * scale, height: STAGE_H * scale }} className="relative overflow-hidden">
       <div
         className="stage-bg absolute left-0 top-0"
-        style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+        // zoom thay cho transform: scale: Chrome vẽ lại chữ đúng cỡ thật nên chữ nét (scale thì chụp ảnh lớp rồi kéo giãn, chữ mờ)
+        style={{ width: STAGE_W, height: STAGE_H, zoom: scale }}
       >
         {children}
       </div>

@@ -78,7 +78,11 @@ def main():
             make_backs(OUT / 'nv' / key)
         print(key, len(files), 'tư thế, khung', box)
     (OUT / 'bg').mkdir(parents=True, exist_ok=True)
-    Image.open(SRC / 'nen-lop-hoc-rong-khong-nguoi-2d.png').convert('RGB').save(OUT / 'bg' / 'lop.webp', quality=92)
+    # nền phóng sẵn lên đúng 1080 ngang (Lanczos + làm nét nhẹ) để trình duyệt khỏi kéo giãn, chữ và nét bảng sắc hơn
+    from PIL import ImageFilter
+    bg = Image.open(SRC / 'nen-lop-hoc-rong-khong-nguoi-2d.png').convert('RGB')
+    bg = bg.resize((1080, round(bg.height * 1080 / bg.width)), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=1, percent=60, threshold=2))
+    bg.save(OUT / 'bg' / 'lop.webp', quality=95)
 
 
 if __name__ == '__main__':

@@ -31,7 +31,7 @@ export const GAME = {
   timeGreetEvery: 4, // ngoài lúc đổi buổi, cứ chừng này tiết cô chào theo giờ một lần
   // Lấp khoảng im lặng lúc chờ trả lời câu chữ: cứ chừng này cô làm 1 việc, xoay vòng
   // rủ "ai yêu cô gõ số 1" -> kể chuyện vui / mẹo tiếng Anh -> hỏi bình chọn (miền Bắc gõ B...) -> kể chuyện
-  engageEveryMs: 100_000,
+  engageEveryMs: 180_000, // giảm từ 100 giây (chủ kênh thấy cô nói quá nhiều, 2026-11-04)
   engageOrder: ['love', 'story', 'poll', 'sleep'] as const, // 'sleep': gọi 1 bạn ngủ gật dậy (không ai ngủ thì kể chuyện)
   loveWindowMs: 15_000, // đếm ai gõ trong chừng này rồi cảm ơn / đọc kết quả
 
@@ -60,7 +60,8 @@ export const GAME = {
   streakBonus: 5, // thưởng thêm
   requireDiacritics: true, // phải gõ đủ dấu mới tính đúng ("phan" không ăn "phấn"); dấu kiểu cũ/mới đều được
   keepHiddenLetters: 2, // gợi ý không bao giờ mở quá (số chữ - 2)
-  roastChance: 0.6, // tỉ lệ cô cà khịa 1 bạn trả lời sai lúc hiện đáp án
+  roastChance: 0.35, // tỉ lệ cô cà khịa 1 bạn trả lời sai lúc hiện đáp án (giảm từ 0.6, 2026-11-04)
+  monitorEveryQ: 4, // lớp trưởng đổi người: cách ít nhất chừng này câu cô mới báo lại
 
   // ---------- Giờ ra chơi (sau mỗi tiết) ----------
   recessPlaySec: { rps: 20, callup: 15, pick: 20, roll: 12, heart: 30 },
@@ -152,9 +153,6 @@ export const GAME = {
   ],
   // mục tiêu quỹ hoa trong ngày (số bông), đạt mốc nào thì cô cảm ơn cả lớp + pháo hoa, rồi tới mốc kế
   flowerGoals: [50, 100, 200, 500, 1000, 2000, 5000, 10000],
-  // cận cảnh cô nhận hoa: từ lúc bạn nhỏ đi tới bục tới lúc quay về (ms tính từ lúc tặng)
-  closeUpFromMs: 1600,
-  closeUpToMs: 5000,
   giftPileMax: 18, // bàn quà sau lưng cô bày tối đa chừng này món (mới nhất)
 
   // ---------- Quà / tim ----------
@@ -174,6 +172,9 @@ export const GAME = {
   // Nhịp giọng: câu chính (đề, đáp án, tổng kết) đọc theo chương trình, đồng hồ dừng trong lúc cô đọc.
   // Câu nói thêm (chào, cảm ơn, cà khịa) chỉ nói lúc đang chờ học sinh trả lời và còn hơn 5 giây.
   chatterMinLeftMs: 5000,
+  // trần câu nói thêm thường (chào, khen người đúng đầu, nhận ra bạn đi học lại, rủ tương tác...) mỗi câu hỏi / mỗi phần.
+  // Cảm ơn quà, sinh nhật, lên lớp không tính trần. Chủ kênh thấy cô nói quá nhiều (2026-11-04).
+  chatterPerPhase: 1,
   chatterMaxWaitMs: 35_000, // câu chào chờ được qua 1 vòng câu hỏi, quá thì bỏ
   giftLineMaxWaitMs: 45_000, // cảm ơn quà chờ lâu hơn
   maxHoldMs: 25_000, // mỗi phần dừng đồng hồ tối đa chừng này (phòng giọng bị kẹt)

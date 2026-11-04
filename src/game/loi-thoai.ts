@@ -189,7 +189,7 @@ export const LINES = {
     'Giờ này còn thức là chưa xong việc, hoặc đang nhắn tin với ai đó. Cô hỏi thôi, không nói ai.',
   ] as L0,
 
-  // ---------- Cận cảnh cô nhận hoa: cảm ơn theo bậc (n tên, g = "một bông hoa" / "một bó hoa nhỏ"...) ----------
+  // ---------- Cô nhận hoa (bạn nhỏ lên bục đưa): cảm ơn theo bậc (n tên, g = "một bông hoa" / "một bó hoa nhỏ"...) ----------
   thankTier0: [
     (n, g) => `Ôi cô cảm ơn ${n} nha, ${g} xinh quá. Cô có thêm động lực dạy tới cuối tháng rồi nè.`,
     (n, g) => `${n} tặng cô ${g}! Hôm nay cô không than lương nữa.`,
@@ -659,7 +659,7 @@ export const LINES = {
   ] as L3,
   praiseThird: [
     (n, s, g) => `Hạng ba là ${n}, ${s} điểm, nhận ${g}.`,
-    (n, s, g) => `Thứ ba là ${n}, ${s} điểm. ${g} cho bạn nha.`,
+    (n, s, g) => `Thứ ba là ${n}, ${s} điểm. Cô tặng ${g} cho bạn nha.`,
   ] as L3,
   // mời tương tác, sau câu này cô chờ vài giây rồi mới ra câu tiếp
   praiseOutro: [

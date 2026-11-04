@@ -501,14 +501,18 @@ export class Classroom {
     return g.name;
   }
 
+  private monitorSaidQ = -99;
   /** Lớp trưởng đổi người thì cô thông báo */
   private checkMonitor(): Say[] {
     const top = this.seats(1)[0];
     if (!top || top.score <= 0 || top.username === this.monitor) return [];
     const first = this.monitor === '';
     this.monitor = top.username;
-    // người đầu tiên có điểm trong tiết thì khỏi báo (cô vừa khen rồi), từ lần đổi người mới báo
-    return first ? [] : [this.t(this.line('newMonitor', top.spoken))];
+    // người đầu tiên có điểm trong tiết thì khỏi báo (cô vừa khen rồi), từ lần đổi người mới báo;
+    // đổi liên tục thì cách GAME.monitorEveryQ câu mới báo 1 lần (đỡ nói nhiều)
+    if (first || this.qNo - this.monitorSaidQ < GAME.monitorEveryQ) return [];
+    this.monitorSaidQ = this.qNo;
+    return [this.t(this.line('newMonitor', top.spoken))];
   }
 
 
@@ -712,6 +716,14 @@ export class Classroom {
     this.phaseEndsAt = now + sec * 1000;
     this.heldMs = 0;
     this.warned = false;
+    if (p !== 'bonus') this.chatterUsed = 0; // thêm giờ vẫn tính chung lượt với câu đang hỏi
+  }
+
+  /** số câu nói thêm (không ưu tiên) cô đã nói trong phần này; GAME.chatterPerPhase là trần */
+  chatterUsed = 0;
+  /** còn được nói thêm câu này không: câu ưu tiên (cảm ơn quà, sinh nhật, lên lớp) luôn được, câu thường theo trần */
+  chatterAllowed(priority: boolean) {
+    return priority || this.chatterUsed < GAME.chatterPerPhase;
   }
 
   private warned = false; // đã nhắc "chuẩn bị hết giờ" ở phần này chưa
@@ -950,7 +962,7 @@ export class Classroom {
       this.clapUntil = now + GAME.clapSec * 1000;
       out.push({ ...this.t(this.line('fundGoal', String(reached))), warn: true });
     }
-    // bạn nhỏ đi lên bục đưa hoa cho cô, cận cảnh cô nhận và cảm ơn ngay (đang có bạn đi thì thôi, tránh combo chen nhau)
+    // bạn nhỏ đi lên bục đưa hoa cho cô, cô cảm ơn ngay (đang có bạn đi thì thôi, tránh combo chen nhau)
     const tier = tierOf(coins);
     this.giftPile = [...this.giftPile, tier].slice(-GAME.giftPileMax);
     if (!this.walk || now - this.walk.at > GAME.walkMs) {
