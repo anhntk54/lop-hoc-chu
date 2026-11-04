@@ -398,7 +398,34 @@ function splitText(text: string, max = 190): string[] {
 }
 
 // hype = câu hô của MC ("Hoan hô!", "Ối dồi ôi!"): chỉ to hơn, giữ nguyên cao độ (đổi cao độ nghe như người khác nói)
-async function edgeTts(text: string, rate: number, hype = false, voiceName = TTS_VOICE): Promise<Buffer> {
+// Edge chặn (lỗi 429) khi mở nhiều kết nối một lúc: cho đi từng câu một, câu giống nhau đang tạo thì dùng chung,
+// bị chặn thì chờ rồi thử lại, hết cách mới sang giọng dự phòng.
+let edgeChain: Promise<unknown> = Promise.resolve();
+const edgeInflight = new Map<string, Promise<Buffer>>();
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+function edgeTts(text: string, rate: number, hype = false, voiceName = TTS_VOICE): Promise<Buffer> {
+  const key = `${voiceName}|${rate}|${hype}|${text}`;
+  const running = edgeInflight.get(key);
+  if (running) return running;
+  const job = edgeChain.then(async () => {
+    let last: unknown;
+    for (const wait of [0, 2000, 5000, 10000]) {
+      if (wait) await sleep(wait);
+      try {
+        return await edgeTtsOnce(text, rate, hype, voiceName);
+      } catch (err) {
+        last = err;
+      }
+    }
+    throw last;
+  });
+  edgeChain = job.catch(() => {});
+  edgeInflight.set(key, job);
+  job.finally(() => edgeInflight.delete(key)).catch(() => {});
+  return job;
+}
+
+async function edgeTtsOnce(text: string, rate: number, hype = false, voiceName = TTS_VOICE): Promise<Buffer> {
   const tts = new MsEdgeTTS();
   try {
     await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
@@ -420,10 +447,10 @@ async function edgeTts(text: string, rate: number, hype = false, voiceName = TTS
   }
 }
 
-async function googleTts(text: string): Promise<Buffer> {
+async function googleTts(text: string, lang = 'vi'): Promise<Buffer> {
   const parts: Buffer[] = [];
   for (const chunk of splitText(text)) {
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
     const r = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -448,18 +475,23 @@ app.get('/api/tts', async (req, res) => {
     const voiceName = req.query.v === 'f' ? 'vi-VN-HoaiMyNeural' : req.query.v === 'en' ? 'en-US-AnaNeural' : TTS_VOICE;
     const key = `${voiceName}|${rate}|${hype}|${text}`;
     let audio = ttsCache.get(key);
+    let fallback = false;
     if (!audio) {
+      const english = req.query.v === 'en';
       try {
-        audio = await edgeTts(text, rate, hype, voiceName);
+        audio = await edgeTts(text, rate, hype, voiceName); // đã tự thử lại 4 lần bên trong
       } catch (err) {
-        console.warn('Edge TTS lỗi, chuyển Google:', err instanceof Error ? err.message : err);
-        audio = await googleTts(text);
+        // giọng dự phòng phải ĐÚNG ngôn ngữ: từ tiếng Anh dùng Google tiếng Anh, Google cũng lỗi thì bỏ câu (không đọc sai)
+        console.warn(`[giọng dự phòng] Edge lỗi 4 lần (${voiceName}), đọc bằng Google ${english ? 'tiếng Anh' : 'tiếng Việt'}: "${text.slice(0, 60)}"`, err instanceof Error ? err.message : err);
+        audio = await googleTts(text, english ? 'en' : 'vi');
+        fallback = true;
       }
-      ttsCache.set(key, audio);
+      // giọng dự phòng không lưu: lần sau đọc lại câu này thì thử Edge trước
+      if (!fallback) ttsCache.set(key, audio);
       if (ttsCache.size > 200) ttsCache.delete(ttsCache.keys().next().value!);
     }
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Cache-Control', fallback ? 'no-store' : 'public, max-age=86400');
     res.send(audio);
   } catch (err) {
     console.error('TTS lỗi:', err);

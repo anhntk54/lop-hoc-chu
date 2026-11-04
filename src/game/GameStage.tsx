@@ -11,13 +11,17 @@ import './stage.css';
  */
 const K = 1080 / 941;
 
-// 4 dãy bàn trên cùng: mép trên mặt bàn (y) và tâm từng bàn (x), đo trên ảnh nền gốc
+// Bàn dài + ghế băng vẽ đè lên dãy bàn lẻ trong ảnh nền (đo trên ảnh gốc): mép trên mặt bàn y, mép dưới b, 2 đầu bàn x1..x2.
+// n = số bạn ngồi mỗi dãy (chủ kênh chốt 2026-11-04: 7–8 bạn một dãy, các bạn nhỏ lại một chút). Dãy cuối nằm dưới giao diện TikTok nên để trống.
 const ROWS = [
-  { y: 815, xs: [170, 322, 471, 620, 768], s: 0.92 },
-  { y: 945, xs: [148, 310, 473, 636, 796], s: 0.98 },
-  { y: 1097, xs: [125, 300, 476, 648, 822], s: 1.04 },
-  { y: 1257, xs: [113, 296, 479, 661, 840], s: 1.1 },
+  { y: 812, b: 922, x1: 100, x2: 838, n: GAME.rowSeats[0], s: 0.92 },
+  { y: 942, b: 1069, x1: 72, x2: 870, n: GAME.rowSeats[1], s: 0.98 },
+  { y: 1093, b: 1232, x1: 45, x2: 902, n: GAME.rowSeats[2], s: 1.04 },
+  { y: 1253, b: 1414, x1: 28, x2: 922, n: GAME.rowSeats[3], s: 1.1 },
+  { y: 1458, b: 1646, x1: 5, x2: 938, n: 0, s: 1.16 },
 ];
+const KID = 0.82; // các bạn nhỏ hơn bản ghế lẻ để ngồi vừa bàn dài
+const SEAT_ROW: number[] = ROWS.flatMap((r, ri) => Array.from({ length: r.n }, () => ri));
 const SPRITE_H = 250; // chiều cao cả người
 const SHOW = 0.5; // ngồi ghế: chỉ hiện phần trên (đầu tới hông)
 // khung đầu đã xoá khỏi ảnh thân sau lưng, tính theo tỉ lệ ảnh (tools/tach-nen.py ghi ra public/assets/nv/*/head.json)
@@ -597,14 +601,47 @@ function studentPose(s: StageView['seats'][number], v: StageView, rank: number, 
 
 /** Vị trí ghế thứ i (khung nửa trên người ngồi, toạ độ stage) */
 function seatBox(i: number) {
-  const row = ROWS[Math.floor(i / 5)];
-  const scale = row.s;
+  const ri = SEAT_ROW[i] ?? ROWS.length - 1;
+  const row = ROWS[ri];
+  const k = i - SEAT_ROW.indexOf(ri); // thứ tự trong dãy
+  const scale = row.s * KID;
   const w = SPRITE_H * 0.47 * scale;
   const h = SPRITE_H * scale;
   const show = h * SHOW;
-  const x = row.xs[i % 5] * K - w / 2;
-  const y = (row.y + 72) * K - show; // ngồi trên ghế, lưng quay ra khán giả, mặt nhìn lên bảng
-  return { scale, w, h, show, x, y };
+  const cx = row.x1 + ((k + 0.5) * (row.x2 - row.x1)) / Math.max(1, row.n);
+  const x = cx * K - w / 2;
+  const y = (row.y + 0.64 * (row.b - row.y)) * K - show; // ngồi trên ghế băng, lưng quay ra khán giả
+  return { scale, w, h, show, x, y, ri };
+}
+
+/** Bàn dài + ghế băng của 1 dãy (che hẳn dãy bàn lẻ vẽ sẵn trong ảnh nền) */
+function LongDesk({ ri }: { ri: number }) {
+  const r = ROWS[ri];
+  const h = r.b - r.y;
+  const [x1, x2] = [r.x1 - 6, r.x2 + 6];
+  const Y = (f: number) => r.y + f * h;
+  const nLegs = Math.max(2, Math.floor((r.n || 8) / 2) + 1);
+  const legs = Array.from({ length: nLegs }, (_, j) => x1 + 22 + (j * (x2 - x1 - 44)) / (nLegs - 1));
+  const line = { stroke: '#6b3f17', strokeWidth: 3, strokeLinejoin: 'round' as const };
+  return (
+    <svg className="pointer-events-none absolute left-0 top-0" width={1080} height={1920} viewBox="0 0 941 1672" style={{ zIndex: 9 + ri }}>
+      {/* bóng dưới bàn ghế: che chân bàn lẻ trong ảnh nền */}
+      <rect x={x1 - 2} y={Y(0.5)} width={x2 - x1 + 4} height={h * 0.52} rx={10} fill="#c27640" />
+      {/* chân bàn 2 đầu */}
+      <rect x={x1 + 6} y={Y(0.34)} width={14} height={h * 0.62} fill="#8b5426" {...line} />
+      <rect x={x2 - 20} y={Y(0.34)} width={14} height={h * 0.62} fill="#8b5426" {...line} />
+      {/* mặt bàn + cạnh trước + tấm chắn trước bàn */}
+      <rect x={x1 + 14} y={Y(0.36)} width={x2 - x1 - 28} height={h * 0.26} fill="#b8762f" {...line} />
+      <polygon points={`${x1 + 8},${r.y} ${x2 - 8},${r.y} ${x2},${Y(0.28)} ${x1},${Y(0.28)}`} fill="#f3c068" {...line} />
+      <rect x={x1} y={Y(0.28)} width={x2 - x1} height={h * 0.08} fill="#d9953f" {...line} />
+      {/* ghế băng */}
+      {legs.map((lx) => (
+        <rect key={lx} x={lx - 5} y={Y(0.74)} width={10} height={h * 0.24} fill="#7a4a1e" />
+      ))}
+      <rect x={x1 + 16} y={Y(0.6)} width={x2 - x1 - 32} height={h * 0.1} rx={4} fill="#ebae52" {...line} />
+      <rect x={x1 + 16} y={Y(0.7)} width={x2 - x1 - 32} height={h * 0.06} fill="#c9863a" {...line} />
+    </svg>
+  );
 }
 
 function Students({ v, now }: { v: StageView; now: number }) {
@@ -612,8 +649,11 @@ function Students({ v, now }: { v: StageView; now: number }) {
   const first = asking ? v.correctTop[0]?.username : undefined;
   return (
     <>
+      {ROWS.map((_, ri) => (
+        <LongDesk key={ri} ri={ri} />
+      ))}
       {v.seats.map((s, i) => {
-        const { scale, w, h, show, x, y } = seatBox(i);
+        const { scale, w, h, show, x, y, ri } = seatBox(i);
         const pose = studentPose(s, v, i, now);
         const g = s.girl ? 'nu' : 'nam';
         const hd = HEAD[g];
@@ -628,7 +668,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
             animate={{ opacity: away ? 0 : 1, left: x, top: s.username === first ? [y, y - 34, y, y - 18, y] : y }}
             transition={s.username === first ? { top: { duration: 0.9 } } : { type: 'spring', stiffness: 120, damping: 18 }}
             className={`absolute ${called ? 'called-up' : ''}`}
-            style={{ width: w, height: show, zIndex: 10 + Math.floor(i / 5) }}
+            style={{ width: w, height: show, zIndex: 10 + ri }}
           >
             <div className="absolute inset-0 overflow-hidden">
               <img src={`/assets/nv/${g}/sau-${POSE[g][pose]}.webp`} style={{ width: w, height: h }} className="max-w-none" />

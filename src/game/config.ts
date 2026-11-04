@@ -84,7 +84,8 @@ export const GAME = {
   seatActiveMs: 10 * 60_000, // cùng điểm: bạn im quá chừng này (thường đã rời live) nhường ghế cho bạn đang tương tác
 
   // ---------- Lớp ----------
-  seats: 20, // 4 dãy bàn trên cùng; dãy cuối nằm dưới giao diện TikTok nên để trống
+  seats: 30, // 4 dãy bàn dài trên cùng (7, 7, 8, 8 bạn); dãy cuối nằm dưới giao diện TikTok nên để trống
+  rowSeats: [7, 7, 8, 8], // số bạn mỗi dãy, cộng lại = seats (chủ kênh chốt 2026-11-04: bàn dài, các bạn nhỏ lại)
   standing: 60, // hết ghế: chen chúc đứng 2 bên ngoài cửa lớp hóng (30 mỗi bên), vẫn tính điểm
   joinKeywords: ['vaolop'],
 
