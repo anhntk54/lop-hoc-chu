@@ -674,13 +674,13 @@ function WeekBoard({ v, left }: { v: StageView; left: number }) {
 function DayTop({ v }: { v: StageView }) {
   const rows = (v.todayTop ?? []).slice(0, 4); // top 4 thôi để không che đầu cô
   return (
-    <div className="absolute left-[8px] top-[228px] z-20 w-[342px] -rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-3 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+    <div className="absolute left-[10px] top-[230px] z-20 w-[326px] -rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-3 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[30px]">📌</div>
-      <div className="whitespace-nowrap text-center text-[23px] font-extrabold leading-tight text-[#b45309]">🏆 Học sinh xuất sắc hôm nay</div>
+      <div className="whitespace-nowrap text-center text-[21px] font-extrabold leading-tight text-[#b45309]">🏆 Học sinh xuất sắc hôm nay</div>
       {rows.length === 0 && <div className="py-3 text-center text-[20px] text-[#8a6a3a]">Chưa có ai, trả lời đúng là lên bảng!</div>}
       <div className="mt-1 space-y-[2px]">
         {rows.map((r, i) => (
-          <motion.div key={r.username} layout className="flex items-center gap-2 text-[25px] leading-[31px]">
+          <motion.div key={r.username} layout className="flex items-center gap-2 text-[23px] leading-[28px]">
             <span className="w-7 text-center">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
             <span className="min-w-0 flex-1 truncate font-semibold">{r.nickname}</span>
             <b className="text-[#c2410c]">{r.points}</b>
@@ -751,8 +751,46 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
 }
 
 // ---------- Ai nhanh nhất câu này ----------
+// Hết câu (hiện đáp án): bảng Top 5 nhanh nhất, thời gian tới mili giây + điểm được cộng; ai đúng chậm hơn +1
+const secText = (ms: number) => `${(ms / 1000).toFixed(3).replace('.', ',')} giây`;
+function FastestBoard({ v }: { v: StageView }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="absolute left-[392px] top-[622px] z-30 w-[470px] overflow-hidden rounded-[16px] border-[3px] border-[#7a2e0e] bg-[#fff6dd]/97 shadow-xl"
+    >
+      <div className="flex items-center justify-between bg-[#7a2e0e] px-3 py-[2px] text-[21px] font-bold text-[#ffe9b8]">
+        <span>⚡ Top {GAME.fastestShown} nhanh nhất</span>
+        <span>{v.correctCount} bạn đúng</span>
+      </div>
+      {v.fastest.length === 0 && <div className="py-3 text-center text-[22px] text-[#8a6a3a]">Chưa ai đúng câu này</div>}
+      {v.fastest.map((a, i) => (
+        <motion.div
+          key={a.username}
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.15 * i }}
+          className={`flex items-center gap-2 px-3 text-[22px] leading-[33px] text-[#4a2c0e] ${i % 2 ? 'bg-[#f6e3b4]/60' : ''}`}
+        >
+          <span className="w-8 text-center text-[24px]">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
+          <span className="min-w-0 flex-1 truncate font-semibold">{a.nickname}</span>
+          <span className="w-[120px] text-right font-mono text-[20px] text-[#6b4a22]">{secText(a.ms)}</span>
+          <b className="w-[52px] text-right text-[#c2410c]">+{a.points}</b>
+        </motion.div>
+      ))}
+      {v.laterCount > 0 && (
+        <div className="border-t border-[#e9d8a6] px-3 text-center text-[19px] font-semibold leading-[30px] text-[#6b4a22]">
+          {v.laterCount} bạn khác đúng chậm hơn: mỗi bạn +{v.laterPoints}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 function Podium({ v }: { v: StageView }) {
-  if (v.phase !== 'question' && v.phase !== 'bonus' && v.phase !== 'reveal') return null;
+  if (v.phase === 'reveal') return <FastestBoard v={v} />;
+  if (v.phase !== 'question' && v.phase !== 'bonus') return null;
   return (
     <div className="absolute left-[417px] top-[634px] w-[420px]">
       <div className="flex items-center justify-between rounded-t-[14px] bg-[#7a2e0e] px-3 py-[1px] text-[19px] font-bold text-[#ffe9b8]">

@@ -716,4 +716,37 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(c.flowersToday, 500);
 }
 
+// ---------- bảng Top 5 nhanh nhất: thời gian tới mili giây (từ lúc hô bắt đầu), 10/7/5/3/3, chậm hơn +1 ----------
+{
+  const c = new Classroom([mk('BẢNG ĐEN'), mk('CÁI BÀN', 'easy', 'ban')], t);
+  c.newRound(t);
+  c.tick((t += GAME.introSec * 1000));
+  const start = t;
+  c.hold(3000); // cô đọc đề 3 giây: chưa tính giờ
+  const skew = 1500; // đồng hồ TikTok chậm hơn máy 1,5 giây
+  const at = (sec: number) => start + 3000 + sec * 1000; // giờ máy lúc người xem gửi
+  // 7 bạn đúng, tới lệch thứ tự; bạn 9 gửi sớm nhất
+  [[1, 2.345], [2, 1.2], [3, 4.5], [4, 3.25], [5, 6.1], [6, 7.003], [9, 0.987]].forEach(([u, sec], k) =>
+    chat(c, u, c.q!.answer, at(sec) - skew, at(sec) + 200 + k * 10),
+  );
+  const v = c.view(t);
+  assert.deepEqual(
+    v.fastest.map((a) => [a.username, a.points]),
+    [
+      ['u9', 10],
+      ['u2', 7],
+      ['u1', 5],
+      ['u4', 3],
+      ['u3', 3],
+    ],
+  );
+  // thời gian: đúng tới mili giây, dư thêm trễ mạng ít nhất (ở đây 200 ms) + chút trôi; luôn tăng dần theo thứ hạng
+  const real = [987, 1200, 2345, 3250, 4500];
+  v.fastest.forEach((a, i) => assert.ok(a.ms >= real[i] && a.ms - real[i] <= 300, `${a.username}: ${a.ms} ms, thật ${real[i]} ms`));
+  for (let i = 1; i < 5; i++) assert.ok(v.fastest[i].ms >= v.fastest[i - 1].ms);
+  assert.equal(v.laterCount, 2);
+  assert.equal(v.laterPoints, 1);
+  assert.deepEqual(c.correct.slice(5).map((a) => a.points), [1, 1], 'chậm hơn top 5: +1');
+}
+
 console.log('quiz.check: tất cả đều đúng');

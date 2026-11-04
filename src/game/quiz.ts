@@ -652,7 +652,14 @@ export class Classroom {
     this.heldMs += add;
     this.phaseStartedAt += add;
     this.phaseEndsAt += add;
+    if (this.phase === 'question') this.answerStartAt += add; // đọc đề xong mới bắt đầu tính giờ trả lời
   }
+
+  /** lúc bắt đầu tính giờ trả lời câu đang hỏi (cô hô bắt đầu xong), giờ máy */
+  private answerStartAt = 0;
+  /** độ lệch giờ máy so với giờ TikTok (giờ máy nhận - giờ TikTok gắn), trung bình trượt */
+  private clockSkew = 0;
+  private skewSamples = 0;
 
   /** Đã hiện bảng chữ (chữ xáo / phép tính) chưa: cô đọc đề xong, hô bắt đầu mới hiện */
   boardShown = false;
@@ -709,6 +716,7 @@ export class Classroom {
     this.wrong = new Set();
     this.stats = { received: 0, attempts: 0 };
     this.setPhase('question', now, GAME.questionSec);
+    this.answerStartAt = now;
     const out: Say[] = [...back];
     if (this.golden) out.push(this.line0('goldenIntro'));
     else if (this.q.math) out.push(this.line0('mathIntro'));
@@ -737,6 +745,11 @@ export class Classroom {
   chat(e: ChatIn, now: number): Say[] {
     const s = this.touch(e, now);
     this.lastChatAt = now;
+    // độ lệch đồng hồ TikTok so với máy: lấy mức nhỏ nhất gần đây (ít trễ mạng nhất), nhích lên dần để theo kịp nếu đồng hồ trôi
+    const sample = now - e.createTime;
+    if (Number.isFinite(sample) && Math.abs(sample) < 10 * 60_000) {
+      this.clockSkew = this.skewSamples++ === 0 ? sample : Math.min(sample, this.clockSkew + 5);
+    }
     // bong bóng chat: không hiện câu trả lời (lộ đáp án cho bạn khác) và câu có từ cấm
     const asking = this.phase === 'question' || this.phase === 'bonus';
     const answering = (asking && this.isAttempt(this.q, e.comment)) || (this.recess?.game === 'callup' && this.isAttempt(this.recess.callQ, e.comment));
@@ -1375,6 +1388,17 @@ export class Classroom {
       // dừng giữa tiết: 3 bạn nhỏ điểm cao nhất kèm quà trên bàn
       praiseTop: this.phase === 'praise' ? this.seats(3).filter((s) => s.score > 0).map(({ username, nickname, score, desk }) => ({ username, nickname, score, desk })) : [],
       correctTop: this.correct.slice(0, 3).map(({ username, nickname, avatar, points }) => ({ username, nickname, avatar, points })),
+      // bảng Top 5 nhanh nhất lúc hiện đáp án: tên, thời gian (ms), điểm; còn lại đúng chậm hơn +1
+      // thời gian trả lời: giờ TikTok gắn lúc gửi đổi sang giờ máy (cùng 1 độ lệch cho mọi bạn nên khớp thứ hạng), tính từ lúc cô hô bắt đầu.
+      // Độ lệch đo được gồm cả trễ mạng ít nhất, nên số giây có thể dư chừng vài trăm mili giây
+      fastest: this.correct.slice(0, GAME.fastestShown).map(({ username, nickname, points, createTime }) => ({
+        username,
+        nickname,
+        points,
+        ms: Math.max(0, Math.round(createTime + this.clockSkew - this.answerStartAt)),
+      })),
+      laterCount: Math.max(0, this.correct.length - GAME.fastestShown),
+      laterPoints: GAME.latePoints * (this.golden ? 2 : 1),
       correctCount: this.correct.length,
       seats: seated.slice(0, GAME.seats).map(pub),
       standing: seated.slice(GAME.seats).map(pub), // không có ghế: đứng ngoài cửa hóng, vẫn tính điểm

@@ -52,8 +52,10 @@ export const GAME = {
   superFastSec: 4, // đúng trong 4 giây đầu: cô nghi "quay cóp"
 
   // ---------- Điểm ----------
-  rankPoints: [10, 7, 5, 3, 3, 3, 3, 3, 3, 3], // nhất 10, nhì 7, ba 5, hạng 4–10 được 3 (câu hỏi vàng x2)
-  latePoints: 1, // đúng sau hạng 10 (thường là chép đáp án trên khung chat)
+  // top 5 nhanh nhất: 10, 7, 5, 3, 3; chậm hơn top 5 đều +1 (chủ kênh chốt 2026-11-04). Câu hỏi vàng x2
+  rankPoints: [10, 7, 5, 3, 3],
+  latePoints: 1, // đúng sau top 5 (thường là chép đáp án trên khung chat)
+  fastestShown: 5, // bảng Top nhanh nhất lúc hiện đáp án
   streakEvery: 3, // đúng 3 câu liền
   streakBonus: 5, // thưởng thêm
   requireDiacritics: true, // phải gõ đủ dấu mới tính đúng ("phan" không ăn "phấn"); dấu kiểu cũ/mới đều được
