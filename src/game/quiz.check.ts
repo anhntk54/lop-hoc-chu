@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { Classroom, LineBag, teamOf, compactVi, dayPeriod, emptyLife, gradeOf, plain, scramble, topicName } from './quiz';
+import { Classroom, LineBag, teamOf, tierOf, compactVi, dayPeriod, emptyLife, gradeOf, plain, scramble, topicName } from './quiz';
 import { parseBank, type Question } from './questions';
 import { GAME } from './config';
 import { makeMath } from './math';
@@ -689,6 +689,31 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   chat(c, 1, 'con vẫn ở đây', t, t);
   c.newRound(t);
   assert.equal(c.students.size, 1, 'bạn rời live lâu được xoá cho nhẹ, bạn còn chơi thì giữ');
+}
+
+// ---------- quà: chia bậc bó hoa, quỹ hoa có mốc, cận cảnh cảm ơn ngay ----------
+{
+  assert.deepEqual([1, 9, 10, 98, 99, 499, 500, 30000].map(tierOf), [0, 0, 1, 1, 2, 2, 3, 3]);
+  const c = new Classroom(BANK, t);
+  c.setFlowersSaved(GAME.flowerGoals[0] - 3); // server: sắp tới mốc đầu
+  const first = c.gift(who(1), 1, t, 1);
+  assert.ok(first[0].warn && !first[0].main, 'cảm ơn nói ngay, không dừng đồng hồ');
+  assert.ok(first[0].text.includes('Bạn 1') && first[0].text.includes('một bông hoa'));
+  assert.equal(c.view(t).walk!.tier, 0);
+  const big = c.gift(who(2), 99, t + 1000, 1); // đang có bạn đi lên: không cận cảnh chen, nhưng vẫn vào quỹ
+  assert.ok(!big.some((l) => l.text.includes('bó hoa thật to')));
+  // 1 món vượt nhiều mốc (47 -> 147 qua 50 và 100): cô báo mốc cao nhất
+  assert.ok(big.some((l) => l.text.includes(String(GAME.flowerGoals.filter((g) => g <= GAME.flowerGoals[0] - 3 + 1 + 99).pop()))), 'qua mốc quỹ hoa: cô cảm ơn cả lớp');
+  const v = c.view(t + 1000);
+  assert.equal(v.fund.today, GAME.flowerGoals[0] - 3 + 1 + 99);
+  assert.equal(v.fund.goal, GAME.flowerGoals.find((g) => g > v.fund.today));
+  assert.equal(v.fund.party, GAME.flowerGoals.filter((g) => g <= v.fund.today).pop());
+  assert.deepEqual(v.gifts, [0, 2], 'quà bày trên bàn sau lưng cô theo bậc');
+  assert.equal(c.flowerDelta, 100, 'chờ gửi server 100 bông');
+  // server trả số đã lưu: giữ phần chưa gửi
+  c.flowerDelta = 0;
+  c.setFlowersSaved(500);
+  assert.equal(c.flowersToday, 500);
 }
 
 console.log('quiz.check: tất cả đều đúng');

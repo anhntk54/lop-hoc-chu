@@ -520,7 +520,7 @@ interface SoLop {
   // chuyên cần: ngày gần nhất vào lớp, số ngày liền, tổng số ngày
   attend: Record<string, { nickname: string; last: string; streak: number; total: number }>;
   // điểm hôm nay (cho báo cáo buổi live) + tương tác hôm nay (bảng Top tương tác)
-  today: { date: string; scores: Record<string, { nickname: string; points: number }>; talk?: Record<string, { nickname: string; points: number }> };
+  today: { date: string; scores: Record<string, { nickname: string; points: number }>; talk?: Record<string, { nickname: string; points: number }>; flowers?: number };
   // học bạ cả đời: điểm cộng dồn mãi (lên lớp) + số câu đúng từng loại (huy hiệu)
   life: Record<string, LifeRow>;
 }
@@ -568,7 +568,7 @@ const saveSoon = () => {
   }, 2000);
 };
 const todayScores = () => {
-  if (soLop.today.date !== dayKey()) soLop.today = { date: dayKey(), scores: {}, talk: {} };
+  if (soLop.today.date !== dayKey()) soLop.today = { date: dayKey(), scores: {}, talk: {}, flowers: 0 };
   return soLop.today.scores;
 };
 const todayTalk = () => {
@@ -602,12 +602,21 @@ const topOf = (book: Record<string, { nickname: string; points: number }>) =>
 const todayTop = () => topOf(todayScores());
 // top tương tác hôm nay (bảng Top tương tác bên phải stage)
 const talkTop = () => topOf(todayTalk());
+// quỹ hoa của cô hôm nay (số bông, mỗi xu quà = 1 bông)
+const flowersToday = () => {
+  todayScores();
+  return soLop.today.flowers ?? 0;
+};
 const lifeOf = (key: string): LifeRow => (Object.hasOwn(soLop.life, key) ? soLop.life[key] : { nickname: '', points: 0, total: 0, toan: 0, su: 0, meo: 0, anh: 0 });
 app.get('/api/game/save', (_req, res) =>
-  res.json({ used: soLop.used, banned: Object.keys(soLop.banned), weekTop: weekTop(), todayTop: todayTop(), talkTop: talkTop() }),
+  res.json({ used: soLop.used, banned: Object.keys(soLop.banned), weekTop: weekTop(), todayTop: todayTop(), talkTop: talkTop(), flowersToday: flowersToday() }),
 );
 app.post('/api/game/save', (req, res) => {
-  const { used, week, banned, report, life, talk } = req.body || {};
+  const { used, week, banned, report, life, talk, flowers } = req.body || {};
+  if (typeof flowers === 'number' && Number.isFinite(flowers) && flowers > 0) {
+    todayScores();
+    soLop.today.flowers = (soLop.today.flowers ?? 0) + Math.min(1_000_000, Math.round(flowers));
+  }
   // học bạ cả đời: cộng phần mới
   if (Array.isArray(life)) {
     for (const e of life.slice(0, 2000)) {
@@ -665,7 +674,7 @@ app.post('/api/game/save', (req, res) => {
     }
   }
   writeSoLop();
-  res.json({ weekTop: weekTop(), todayTop: todayTop(), talkTop: talkTop() });
+  res.json({ weekTop: weekTop(), todayTop: todayTop(), talkTop: talkTop(), flowersToday: flowersToday() });
 });
 
 // Chuyên cần: trang stage báo mỗi bạn lần đầu bình luận trong buổi, server trả về số ngày đi học liền

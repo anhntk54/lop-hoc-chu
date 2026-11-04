@@ -188,6 +188,30 @@ export const LINES = {
     'Giờ này các bạn nhỏ phải đi ngủ rồi nè. Ai còn thức thì chơi nhỏ nhỏ với cô thôi nha.',
   ] as L0,
 
+  // ---------- Cận cảnh cô nhận hoa: cảm ơn theo bậc (n tên, g = "một bông hoa" / "một bó hoa nhỏ"...) ----------
+  thankTier0: [
+    (n, g) => `Ôi cô cảm ơn ${n} nha, ${g} xinh quá. Cô có thêm động lực dạy rồi nè.`,
+    (n, g) => `${n} tặng cô ${g}! Cô thương bạn nhỏ quá à.`,
+    (n, g) => `Cảm ơn ${n} nha, cô cắm ${g} này lên bàn liền.`,
+  ] as L2,
+  thankTier1: [
+    (n, g) => `Oa, ${n} tặng cô ${g} luôn! Cô cảm ơn nhiều lắm nha.`,
+    (n, g) => `${g} đẹp quá ${n} ơi! Cô vui cả buổi luôn đó.`,
+  ] as L2,
+  thankTier2: [
+    (n, g) => `Trời ơi ${n} tặng cô ${g}! Cô cảm động quá, cả lớp vỗ tay cho ${n} nào!`,
+    (n, g) => `${g} luôn hả ${n}? Cô cảm ơn bạn nhỏ nhiều lắm lắm!`,
+  ] as L2,
+  thankTier3: [
+    (n, g) => `Không tin nổi, ${n} tặng cô ${g}! Cô cảm ơn từ tận đáy lòng, cả lớp hoan hô ${n} nào!`,
+    (n, g) => `${n} ơi, ${g} lận! Lớp mình hôm nay có nhà hảo tâm lớn rồi. Cô cảm ơn nhiều lắm!`,
+  ] as L2,
+  // quỹ hoa của cô đạt mốc (g = số bông)
+  fundGoal: [
+    (g) => `Quỹ hoa của cô hôm nay đủ ${g} bông rồi! Cô cảm ơn cả lớp nhiều lắm, có các bạn nhỏ cô dạy vui quá.`,
+    (g) => `Yeah, ${g} bông hoa rồi! Bàn của cô đầy hoa luôn. Cảm ơn cả lớp nha!`,
+  ] as L1,
+
   // ---------- Học bạ: lên lớp (g = "lớp 3" / "tốt nghiệp"), huy hiệu mới (b = "🧮 Thần đồng toán") ----------
   gradeUp: [
     (n, g) => `Chúc mừng bạn nhỏ ${n} đã lên ${g}! Cả lớp vỗ tay nào!`,

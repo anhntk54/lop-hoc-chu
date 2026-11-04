@@ -107,6 +107,21 @@ export const GAME = {
   standing: 0,
   joinKeywords: ['vaolop'],
 
+  // ---------- Quà: chia bậc bó hoa + quỹ hoa của cô (bản riêng, chủ kênh chốt 2026-11-04) ----------
+  // bậc theo số xu của món quà (kim cương x số lượng). Mỗi xu = 1 bông vào quỹ hoa.
+  giftTiers: [
+    { min: 1, name: 'một bông hoa', label: '🌹 1 bông hoa', icon: '🌹', size: 1 },
+    { min: 10, name: 'một bó hoa nhỏ', label: '💐 Bó hoa nhỏ', icon: '💐', size: 1.4 },
+    { min: 99, name: 'một bó hoa thật to', label: '💐 Bó hoa lớn', icon: '💐', size: 2 },
+    { min: 500, name: 'cả một xe hoa', label: '🌸 Xe hoa', icon: '🌸', size: 2.6 },
+  ],
+  // mục tiêu quỹ hoa trong ngày (số bông), đạt mốc nào thì cô cảm ơn cả lớp + pháo hoa, rồi tới mốc kế
+  flowerGoals: [50, 100, 200, 500, 1000, 2000, 5000, 10000],
+  // cận cảnh cô nhận hoa: từ lúc bạn nhỏ đi tới bục tới lúc quay về (ms tính từ lúc tặng)
+  closeUpFromMs: 1600,
+  closeUpToMs: 5000,
+  giftPileMax: 18, // bàn quà sau lưng cô bày tối đa chừng này món (mới nhất)
+
   // ---------- Quà / tim ----------
   // 0 = quà KHÔNG cho lợi thế trong game (chủ kênh chốt 2026-11-04): TikTok cấm khuyến khích trẻ em tặng quà,
   // quà chỉ để cảm ơn. Đặt vd 30 thì quà từ 30 xu lúc chưa ai đúng sẽ mở thêm 1 chữ như trước.

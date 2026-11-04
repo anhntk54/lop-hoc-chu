@@ -130,7 +130,7 @@ export function useGame() {
       const coins = e.diamondCount * e.repeatCount;
       setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
       const hint = room.gift(p, coins, Date.now(), e.repeatCount);
-      say(hint);
+      say(hint); // cận cảnh cô nhận hoa: cảm ơn ngay, quà đạt mốc quỹ hoa: cô cảm ơn cả lớp
       // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
       if (!hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
     },
@@ -197,12 +197,15 @@ export function useGame() {
       room.lifeDelta.clear();
       const talk = [...room.talkDelta].map(([username, v]) => ({ username, ...v }));
       room.talkDelta.clear();
+      const flowers = room.flowerDelta;
+      room.flowerDelta = 0;
       try {
-        const r = await fetch('/api/game/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ used, week, banned, report, life, talk }) });
+        const r = await fetch('/api/game/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ used, week, banned, report, life, talk, flowers }) });
         const d = await r.json();
         weekTop.current = d.weekTop ?? [];
         todayTop.current = d.todayTop ?? [];
         talkTop.current = d.talkTop ?? [];
+        if (typeof d.flowersToday === 'number') roomRef.current?.setFlowersSaved(d.flowersToday);
         room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
       } catch {
         room.usedLog.unshift(...used); // server tắt: giữ lại, lần sau gửi
@@ -211,12 +214,14 @@ export function useGame() {
         room.reportLog.unshift(...report);
         for (const l of life) room.lifeDelta.set(l.username, l);
         for (const w of talk) room.talkDelta.set(w.username, w);
+        room.flowerDelta += flowers;
       }
     };
 
     (async () => {
       let used: Record<string, number> = {};
       let banned: string[] = [];
+      let flowersSaved = 0;
       try {
         const d = await (await fetch('/api/game/save')).json();
         used = d.used ?? {};
@@ -224,11 +229,13 @@ export function useGame() {
         weekTop.current = d.weekTop ?? [];
         todayTop.current = d.todayTop ?? [];
         talkTop.current = d.talkTop ?? [];
+        flowersSaved = Number(d.flowersToday) || 0; // quỹ hoa hôm nay (mở lại trang không mất)
       } catch {
         // server cũ chưa có sổ: chơi bình thường, chỉ không nhớ câu đã hỏi
       }
       if (stop) return;
       const room = new Classroom(QUESTIONS, Date.now(), Math.random, used, banned);
+      room.setFlowersSaved(flowersSaved);
       room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
       roomRef.current = room;
       say(room.newRound(Date.now()));
