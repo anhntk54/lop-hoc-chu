@@ -54,4 +54,7 @@ export const GAME = {
   namesPerGreeting: 3,
   shareReminderEveryMs: 6 * 60_000,
   idleAfterSec: 75, // không ai comment chừng này giây thì cô nhắc
+  // câu nói thêm (chào, cà khịa) chờ quá lâu thì bỏ, nhường chỗ cho câu hỏi; cảm ơn quà được chờ lâu hơn
+  chatterMaxWaitMs: 7000,
+  giftLineMaxWaitMs: 15000,
 };

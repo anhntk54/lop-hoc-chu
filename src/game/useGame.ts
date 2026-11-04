@@ -43,8 +43,21 @@ export function useGame() {
     follows: new OncePerPerson(),
   }));
 
+  // Câu chính (đề, đáp án, tổng kết) chen lên đọc trước. Câu nói thêm (chào, cảm ơn, cà khịa) mà chờ quá lâu
+  // hoặc đã có câu chính mới thì bỏ, để giọng không trễ sau câu hỏi khi phòng đông.
+  const turn = useRef(0);
   function say(lines: Say[]) {
-    for (const l of lines) voice.say(l.text, l.priority);
+    if (lines.some((l) => l.main)) turn.current++;
+    for (const l of lines) {
+      if (l.main) {
+        voice.say(l.text, true);
+        continue;
+      }
+      const myTurn = turn.current;
+      const at = Date.now();
+      const maxWait = l.priority ? GAME.giftLineMaxWaitMs : GAME.chatterMaxWaitMs;
+      voice.say(l.text, l.priority, undefined, false, undefined, () => turn.current === myTurn && Date.now() - at < maxWait);
+    }
     dirty.current = true;
   }
 

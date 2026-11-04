@@ -39,6 +39,8 @@ export interface Answerer {
 export interface Say {
   text: string;
   priority?: boolean;
+  /** câu chính (đọc đề, đáp án, tổng kết, ra chơi): chen lên đọc trước, câu nói thêm còn chờ thì bỏ */
+  main?: boolean;
 }
 
 export interface ChatIn {
@@ -183,6 +185,10 @@ export class Classroom {
   /** 1 câu cô nói (giọng nữ) */
   private t(text: string, priority = false): Say {
     return { text: `F: ${text}`, priority };
+  }
+  /** đánh dấu câu chính */
+  private mainOf(lines: Say[]): Say[] {
+    return lines.map((l) => ({ ...l, main: true }));
   }
   private line0(key: keyof typeof LINES) {
     return this.t(this.lines.pick(key, LINES[key] as string[]));
@@ -335,7 +341,7 @@ export class Classroom {
     const out: Say[] = [];
     if (this.golden) out.push(this.line0('goldenIntro'));
     out.push(this.t(`Câu ${this.qNo}. ${this.q.kind} ${this.q.clue}`));
-    return out;
+    return this.mainOf(out);
   }
 
   private matches(q: Question | null, comment: string) {
@@ -443,7 +449,7 @@ export class Classroom {
       main = this.line('reveal', answer, rest);
       if (this.golden) out.unshift(this.t(this.line('goldenWinner', top.spoken)));
     } else main = this.line('revealNobody', answer);
-    out.unshift(this.t(main));
+    out.unshift({ ...this.t(main), main: true });
     // cà khịa 1 bạn trả lời sai (60% số câu, tên đọc được)
     const wrongs = [...this.wrong].map((u) => this.students.get(u)).filter((s): s is Student => !!s && s.spoken !== 'bạn');
     if (wrongs.length && this.rand() < GAME.roastChance) out.push(this.t(this.line('roastWrong', wrongs[Math.floor(this.rand() * wrongs.length)].spoken)));
@@ -457,7 +463,7 @@ export class Classroom {
     if (outOfQuestions) lines.push(this.t('Hết câu hỏi rồi, cô tổng kết luôn nha.'));
     lines.push(best && best.score > 0 ? this.t(this.line('results', best.spoken, String(best.score))) : this.line0('resultsNobody'));
     if (this.weekLeader && this.round % 3 === 0) lines.push(this.t(this.line('weekBoard', this.weekLeader)));
-    return lines;
+    return this.mainOf(lines);
   }
 
   // ---------- giờ ra chơi ----------
@@ -497,7 +503,7 @@ export class Classroom {
     if (game === 'pick') out.push(this.t(this.line('pickIntro', r.pick[0], r.pick[1])));
     if (game === 'roll') out.push(this.line0('rollIntro'));
     if (game === 'heart') out.push(this.t(this.line('heartIntro', String(GAME.heartTarget))));
-    return out;
+    return this.mainOf(out);
   }
 
   private recessChat(s: Student, e: ChatIn, now: number): Say[] {
@@ -523,7 +529,7 @@ export class Classroom {
     this.setPhase('recess', now, GAME.recessResultSec);
     const out: Say[] = [];
     if (r.game === 'rps') {
-      if (r.rps.size === 0) return [this.line0('rpsNobody')];
+      if (r.rps.size === 0) return this.mainOf([this.line0('rpsNobody')]);
       r.teacher = (Object.keys(RPS) as Rps[])[Math.floor(this.rand() * 3)];
       let win = 0;
       let lose = 0;
@@ -571,7 +577,7 @@ export class Classroom {
         this.clapUntil = now + GAME.clapSec * 1000;
       } else out.push(this.t(this.line('heartFail', String(r.hearts))));
     }
-    return [...out, ...this.checkMonitor()];
+    return [...this.mainOf(out), ...this.checkMonitor()];
   }
 
   private recessBoard(now: number): Say[] {
@@ -594,7 +600,7 @@ export class Classroom {
     }
     this.pickRound(now);
     this.setPhase('intro', now, GAME.introSec);
-    return [this.line0('intro')];
+    return this.mainOf([this.line0('intro')]);
   }
 
   /** Bỏ qua phần đang chạy (nút "Qua phần tiếp" ở trang điều khiển) */
@@ -632,7 +638,7 @@ export class Classroom {
           this.bonusUsed = true;
           this.revealOne();
           this.setPhase('bonus', now, GAME.bonusSec);
-          return [this.line0('bonus')];
+          return this.mainOf([this.line0('bonus')]);
         }
         return this.reveal(now);
       case 'bonus':

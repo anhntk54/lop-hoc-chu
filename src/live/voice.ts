@@ -42,6 +42,8 @@ class Voice {
     }
     const q = priority ? this.priority : this.normal;
     q.push({ text: text.trim(), at: Date.now(), done, keep, start, valid });
+    // câu ưu tiên: tạo giọng sẵn ngay lúc xếp hàng, tới lượt là phát liền không phải chờ server
+    if (priority) for (const p of this.parts(text)) fetch(this.urlOf(p)).catch(() => {});
     if (q.length > MAX_QUEUE) q.shift()?.done?.();
     void this.next();
   }
@@ -74,6 +76,27 @@ class Voice {
     return this.busy ? 0 : now - this.lastSpokeAt;
   }
 
+  // "M: Trời ơi! | ^Hoan hô!" -> từng đoạn: ai nói (M nam, F nữ), có hô to không
+  private parts(text: string) {
+    let who: 'M' | 'F' = 'M';
+    const out: { who: 'M' | 'F'; hype: boolean; text: string }[] = [];
+    for (let raw of text.split('|')) {
+      raw = raw.trim();
+      const sp = /^(M|F):\s*/.exec(raw);
+      if (sp) {
+        who = sp[1] as 'M' | 'F';
+        raw = raw.slice(sp[0].length);
+      }
+      const t = raw.replace(/^\^+/, '');
+      if (t) out.push({ who, hype: raw.startsWith('^'), text: t });
+    }
+    return out;
+  }
+
+  private urlOf(p: { who: 'M' | 'F'; hype: boolean; text: string }) {
+    return `/api/tts?rate=${this.rate}${p.hype ? '&hype=1' : ''}${p.who === 'F' ? '&v=f' : ''}&text=${encodeURIComponent(p.text)}`;
+  }
+
   private async next() {
     if (this.playing) return;
     const now = Date.now();
@@ -89,21 +112,10 @@ class Voice {
     if (!line) return;
     this.playing = true;
     line.start?.();
-    let who: 'M' | 'F' = 'M';
     try {
-      // "Trời ơi! | ^Hoan hô!" -> đọc thường rồi hô to hơn
-      for (let raw of line.text.split('|')) {
-        raw = raw.trim();
-        const sp = /^(M|F):\s*/.exec(raw);
-        if (sp) {
-          who = sp[1] as 'M' | 'F';
-          raw = raw.slice(sp[0].length);
-        }
-        const hype = raw.startsWith('^');
-        const text = raw.replace(/^\^+/, '');
-        if (!text) continue;
-        this.onSpeaker?.(who);
-        const audio = new Audio(`/api/tts?rate=${this.rate}${hype ? '&hype=1' : ''}${who === 'F' ? '&v=f' : ''}&text=${encodeURIComponent(text)}`);
+      for (const part of this.parts(line.text)) {
+        this.onSpeaker?.(part.who);
+        const audio = new Audio(this.urlOf(part));
         audio.volume = this.volume;
         this.current = audio;
         await new Promise<void>((resolve) => {

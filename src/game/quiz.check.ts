@@ -48,8 +48,9 @@ for (let i = 0; i < 200; i++) {
 {
   const c = new Classroom([mk('BẢNG ĐEN')], t);
   c.newRound(t);
-  c.tick((t += GAME.introSec * 1000));
+  const asked = c.tick((t += GAME.introSec * 1000));
   assert.equal(c.phase, 'question');
+  assert.ok(asked.some((l) => l.main && l.text.includes('Câu 1.')), 'câu hỏi là câu chính, được đọc trước');
   assert.deepEqual(c.slots(), [null, null, null, null, ' ', null, null, null]);
   chat(c, 9999, 'khó quá', t, t); // nói chuyện thường không bị tính sai
   chat(c, 9999, 'bảng đen', t + 9000, t);
