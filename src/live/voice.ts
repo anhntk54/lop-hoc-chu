@@ -82,7 +82,8 @@ class Voice {
 
   // "M: Trời ơi! | ^Hoan hô!" -> từng đoạn: ai nói (M nam, F nữ), có hô to không
   private parts(text: string) {
-    let who: Who = 'M';
+    // Lớp Học Chữ: chỉ có cô Ngân nói, câu không ghi "M:"/"F:" (vd chủ kênh gõ cho cô đọc) cũng là giọng nữ (2026-11-04)
+    let who: Who = 'F';
     const out: { who: Who; hype: boolean; text: string }[] = [];
     for (let raw of text.split('|')) {
       raw = raw.trim();
@@ -160,9 +161,9 @@ class Voice {
 function readRate() {
   try {
     const r = Number(localStorage.getItem('voice-rate'));
-    return r >= 0.5 && r <= 1.5 ? r : 1.1; // cô giáo đọc đề: chậm hơn MC đám cưới (1.35)
+    return r >= 0.5 && r <= 1.5 ? r : 1.0; // cô Ngân đọc tốc độ thường (chủ kênh 2026-11-04: 1.1 hơi nhanh); chỉnh ở trang điều khiển
   } catch {
-    return 1.1;
+    return 1.0;
   }
 }
 

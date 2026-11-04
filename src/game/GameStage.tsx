@@ -6,7 +6,7 @@ import { Hair } from './Hair';
 import './stage.css';
 
 /**
- * Màn hình lớp học 1080x1920. Nền là ảnh public/assets/bg/lop.webp (gốc 941x1672, tach-nen.py phóng sẵn lên 1080 ngang),
+ * Màn hình lớp học 1080x1920. Nền là ảnh public/assets/bg/lop.webp (941x1672 phóng lên 1080 ngang),
  * nên mọi toạ độ dưới đây = toạ độ trên ảnh gốc x K.
  */
 const K = 1080 / 941;
@@ -103,8 +103,9 @@ export function GameStage({ game }: { game: GameState }) {
   }
   return (
     <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
-      {/* tặng hoa: chỉ có bạn nhỏ đi lên bục đưa cô (FlowerWalk), không zoom, không khung cận cảnh (chủ kênh bỏ 2026-11-04) */}
-      <div className="absolute inset-0">
+      {/* tặng hoa: chỉ có bạn nhỏ đi lên bục đưa cô (FlowerWalk), không zoom, không khung cận cảnh (chủ kênh bỏ 2026-11-04).
+          Giữ motion.div như cũ (scale luôn 1): đổi sang div thường thì hình trên live khác đi */}
+      <motion.div className="absolute inset-0" style={{ transformOrigin: '330px 700px' }} animate={{ scale: 1 }}>
         {/* sàn lớp trong ảnh nền hơi chói: phủ 1 lớp tối nhẹ từ chân bảng trở xuống (chủ kênh chỉnh 2026-11-04) */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[600px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/20 to-[#3b1d07]/28 mix-blend-multiply" />
         <Header v={v} name={game.channelName} />
@@ -120,10 +121,10 @@ export function GameStage({ game }: { game: GameState }) {
         <Teacher v={v} now={now} />
         <Punished v={v} />
         <Podium v={v} />
-        {v.phase !== 'show' && <SeatHint now={now} />}
+        {v.phase !== 'show' && <SeatHint now={now} asking={v.phase === 'question' || v.phase === 'bonus'} />}
         <Students v={v} now={now} />
         <FlowerWalk v={v} />
-      </div>
+      </motion.div>
       <GiftBanner gift={game.lastGift} now={now} />
       <BirthdayBanner v={v} />
       <FundParty v={v} />
@@ -332,7 +333,7 @@ function Timer({ left }: { left: number }) {
       key={urgent ? left : 'calm'}
       initial={urgent ? { scale: 1.35 } : false}
       animate={{ scale: 1 }}
-      className={`flex h-[64px] min-w-[64px] items-center justify-center rounded-full border-4 px-2 text-[40px] leading-none ${urgent ? 'border-[#ff8a7a] text-[#ff8a7a]' : 'border-[#f4f1e6]'}`}
+      className={`flex h-[78px] min-w-[78px] items-center justify-center rounded-full border-[5px] px-2 text-[50px] font-bold leading-none ${urgent ? 'border-[#ff8a7a] bg-[#ff8a7a]/20 text-[#ff8a7a]' : 'border-[#f4f1e6]'}`}
     >
       {left}
     </motion.div>
@@ -946,13 +947,14 @@ function WeekBoard({ v, left }: { v: StageView; left: number }) {
   );
 }
 
-// Góc trái trên đầu cô: tờ giấy ghim "Học sinh xuất sắc hôm nay", tính tổng điểm cả ngày (server lưu, qua 0 giờ thì làm lại)
+// Góc trái trên đầu cô: tờ giấy ghim "Học sinh xuất sắc trong tiết", chỉ tính điểm tiết đang học, sang tiết mới làm lại
+// (chủ kênh đổi 2026-11-04, trước tính cả ngày). Ghế đã xếp theo điểm tiết nên lấy luôn 4 bạn đầu
 function DayTop({ v }: { v: StageView }) {
-  const rows = (v.todayTop ?? []).slice(0, 4); // top 4 thôi để không che đầu cô
+  const rows = v.seats.filter((s) => s.score > 0).slice(0, 4).map((s) => ({ username: s.username, nickname: s.nickname, points: s.score })); // top 4 thôi để không che đầu cô
   return (
     <div className="absolute left-[10px] top-[230px] z-20 w-[326px] -rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-3 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[30px]">📌</div>
-      <div className="whitespace-nowrap text-center text-[21px] font-extrabold leading-tight text-[#b45309]">🏆 Học sinh xuất sắc hôm nay</div>
+      <div className="whitespace-nowrap text-center text-[21px] font-extrabold leading-tight text-[#b45309]">🏆 Học sinh xuất sắc trong tiết</div>
       {rows.length === 0 && <div className="py-3 text-center text-[20px] text-[#8a6a3a]">Chưa có ai, trả lời đúng là lên bảng!</div>}
       <div className="mt-1 space-y-[2px]">
         {rows.map((r, i) => (
@@ -1153,8 +1155,10 @@ function Podium({ v }: { v: StageView }) {
 
 // Dòng nhắc dưới khung "Nhanh nhất", trên hàng ghế đầu: cách được vào lớp ngồi (đổi câu mỗi 8 giây, viết ngắn)
 const SEAT_HINTS = ['⭐ Đoán nhanh, điểm cao được vào lớp ngồi!', '💬 Tương tác nhiều để giữ chỗ trong lớp nha!'];
-function SeatHint({ now }: { now: number }) {
-  const i = Math.floor(now / 8000) % SEAT_HINTS.length;
+// đang hỏi: luôn hiện hướng dẫn cố định để người mới lướt vào hiểu ngay (chế độ nhanh 2026-11-04)
+const ASK_HINT = '💬 Gõ đáp án vào bình luận · nhanh nhất +10 điểm';
+function SeatHint({ now, asking }: { now: number; asking: boolean }) {
+  const i = asking ? -1 : Math.floor(now / 8000) % SEAT_HINTS.length;
   return (
     <div className="pointer-events-none absolute left-[397px] top-[718px] z-[9] flex w-[460px] justify-center">
       <AnimatePresence mode="wait">
@@ -1165,7 +1169,7 @@ function SeatHint({ now }: { now: number }) {
           exit={{ opacity: 0, y: -8 }}
           className="whitespace-nowrap rounded-full bg-[#7a2e0e]/80 px-3 py-[1px] text-[18px] font-bold text-[#ffe9b8] shadow-md"
         >
-          {SEAT_HINTS[i]}
+          {i < 0 ? ASK_HINT : SEAT_HINTS[i]}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -1266,6 +1270,18 @@ function Students({ v, now }: { v: StageView; now: number }) {
               </div>
             </div>
             {s.answered === 'right' && <div className="badge bg-[#16a34a]">✓</div>}
+            {s.answered === 'right' && s.gain > 0 && (
+              <motion.div
+                key={`gain${v.qNo}`}
+                initial={{ y: 0, opacity: 1, scale: 0.6 }}
+                animate={{ y: -90, opacity: [1, 1, 0], scale: 1.2 }}
+                transition={{ duration: 1.8, ease: 'easeOut' }}
+                className="pointer-events-none absolute left-1/2 top-0 z-40 -translate-x-1/2 whitespace-nowrap font-extrabold text-[#fde047] [text-shadow:0_2px_0_#7a2e0e,0_0_6px_#000]"
+                style={{ fontSize: 34 * scale }}
+              >
+                +{s.gain}
+              </motion.div>
+            )}
             {s.answered === 'wrong' && <div className="badge bg-[#dc2626]">✗</div>}
             <DeskGifts desk={s.desk} x={x} y={y} w={w} show={show} scale={scale} />
             {s.sleeping && !s.bubble && (
@@ -1448,6 +1464,8 @@ function TalkTop({ v }: { v: StageView }) {
           <motion.div key={r.username} layout className="flex items-center gap-1 text-[22px] leading-[28px]">
             <span className="w-6 text-center">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
             <span className="min-w-0 flex-1 truncate font-semibold">{r.nickname}</span>
+            {/* hiện điểm tương tác, không ghi cách tính (chủ kênh đổi 2026-11-04) */}
+            <b className="text-[#c2410c]">{r.points}</b>
           </motion.div>
         ))}
       </div>

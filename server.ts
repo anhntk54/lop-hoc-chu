@@ -505,6 +505,7 @@ app.get('/api/tts', async (req, res) => {
 // Trang stage (nơi chạy game thật) gửi ảnh chụp trạng thái lên; trang điều khiển xem trước đúng y như vậy
 app.post('/api/game/state', (req, res) => {
   broadcast('gamestate', req.body);
+  if (typeof req.body?.phase === 'string') stagePhase = req.body.phase.slice(0, 20);
   res.json({ success: true });
 });
 
@@ -699,6 +700,54 @@ app.post('/api/game/attend', (req, res) => {
   res.json({ days: cur.streak, total: cur.total, life });
 });
 
+// Người xem theo từng phần của game: cứ 15 giây ghi (giờ, phần đang chạy, số người xem) vào data/bao-cao/<ngày>-xem.json.
+// Trang báo cáo tính mỗi phần người xem tăng hay giảm bao nhiêu mỗi phút, để biết phần nào làm khách rời live.
+let stagePhase = '';
+type ViewSample = { at: number; phase: string; viewers: number };
+const viewFile = (day: string) => path.join(REPORT_DIR, `${day}-xem.json`);
+const readViews = (day: string): ViewSample[] => {
+  try {
+    return JSON.parse(fs.readFileSync(viewFile(day), 'utf8'));
+  } catch {
+    return [];
+  }
+};
+let viewSamples: { day: string; rows: ViewSample[] } = { day: '', rows: [] };
+setInterval(() => {
+  if (!stagePhase || liveStats.viewerCount <= 0) return;
+  const day = dayKey();
+  if (viewSamples.day !== day) viewSamples = { day, rows: readViews(day) };
+  viewSamples.rows.push({ at: Date.now(), phase: stagePhase, viewers: liveStats.viewerCount });
+  try {
+    fs.mkdirSync(REPORT_DIR, { recursive: true });
+    fs.writeFileSync(viewFile(day), JSON.stringify(viewSamples.rows));
+  } catch (err) {
+    console.error('Không lưu được số người xem:', err);
+  }
+}, 15_000);
+const PHASE_NAME: Record<string, string> = {
+  team: 'Chọn tổ', intro: 'Giới thiệu tiết', question: 'Đang trả lời', bonus: 'Thêm giờ (mở chữ)', reveal: 'Hiện đáp án',
+  praise: 'Điểm danh giữa tiết', results: 'Tổng kết tiết', recess: 'Ra chơi', vote: 'Bình chọn chủ đề', show: 'Game lớn',
+};
+/** mỗi phần: tổng thời gian, người xem trung bình, người xem thay đổi mỗi phút (âm = khách rời đi) */
+const viewStats = (rows: ViewSample[]) => {
+  const by = new Map<string, { n: number; sum: number; delta: number; ms: number }>();
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const b = by.get(r.phase) ?? { n: 0, sum: 0, delta: 0, ms: 0 };
+    b.n++;
+    b.sum += r.viewers;
+    const next = rows[i + 1];
+    // chỉ tính khoảng liền nhau (dưới 1 phút), tắt live rồi bật lại thì bỏ
+    if (next && next.at - r.at < 60_000) {
+      b.delta += next.viewers - r.viewers;
+      b.ms += next.at - r.at;
+    }
+    by.set(r.phase, b);
+  }
+  return [...by].map(([phase, b]) => ({ phase, minutes: b.ms / 60_000, avg: b.sum / b.n, perMin: b.ms ? (b.delta / b.ms) * 60_000 : 0 })).sort((a, b) => a.perMin - b.perMin);
+};
+
 // Trang báo cáo sau buổi live: http://localhost:3006/bao-cao (thêm ?ngay=2026-11-04 để xem ngày khác)
 app.get('/bao-cao', (req, res) => {
   const day = typeof req.query.ngay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.ngay) ? req.query.ngay : dayKey();
@@ -712,6 +761,7 @@ app.get('/bao-cao', (req, res) => {
   const top = day === soLop.today.date ? Object.entries(soLop.today.scores).sort((a, b) => b[1].points - a[1].points).slice(0, 15) : [];
   const loyal = attended.sort((a, b) => b[1].streak - a[1].streak).slice(0, 15);
   const banned = Object.entries(soLop.banned).sort((a, b) => b[1].at - a[1].at);
+  const views = viewStats(day === viewSamples.day ? viewSamples.rows : readViews(day));
   const list = (items: string[], empty: string) => (items.length ? `<ol>${items.map((i) => `<li>${i}</li>`).join('')}</ol>` : `<p class="muted">${empty}</p>`);
   res.type('html').send(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Báo cáo Lớp Học Chữ ${esc(day)}</title>
@@ -725,6 +775,10 @@ h1{margin:0 0 4px}h2{margin-top:28px;border-bottom:2px solid #e9d8a6;padding-bot
 <div class="stat"><b>${attended.length}</b>bạn vào lớp</div>
 <div class="stat"><b>${hard.length}</b>câu không ai đúng</div>
 <div class="stat"><b>${easy.length}</b>câu quá dễ</div></div>
+<h2>👀 Người xem theo từng phần</h2><p class="muted">Số người xem tăng (+) hay giảm (−) trung bình mỗi phút trong từng phần. Phần giảm nhiều nhất ở trên cùng: đó là chỗ khách rời live. Cứ 15 giây ghi 1 lần, chỉ lúc đã kết nối TikTok.</p>
+${views.length ? `<table style="border-collapse:collapse;width:100%;background:#fff;border-radius:12px"><tr style="text-align:left"><th style="padding:6px">Phần</th><th>Thời gian</th><th>Xem TB</th><th>Thay đổi / phút</th></tr>${views
+  .map((r) => `<tr style="border-top:1px solid #eee"><td style="padding:6px">${esc(PHASE_NAME[r.phase] ?? r.phase)}</td><td>${r.minutes.toFixed(0)} phút</td><td>${r.avg.toFixed(0)}</td><td style="color:${r.perMin < 0 ? '#b91c1c' : '#15803d'};font-weight:700">${r.perMin > 0 ? '+' : ''}${r.perMin.toFixed(1)}</td></tr>`)
+  .join('')}</table>` : '<p class="muted">Chưa có số liệu (chưa kết nối TikTok hôm nay).</p>'}
 <h2>❌ Câu không ai trả lời đúng</h2><p class="muted">Có nhiều bạn thử mà vẫn sai: có thể câu quá khó hoặc gợi ý chưa rõ, nên xem lại.</p>
 ${list(hard.map((r) => `<b>${esc(r.answer)}</b> · ${esc(r.category)} · ${r.attempts} bạn thử <code>${esc(r.id)}</code>`), 'Không có câu nào.')}
 <h2>✅ Câu quá dễ (90% trở lên trả lời đúng)</h2>

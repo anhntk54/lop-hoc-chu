@@ -38,7 +38,6 @@ DƯỢC SĨ | Người đọc được chữ bác sĩ viết trong đơn thuốc
 NHA SĨ | Người bảo bạn há miệng ra rồi hỏi chuyện, ai mà trả lời được. | 2
 BÁC SĨ THÚ Y | Người chữa bệnh cho các boss chó mèo, khách hàng không biết nói. | 3 | THÚ Y
 LẬP TRÌNH VIÊN | Người viết code, sửa được một lỗi thì sinh thêm hai lỗi khác. | 3 | DEV
-YOUTUBER | Người làm video đăng lên kênh có nút đỏ, câu cửa miệng "nhớ bấm đăng ký". | 2
 THỢ MỘC | Người làm bàn ghế tủ giường từ gỗ, nhà đầy mùn cưa. | 2
 THỢ RÈN | Người đập sắt nung đỏ thành dao, tiếng búa vang cả xóm. | 3
 THỢ GỐM | Người nặn đất sét thành bình, quay bàn xoay như trong phim tình cảm. | 3
@@ -53,8 +52,6 @@ PHI HÀNH GIA | Người bay vào vũ trụ, đi làm xa nhất thế giới. | 
 NHÀ KHOA HỌC | Người mặc áo trắng làm thí nghiệm, tóc hay bị dựng đứng trong phim hoạt hình. | 3
 BÁC SĨ PHẪU THUẬT | Người cầm dao mổ, đứng mấy tiếng liền trong phòng mổ. | 3
 THỢ ẢNH | Người chụp ảnh cưới, ảnh kỷ yếu, hô "một hai ba cười". | 2
-MC | Người cầm micro dẫn chương trình, lỡ quên kịch bản thì nói "xin một tràng pháo tay". | 1 | NGƯỜI DẪN CHƯƠNG TRÌNH
-DJ | Người chơi nhạc ở quán bar, giơ tay lên là cả sàn nhảy. | 1
 VẬN ĐỘNG VIÊN | Người thi đấu thể thao chuyên nghiệp, mang huy chương về cho đất nước. | 3
 HUẤN LUYỆN VIÊN | Người đứng ngoài đường biên la hét chỉ đạo đội bóng. | 3
 TRỌNG TÀI | Người thổi còi rút thẻ, cả sân vận động không ai ưa. | 2

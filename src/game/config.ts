@@ -18,7 +18,14 @@ export const GAME = {
     'dh', 'anh', 'meo', 'dh', 'math3',
     'hard', 'su', 'dh', 'math4', 'hard',
   ] as const,
-  introSec: 8, // cô giới thiệu đầu tiết
+  introSec: 5, // cô giới thiệu đầu tiết (giảm từ 8, chế độ nhanh 2026-11-04)
+  // ---------- Chế độ nhanh (chủ kênh duyệt 2026-11-04): khách vào chơi giờ nghỉ, cần câu nối câu ----------
+  // true: cô đọc ngắn ("Câu 3. Một món ăn. <gợi ý>"), không hô bắt đầu; đọc XONG là hiện bảng chữ, nhận đáp án, chạy giờ.
+  // false: như cũ (đọc đề xong, hô bắt đầu mới hiện chữ, đồng hồ dừng lúc cô đọc)
+  quickRead: true,
+  closeAfterTopN: 5, // đủ chừng này bạn đúng (top có điểm cao) thì chốt câu sau closeAfterTopSec giây. 0 = tắt
+  closeAfterTopSec: 3,
+  praiseShort: true, // điểm danh giữa tiết chỉ 1 câu đọc top 3
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)
   endAfterFirstSec: 0, // 0 = luôn đủ giờ cho cả lớp. Đặt vd 10: có người đúng thì 10 giây sau chốt luôn (hợp lúc phòng vắng)
   // Tự đổi nhịp: dưới 5 bạn đang chơi (bình luận trong 2 phút) thì có người đúng là 8 giây sau chốt câu
@@ -42,13 +49,13 @@ export const GAME = {
   standChance: 0.3, // lúc trêu bạn trả lời sai: tỉ lệ cô phạt lên bục đứng (học sinh cá biệt)
   standSec: 45,
   bonusSec: 10, // hết giờ chưa ai đúng: mở 1 chữ, thêm chừng này giây
-  praiseEvery: 5, // cứ 5 câu cô dừng lại điểm danh bạn nhỏ giỏi, tặng quà top 3 (câu 5, 10, 15)
-  praiseSec: 8, // đọc xong còn dừng chừng này giây để các bạn nhỏ chào cô, thả tim rồi mới ra câu tiếp
-  giftChance: 0.4, // tỉ lệ cô thưởng quà cho bạn đúng đầu tiên / đúng 3 câu liền
+  praiseEvery: 10, // cứ chừng này câu cô dừng lại điểm danh top 3, tặng quà (chế độ nhanh: chỉ sau câu 10; trước là 5)
+  praiseSec: 3, // đọc xong còn dừng chừng này giây để các bạn nhỏ chào cô, thả tim rồi mới ra câu tiếp
+  giftChance: 0.4, // tỉ lệ cô thưởng quà cho bạn đúng đầu tiên / đạt mốc chuỗi câu liền
   deskGifts: 4, // mỗi bàn bày tối đa chừng này món quà (mới nhất)
   warnLeftSec: 5, // còn chừng này giây thì cô nhắc "chuẩn bị hết giờ" (đồng hồ không dừng)
-  revealSec: 8,
-  resultsSec: 12,
+  revealSec: 5,
+  resultsSec: 8,
   superFastSec: 4, // đúng trong 4 giây đầu: cô nghi "quay cóp"
 
   // ---------- Điểm ----------
@@ -56,17 +63,19 @@ export const GAME = {
   rankPoints: [10, 7, 5, 3, 3],
   latePoints: 1, // đúng sau top 5 (thường là chép đáp án trên khung chat)
   fastestShown: 5, // bảng Top nhanh nhất lúc hiện đáp án
-  streakEvery: 3, // đúng 3 câu liền
+  // khen + thưởng khi đúng liền đủ 5, 12, 17 câu (chủ kênh chốt 2026-11-04, trước cứ 3 câu là khen, dễ quá)
+  streakMilestones: [5, 12, 17],
   streakBonus: 5, // thưởng thêm
+  streakNamesRead: 3, // nhiều bạn cùng đủ chuỗi 1 lúc: cô gộp 1 câu, đọc tối đa chừng này tên (còn lại "và N bạn nữa")
   requireDiacritics: true, // phải gõ đủ dấu mới tính đúng ("phan" không ăn "phấn"); dấu kiểu cũ/mới đều được
   keepHiddenLetters: 2, // gợi ý không bao giờ mở quá (số chữ - 2)
-  roastChance: 0.35, // tỉ lệ cô cà khịa 1 bạn trả lời sai lúc hiện đáp án (giảm từ 0.6, 2026-11-04)
+  roastChance: 0.2, // tỉ lệ cô cà khịa 1 bạn trả lời sai lúc hiện đáp án (giảm từ 0.6, 2026-11-04)
   monitorEveryQ: 4, // lớp trưởng đổi người: cách ít nhất chừng này câu cô mới báo lại
 
   // ---------- Giờ ra chơi (sau mỗi tiết) ----------
-  recessPlaySec: { rps: 20, callup: 15, pick: 20, roll: 12, heart: 30 },
-  recessResultSec: 8,
-  recessBoardSec: 10, // bảng "học sinh giỏi hôm nay"
+  recessPlaySec: { rps: 15, callup: 12, pick: 15, roll: 10, heart: 20 }, // chế độ nhanh: ra chơi + bình chọn ~35 giây
+  recessResultSec: 5,
+  recessBoardSec: 5, // bảng "học sinh giỏi hôm nay"
   rpsPoints: 2, // oẳn tù tì thắng cô
   callUpPoints: 5, // kiểm tra miệng trả lời đúng
   rollPoints: 3, // điểm danh nhanh
@@ -75,16 +84,17 @@ export const GAME = {
   heartBoost: 5, // mỗi tim thật tính thành 5 tim (300 tim chỉ cần 60 tim thật) cho cả lớp dễ thắng; cũng áp cho vỗ tay
 
   // ---------- Sau giờ ra chơi: cả lớp chọn chủ đề tiết sau ----------
-  voteSec: 15, // gõ 1 hoặc 2
+  voteSec: 10, // gõ 1 hoặc 2
   voteTopicQuestions: 5, // chủ đề thắng chiếm chừng này câu chữ thường của tiết sau
   // bản riêng (2026-11-04): khán giả Gen Z + người đi làm, nên phần lớn câu chữ thường lấy từ các bộ này
   hotTopics: ['16-gen-z', '32-cong-so', '33-gen-z-trend', '34-an-uong-tinh-yeu'],
-  hotShare: 0.75, // tỉ lệ câu chữ thường bốc từ hotTopics (chủ đề cả lớp bình chọn vẫn được ưu tiên trước)
+  hotShare: 0.5, // tỉ lệ câu chữ thường bốc từ hotTopics (giảm từ 0.75, 2026-11-05: trộn thêm chủ đề đời thường gần gũi); chủ đề cả lớp bình chọn vẫn ưu tiên trước
 
   // ---------- Chia tổ (bản riêng cô Ngân) ----------
   // Trước mỗi tiết có chừng này giây chọn tổ (gõ "tổ 1".."tổ 4", "t2", "3", "tổ ba"). Ai chưa chọn thì máy xếp vào tổ ít người nhất.
   // Bạn vào lớp giữa tiết cũng được xếp ngay. 0 = tắt phần chọn tổ (test cũ dùng).
-  teamPickSec: 45,
+  teamPickSec: 20,
+  teamPickEvery: 4, // chỉ tiết 1, 5, 9... mới có pha chọn tổ (giữ tổ qua các tiết, bạn mới vào tự xếp)
   teamCount: 4,
   teamRemindLeftSec: 15, // còn chừng này giây thì cô nhắc chọn tổ
 
@@ -95,7 +105,7 @@ export const GAME = {
   // ---------- 2 game lớn (bản riêng 2026-11-04): Đường lên đỉnh Everest, Rung Chuông Đồng ----------
   // cứ chừng này tiết thì thay giờ ra chơi bằng 1 game (xen kẽ 2 game), xong game thì bình chọn chủ đề như thường.
   // Gõ A/B/C/D; ai đúng trong giờ đều được điểm, không xét nhanh chậm. Câu ở src/game/cau-hoi-show/.
-  showEvery: 2,
+  showEvery: 4, // chế độ nhanh: 4 tiết mới có 1 game lớn (trước 2)
   show: {
     gatherSec: 30, // tập hợp / mời vào sàn
     revealSec: 5, // hiện đáp án mỗi câu

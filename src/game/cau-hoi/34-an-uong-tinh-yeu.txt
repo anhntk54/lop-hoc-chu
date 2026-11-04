@@ -1,20 +1,14 @@
 # Ăn uống, tình yêu
 > Đây là chuyện ăn uống, yêu đương.
 TRÂN CHÂU | Viên tròn đen dai dai nằm dưới đáy ly trà sữa. | 1
-TOPPING | Phần thêm vào trà sữa, gọi nhiều quá thì ly nước thành ly đồ ăn. | 1
 BÁNH TRÁNG TRỘN | Món ăn vặt cổng trường có xoài, khô bò, trứng cút, rau răm. | 1
 LẨU | Món ăn tụ tập, trời mưa mà rủ là không ai từ chối. | 1
 ĐỒ NƯỚNG | Ngồi quanh bếp than, thịt kêu xèo xèo, áo về toàn mùi khói. | 1 | NƯỚNG, BBQ
-BUFFET | Trả một giá, ăn thoải mái tới khi phải nới thắt lưng. | 1
 ĂN ĐÊM | Mười một giờ khuya bụng réo, mở ứng dụng gọi đồ ăn. | 1
 ĂN VẶT | Ăn linh tinh giữa các bữa chính, nhất là lúc ba giờ chiều. | 1
-MUKBANG | Video ăn thật nhiều trước máy quay, người xem nhìn mà no thay. | 3
 TRÀ CHANH | Ly trà chua ngọt ngồi vỉa hè tán gẫu, rẻ mà vui. | 1
 CÀ PHÊ MUỐI | Món cà phê có lớp kem mằn mặn, nghe lạ mà uống là nghiện. | 2
 GÀ RÁN | Món giòn rụm đi kèm khoai tây chiên và nước ngọt. | 1
-PIZZA | Bánh tròn cắt hình tam giác, phô mai kéo sợi dài. | 1
-SUSHI | Món Nhật cơm cuộn cá sống, chấm xì dầu với mù tạt. | 2
-TOKBOKKI | Bánh gạo cay Hàn Quốc màu đỏ rực, ăn xong hít hà. | 2 | TTEOKBOKKI
 ỐC | Món nhậu phải dùng tăm để khều, quán vỉa hè nào cũng có. | 1
 ĐẶT BÀN | Gọi điện trước giữ chỗ cho buổi hẹn hò cuối tuần. | 2
 HẸN HÒ | Lần đầu đi chơi riêng hai người, chọn đồ mất một tiếng. | 1 | DATE
@@ -22,7 +16,7 @@ CHIA TAY | Câu "mình dừng lại đi" làm cả thế giới sụp đổ. | 1
 TỎ TÌNH | Nói thích người ta, run hơn cả đi phỏng vấn xin việc. | 1
 NGƯỜI YÊU | Người được lưu trong danh bạ kèm hình trái tim. | 1 | NY
 ĐỒ ĐÔI | Hai người mặc áo giống nhau đi chơi, ai nhìn cũng biết là một cặp. | 1 | ÁO ĐÔI
-GHEN | Thấy người yêu thả tim ảnh người khác là thấy khó chịu trong người. | 1 | GHEN TUÔNG
+GHEN TUÔNG | Thấy người yêu thả tim ảnh người khác là thấy khó chịu trong người. | 1 | GHEN
 GIẬN DỖI | "Em không sao" nhưng thật ra là có sao. | 1 | DỖI
 DỖ DÀNH | Việc người yêu phải làm khi nửa kia đang giận, kèm trà sữa thì càng nhanh. | 2 | DỖ
 RA MẮT | Lần đầu tới nhà bố mẹ người yêu, cầm giỏ trái cây run run. | 2
@@ -51,7 +45,6 @@ XIÊN BẨN | Que xiên chiên ở vỉa hè, tên nghe sợ mà ai cũng mê. |
 NEM CHUA RÁN | Món ăn vặt phố cổ Hà Nội, chấm tương ớt. | 2
 ỚT | Thứ người miền Trung ăn như rau, người khác nhìn thôi đã thấy cay. | 1
 TRÀ ĐÀO | Ly trà có miếng đào vàng và cọng sả, quán nào cũng có. | 1
-MATCHA | Bột trà xanh Nhật Bản, ly nước nào thêm vô cũng thành màu xanh lá. | 2
 BÁNH FLAN | Bánh mềm rung rinh, lớp đường cháy nâu ở trên, ăn với đá bào. | 2 | CARAMEN
 NGƯỜI THỨ BA | Người xuất hiện làm tình yêu của hai người tan vỡ. | 2 | TUESDAY
 QUAY LẠI | Chia tay rồi mà vẫn về với nhau, lần thứ ba trong năm. | 2
@@ -78,3 +71,5 @@ HẾT MÓN | Câu quán nói khi bạn gọi đúng món mình thèm nhất. | 2
 CƠM TẤM SƯỜN | Đĩa cơm hạt vỡ, miếng thịt nướng to, chan nước mắm, ăn sáng kiểu Sài Gòn. | 2
 BÁNH MÌ CHẢO | Chảo gang nóng có trứng ốp, pa tê, xúc xích, chấm bánh mì ăn sáng. | 2
 TRÀ ĐÁ | Ly nước vỉa hè rẻ nhất, bàn chuyện thế giới cả buổi. | 1
+XIÊN QUE | Đồ chiên cắm que chấm tương ớt, mua mười cái là bay luôn tiền ăn sáng. | 1
+THẤT TÌNH | Bị người yêu bỏ, nghe nhạc buồn, ăn hết hộp kem một mình. | 1

@@ -18,6 +18,9 @@ let t = 1_000_000;
 // các test cũ chạy không có giờ chọn tổ (bản cô Ngân); phần chia tổ test riêng ở cuối file
 const TEAM_SEC = GAME.teamPickSec;
 GAME.teamPickSec = 0;
+// các test cũ viết cho nhịp cũ; chế độ nhanh (2026-11-04) test riêng ở cuối file
+const FAST = { quickRead: GAME.quickRead, closeAfterTopN: GAME.closeAfterTopN, praiseShort: GAME.praiseShort, praiseEvery: GAME.praiseEvery, showEvery: GAME.showEvery, teamPickEvery: GAME.teamPickEvery };
+Object.assign(GAME, { quickRead: false, closeAfterTopN: 0, praiseShort: false, praiseEvery: 5, showEvery: 2, teamPickEvery: 1 });
 
 // ---------- chữ ----------
 assert.equal(compactVi('  Bảng   Đen! '), 'bảngđen');
@@ -179,8 +182,8 @@ for (const q of BANK) {
   assert.ok(c.students.get('u1')!.desk.length <= GAME.deskGifts);
   assert.deepEqual(plan, [...GAME.roundPlan]);
   for (let i = 1; i < cats.length; i++) assert.notEqual(cats[i], cats[i - 1], 'không 2 câu chữ liền cùng chủ đề');
-  // 19 câu x 10 + câu vàng 20 + 6 lần chuỗi (câu 3, 6, ..., 18) x 5
-  assert.equal(c.students.get('u1')!.score, 19 * 10 + 20 + 6 * GAME.streakBonus);
+  // 19 câu x 10 + câu vàng 20 + 3 mốc chuỗi (câu 5, 12, 17) x 5
+  assert.equal(c.students.get('u1')!.score, 19 * 10 + 20 + 3 * GAME.streakBonus);
   assert.equal(c.phase, 'results');
   assert.equal(c.usedLog.length, 16, 'câu toán không ghi vào sổ lớp');
 }
@@ -916,6 +919,64 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.ok(f.nextShow()!.soon);
   assert.ok(intro2.some((l) => LINES.showSoon.some((fn) => l.text.includes(fn('Đường lên đỉnh Everest')))), 'đầu tiết 2 cô báo hết tiết là tới Everest');
   assert.ok([...outfits].every((o) => (GAME.outfits as readonly string[]).includes(o)));
+}
+
+// ---------- chuỗi câu đúng liền: chỉ khen ở mốc 5, 12, 17; nhiều bạn cùng mốc thì gộp 1 câu, đọc tối đa 3 tên ----------
+{
+  const c = new Classroom(Array.from({ length: 30 }, (_, i) => mk('BẢNG ĐEN' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i % 26] + (i >= 26 ? 'X' : ''))), t);
+  c.newRound(t);
+  const streakSaid: string[][] = [];
+  for (let q = 1; q <= 5; q++) {
+    while (c.phase !== 'question') c.tick((t += 500));
+    c.showBoard();
+    for (let i = 1; i <= 4; i++) chat(c, i, c.q!.answer, t, (t += 10));
+    let said: string[] = [];
+    while ((c.phase as string) !== 'reveal') said = c.tick((t += 500)).map((l) => l.text);
+    streakSaid.push(said.filter((x) => /câu liền|câu không trượt|câu gọi tên|câu đúng của/.test(x)));
+  }
+  assert.deepEqual(streakSaid.slice(0, 4), [[], [], [], []], 'chưa tới 5 câu liền thì không khen chuỗi');
+  assert.equal(streakSaid[4].length, 1, '4 bạn cùng đủ 5 câu: gộp 1 câu');
+  assert.ok(streakSaid[4][0].includes('5 câu') && streakSaid[4][0].includes('và 1 bạn nữa'), streakSaid[4][0]);
+  for (let i = 1; i <= 4; i++) assert.equal(c.students.get(`u${i}`)!.streak, 5);
+}
+
+// ---------- chế độ nhanh: đọc đề ngắn, đọc xong mới hiện bảng + nhận đáp án, đủ 5 bạn đúng thì chốt sớm, điểm danh 1 câu sau câu 10 ----------
+{
+  Object.assign(GAME, FAST);
+  const c = new Classroom(BANK, t);
+  c.newRound(t);
+  let asked: ReturnType<Classroom['tick']> = [];
+  while (c.phase !== 'question') asked = c.tick((t += 500));
+  assert.ok(!c.boardShown, 'cô đang đọc đề: bảng chữ chưa hiện');
+  const qLine = asked.find((l) => l.text.includes('Câu 1.'))!;
+  assert.ok(qLine && qLine.main && qLine.showAfter, 'đọc đề là câu chính (dừng giờ), đọc xong mới hiện bảng');
+  assert.ok(!qLine.text.includes('chữ cái'), 'không đọc số chữ cái');
+  assert.ok(!asked.some((l) => l.go), 'không hô bắt đầu');
+  chat(c, 77, c.q!.answer, t, t); // gõ trước khi bảng hiện: không tính, không mất lượt
+  assert.equal(c.correct.length, 0, 'đáp án gõ trước khi cô đọc xong đề không tính');
+  c.showBoard();
+  chat(c, 77, c.q!.answer, t, (t += 10));
+  assert.equal(c.correct.length, 1, 'bảng hiện rồi thì gõ lại được tính');
+  const end = c.phaseEndsAt;
+  for (let i = 1; i <= 5; i++) chat(c, i, c.q!.answer, t, (t += 10));
+  assert.ok(c.phaseEndsAt <= t + GAME.closeAfterTopSec * 1000 && c.phaseEndsAt < end, 'đủ 5 bạn đúng thì chốt sớm');
+  let praise: ReturnType<Classroom['tick']> = [];
+  while (c.qNo < 11 && (c.phase as string) !== 'results') {
+    const said = c.tick((t += 500));
+    if ((c.phase as string) === 'praise' && said.length) praise = said;
+    if ((c.phase as string) === 'question' && c.correct.length === 0) chat(c, 1, c.q!.answer, t, t);
+  }
+  assert.equal(praise.length, 1, 'điểm danh giữa tiết chỉ 1 câu');
+  assert.ok(c.qNo === 11, 'điểm danh sau câu 10');
+  // chọn tổ chỉ ở tiết 1, 5, 9...
+  GAME.teamPickSec = TEAM_SEC;
+  const rounds: string[] = [];
+  const r = new Classroom(Array.from({ length: 30 }, (_, i) => mk('BẢNG ĐEN' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i % 26] + (i >= 26 ? 'X' : ''))), t);
+  for (let i = 0; i < 5; i++) {
+    r.newRound((t += 1000));
+    rounds.push(r.phase);
+  }
+  assert.deepEqual(rounds, ['team', 'intro', 'intro', 'intro', 'team']);
 }
 
 console.log('quiz.check: tất cả đều đúng');

@@ -80,11 +80,12 @@ export const LINES = {
   ] as L0,
 
   // còn 5 giây
+  // còn 5 giây: chỉ nhắc sắp hết giờ, ngắn gọn, không đùa thêm (chủ kênh chốt 2026-11-05)
   timeWarn: [
-    'Chuẩn bị hết giờ nhé các bạn ơi!',
-    'Sắp hết giờ rồi, gõ lẹ lên như lúc nộp báo cáo cuối ngày đi!',
-    'Còn năm giây thôi cả lớp ơi!',
-    'Năm giây cuối, ai chưa gõ là cô ghi tên đó nha!',
+    'Sắp hết giờ rồi!',
+    'Sắp hết giờ nha cả lớp!',
+    'Chuẩn bị hết giờ!',
+    'Sắp hết giờ, nhanh lên nào!',
   ] as L0,
 
   // trêu bạn sai + phạt lên bục đứng thật (nhân vật lên đứng cạnh bảng, đeo bảng "học sinh cá biệt")
@@ -528,6 +529,28 @@ export const LINES = {
     (n) => `${n} ăn gì mà thông minh vậy? Chia sẻ thực đơn cho cả lớp đi.`,
     (n) => `Siêu nhân ${n} xuất hiện! Mới mấy giây đã có đáp án.`,
     (n) => `Cô phục ${n} luôn đó. Nhanh vầy chắc săn sale không bao giờ hụt.`,
+    // khen lố (chủ kênh 2026-11-05): "|" tách đoạn, "^" đoạn hô to hơn cho có cảm xúc
+    (n) => `Ối dồi ôi! | ^${n} là thần đồng thế kỷ! | Đề vừa hiện là ra đáp án, cô xin bái phục!`,
+    (n) => `Dừng lại! Dừng lại hết! | ^Thiên tài ${n} vừa xuất hiện! | Bộ Giáo dục ơi, có nhân tài ở đây nè!`,
+    (n) => `Trời đất quỷ thần ơi! | ^${n} nhanh hơn cả Google! | Cô đề nghị cho ${n} tốt nghiệp luôn hôm nay!`,
+    (n) => `Cả lớp ơi, | ^${n} không phải người thường! | Chắc là người ngoài hành tinh xuống học ké lớp cô!`,
+    (n) => `Cô nổi da gà luôn rồi nè! | ^${n} đỉnh nóc kịch trần bay phấp phới! | Ai dạy bạn giỏi vậy, cô xin số liên lạc!`,
+  ] as L1,
+  // trả lời siêu nhanh câu toán: thần đồng toán học (lố)
+  superFastMath: [
+    (n) => `Trời ơi! | ^Thần đồng toán học ${n}! | Máy tính cầm tay còn chưa kịp bật, bạn đã ra đáp số!`,
+    (n) => `Ối dồi ôi! | ^${n} là máy tính sống! | Kế toán công ty nào tuyển gấp đi, nhân tài đây!`,
+    (n) => `Dừng lại! | ^Giáo sư toán học ${n} đã lên tiếng! | Cô dạy toán mười năm chưa thấy ai nhẩm nhanh vậy!`,
+    (n) => `Cả lớp ơi, | ^${n} nhẩm nhanh hơn cả máy tính! | Cô đề cử ${n} đi thi toán quốc tế luôn!`,
+    (n) => `Trời đất ơi! | ^Bộ não siêu máy tính ${n}! | Bảng cửu chương chắc thuộc từ trong bụng mẹ!`,
+  ] as L1,
+  // trả lời siêu nhanh câu tiếng Anh: vua ngôn ngữ (lố)
+  superFastEnglish: [
+    (n) => `Ô mai gót! | ^Vua ngôn ngữ ${n}! | Tiếng Anh nhanh như người bản xứ luôn đó cả lớp!`,
+    (n) => `Trời ơi! | ^Nữ hoàng tiếng Anh, à không, vua tiếng Anh ${n}! | Cô gọi bạn là thầy được không?`,
+    (n) => `Dừng lại hết! | ^${n} nói tiếng Anh như gió! | Chắc kiếp trước sinh ra ở Luân Đôn!`,
+    (n) => `Ối dồi ôi! | ^Thông dịch viên ${n} đã có mặt! | Đi phỏng vấn công ty nước ngoài đậu chắc luôn!`,
+    (n) => `Cả lớp ơi! | ^${n} là từ điển biết đi! | Cô mở sách còn chưa kịp, bạn đã trả lời xong!`,
   ] as L1,
 
   quietHalfway: [
@@ -606,13 +629,27 @@ export const LINES = {
     (n) => `${n} sai rồi. Ngồi xuống, câu sau làm lại.`,
   ] as L1,
 
+  // chuỗi câu đúng liền (mốc 5, 12, 17: GAME.streakMilestones). n = tên, k = số câu liền
   streak: [
-    (n) => `${n} đúng ba câu liền! Cô thưởng thêm năm điểm.`,
-    (n) => `${n} đang lên phong độ, ba câu không trượt câu nào. Cộng năm điểm.`,
-    (n) => `Chuỗi ba câu đúng của ${n}! Năm điểm thưởng nha.`,
-    (n) => `${n} ba câu liền, KPI tháng này hoàn thành sớm. Cộng năm điểm.`,
-    (n) => `Ai cản ${n} được không? Ba câu liền, cộng năm điểm.`,
-  ] as L1,
+    (n, k) => `${n} đúng ${k} câu liền! Cô thưởng thêm năm điểm.`,
+    (n, k) => `${n} đang lên phong độ, ${k} câu không trượt câu nào. Cộng năm điểm.`,
+    (n, k) => `Chuỗi ${k} câu đúng của ${n}! Năm điểm thưởng nha.`,
+    (n, k) => `${n} ${k} câu liền, KPI tháng này hoàn thành sớm. Cộng năm điểm.`,
+    (n, k) => `Ai cản ${n} được không? ${k} câu liền, cộng năm điểm.`,
+  ] as L2,
+  // nhiều bạn cùng đủ chuỗi ở 1 câu: gộp 1 câu cho đỡ nói nhiều. n = "Minh, Lan với Hùng" / "Minh, Lan, Hùng và 2 bạn nữa"
+  streakGroup: [
+    (n, k) => `${n} cùng đúng ${k} câu liền! Mỗi bạn cộng năm điểm.`,
+    (n, k) => `Chuỗi ${k} câu gọi tên ${n}. Năm điểm mỗi bạn nha.`,
+    (n, k) => `Lớp mình nhiều cao thủ quá: ${n} ${k} câu không trượt. Cộng năm điểm hết.`,
+    (n, k) => `${n} giữ phong độ ${k} câu liền, mỗi bạn năm điểm thưởng.`,
+  ] as L2,
+  // nói thêm sau streakGroup khi có bạn trong nhóm được cô tặng quà (quà đã đặt lên bàn)
+  streakGroupGift: [
+    'Vài bạn còn được cô đặt quà lên bàn nữa đó.',
+    'Ai được quà thì nhìn lên bàn mình nha.',
+    'Cô còn lén đặt quà lên bàn vài bạn rồi.',
+  ],
 
   goldenWinner: [
     (n) => `${n} ăn trọn câu hỏi vàng, hai mươi điểm!`,
@@ -631,10 +668,10 @@ export const LINES = {
     (n, g) => `${n} giỏi ghê, cô thưởng ${g} nè. Đừng khoe với sếp.`,
   ] as L2,
   streakGift: [
-    (n, g) => `Ba câu liền rồi ${n}! Thêm năm điểm, cô thưởng thêm ${g}.`,
-    (n, g) => `${n} ba câu liền! Năm điểm với ${g}, thưởng nóng như thưởng Tết.`,
-    (n, g) => `Chuỗi ba câu của ${n}! Năm điểm, kèm ${g} đặt lên bàn luôn.`,
-  ] as L2,
+    (n, g, k) => `${k} câu liền rồi ${n}! Thêm năm điểm, cô thưởng thêm ${g}.`,
+    (n, g, k) => `${n} ${k} câu liền! Năm điểm với ${g}, thưởng nóng như thưởng Tết.`,
+    (n, g, k) => `Chuỗi ${k} câu của ${n}! Năm điểm, kèm ${g} đặt lên bàn luôn.`,
+  ] as L3,
   goldenGift: [
     (n, g) => `Câu hỏi vàng là của ${n}! Cô thưởng gấp đôi điểm, thêm ${g} nữa.`,
     (n, g) => `${n} giành câu hỏi vàng! Hai mươi điểm và ${g}.`,
@@ -647,6 +684,12 @@ export const LINES = {
     'Khoan ra câu tiếp, cô phát quà cho mấy bạn giỏi đã.',
     'Tạm dừng nè cả lớp. Ai đang dẫn đầu lớp mình?',
   ] as L0,
+  // chế độ nhanh: điểm danh giữa tiết gộp 1 câu. n = "Minh 40 điểm, Lan 35 điểm, Hùng 30 điểm"
+  praiseQuick: [
+    (n) => `Nửa tiết rồi! Top 3 đang là ${n}. Quà cô để trên bàn rồi nha.`,
+    (n) => `Bảng điểm giữa tiết: ${n}. Ba bạn có quà, còn lại đuổi theo đi!`,
+    (n) => `Ai đang dẫn đầu? ${n}. Cô thưởng quà rồi, chơi tiếp nào!`,
+  ] as L1,
   // n tên, s điểm, g quà
   praiseFirst: [
     (n, s, g) => `Đứng nhất là ${n}, ${s} điểm. Cô tặng ${g}.`,

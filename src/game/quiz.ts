@@ -176,6 +176,8 @@ export interface Say {
   warn?: boolean;
   /** câu cô hô bắt đầu: lúc bắt đầu đọc câu này thì hiện bảng chữ (gọi showBoard) */
   go?: boolean;
+  /** chế độ nhanh: đọc XONG câu này (câu đề) thì hiện bảng chữ */
+  showAfter?: boolean;
 }
 
 export interface ChatIn {
@@ -767,6 +769,15 @@ export class Classroom {
   /** Câu cô đọc trước gợi ý: "Đây là một từ gồm 5 chữ cái, là một món ăn." (hô bắt đầu xong mới hiện chữ trên bảng) */
   intro(q: Question) {
     if (q.math) return q.kind;
+    // chế độ nhanh: số chữ cái đã thấy trên bảng, chỉ nói loại từ ngắn gọn ("Một món ăn.")
+    if (GAME.quickRead) {
+      const k = /^Đây là\s+/i.exec(q.kind);
+      const rest = k ? q.kind.slice(k[0].length) : q.kind;
+      const short = rest.charAt(0).toUpperCase() + rest.slice(1);
+      // đuổi hình bắt chữ: "Đuổi hình bắt chữ! Một thành ngữ."
+      if (q.slot === 'dh') return `Đuổi hình bắt chữ! ${short}`;
+      return k ? short : q.kind;
+    }
     const n = this.lettersOf(q).length;
     const word = q.slot === 'anh' ? `một từ tiếng Anh gồm ${n} chữ cái` : `một từ gồm ${n} chữ cái`;
     const kind = /^Đây là\s+/i.exec(q.kind);
@@ -803,10 +814,16 @@ export class Classroom {
     this.answerStartAt = now;
     const out: Say[] = [...back];
     if (this.golden) out.push(this.line0('goldenIntro'));
-    else if (this.q.math) out.push(this.line0('mathIntro'));
+    else if (this.q.math && !GAME.quickRead) out.push(this.line0('mathIntro'));
     // đuổi hình bắt chữ: không đọc emoji, chỉ mời nhìn hình
-    const clue = this.q.slot === 'dh' ? 'Nhìn hình đoán chữ nha cả lớp.' : this.q.clue;
+    const clue = this.q.slot === 'dh' ? (GAME.quickRead ? 'Nhìn hình đoán nhanh!' : 'Nhìn hình đoán chữ nha cả lớp.') : this.q.clue;
     out.push(this.t(`Câu ${this.qNo}. ${this.intro(this.q)} ${clue}`));
+    // chế độ nhanh: đọc đề ngắn, không hô bắt đầu; đọc xong là hiện bảng chữ, nhận đáp án, chạy giờ
+    // (chủ kênh 2026-11-04: hiện bảng lúc cô còn đọc thì người chơi đoán trước, không công bằng)
+    if (GAME.quickRead) {
+      out[out.length - 1] = { ...out[out.length - 1], showAfter: true };
+      return this.mainOf(out);
+    }
     // đọc đề xong cô hô bắt đầu (lúc đó mới hiện bảng chữ); đồng hồ dừng trong lúc cô nói nên hô xong mới đếm giờ
     out.push({ ...this.line0('go'), go: true });
     return this.mainOf(out);
@@ -864,6 +881,8 @@ export class Classroom {
     if (this.phase === 'recess') return this.recessChat(s, e, now);
     if (this.phase !== 'question' && this.phase !== 'bonus') return [];
     this.stats.received++;
+    // cô chưa đọc xong đề (bảng chữ chưa hiện): đáp án gõ trước không tính, cũng không mất lượt
+    if (GAME.quickRead && !this.boardShown) return [];
     if (!this.isAttempt(this.q, e.comment) || this.tried.has(e.username)) return [];
     this.tried.add(e.username);
     this.stats.attempts++;
@@ -876,6 +895,10 @@ export class Classroom {
     this.correct.sort((a, b) => a.createTime - b.createTime || a.seq - b.seq);
     const mult = this.golden ? 2 : 1;
     this.correct.forEach((a, i) => (a.points = pointsForRank(i) * mult));
+    // đủ top N bạn đúng (các hạng có điểm cao) thì vài giây nữa chốt câu, khỏi chờ hết 20 giây
+    if (GAME.closeAfterTopN > 0 && this.correct.length === GAME.closeAfterTopN) {
+      this.phaseEndsAt = Math.min(this.phaseEndsAt, now + GAME.closeAfterTopSec * 1000);
+    }
     if (this.correct.length === 1) {
       // phòng vắng (ít bạn đang chơi): có người đúng thì chốt sớm, khỏi chờ đủ 20 giây
       const endAfter = this.activePlayers(now) < GAME.smallRoomPlayers ? GAME.smallRoomEndAfterSec : GAME.endAfterFirstSec;
@@ -884,7 +907,12 @@ export class Classroom {
       if (!fast && this.rand() < GAME.giftChance) {
         return [{ ...this.t(this.line('firstCorrectGift', e.spoken, this.giveGift(s, now))), ttl: 6000 }];
       }
-      return [{ ...this.t(this.line(fast ? 'superFast' : 'firstCorrect', e.spoken)), ttl: 6000 }];
+      // siêu nhanh: khen lố theo loại câu (toán: thần đồng toán học, tiếng Anh: vua ngôn ngữ), ưu tiên nên luôn được nói
+      if (fast) {
+        const key = this.q?.math ? 'superFastMath' : this.q?.slot === 'anh' ? 'superFastEnglish' : 'superFast';
+        return [{ ...this.t(this.line(key, e.spoken), true), ttl: 8000 }];
+      }
+      return [{ ...this.t(this.line('firstCorrect', e.spoken)), ttl: 6000 }];
     }
     return [];
   }
@@ -1012,23 +1040,48 @@ export class Classroom {
     return [this.line0('clap')];
   }
 
+  /**
+   * Khen chuỗi câu đúng liền (mốc GAME.streakMilestones): 1 bạn thì khen riêng; nhiều bạn cùng mốc thì gộp 1 câu, đọc tối đa
+   * GAME.streakNamesRead tên (chủ kênh chốt 2026-11-04, trước đọc từng bạn làm cô nói quá nhiều). Điểm, quà vẫn đủ cho mọi bạn.
+   */
+  private streakLines(all: { s: Student; gift: string }[]): Say[] {
+    const out: Say[] = [];
+    for (const m of GAME.streakMilestones) out.push(...this.streakGroupLines(all.filter((x) => x.s.streak === m), String(m)));
+    return out;
+  }
+  private streakGroupLines(list: { s: Student; gift: string }[], k: string): Say[] {
+    if (list.length === 0) return [];
+    if (list.length === 1) {
+      const { s, gift } = list[0];
+      return [this.t(gift ? this.line('streakGift', s.spoken, gift, k) : this.line('streak', s.spoken, k))];
+    }
+    const named = list.map((x) => x.s.spoken).filter((n) => n !== 'bạn').slice(0, GAME.streakNamesRead);
+    const more = list.length - named.length;
+    const names = named.length === 0 ? `${more} bạn` : more > 0 ? `${named.join(', ')} và ${more} bạn nữa` : `${named.slice(0, -1).join(', ')} với ${named[named.length - 1]}`;
+    const out = [this.t(this.line('streakGroup', names, k))];
+    if (list.some((x) => x.gift)) out.push(this.line0('streakGroupGift'));
+    return out;
+  }
+
   private reveal(now: number): Say[] {
     this.setPhase('reveal', now, GAME.revealSec);
     const q = this.q!;
     this.reportLog.push({ id: q.id, answer: q.answer, category: q.category, attempts: this.stats.attempts, correct: this.correct.length, at: now });
     const out: Say[] = [];
     const winners = new Set(this.correct.map((a) => a.username));
+    const streakers: { s: Student; gift: string }[] = [];
     for (const a of this.correct) {
       const s = this.students.get(a.username);
       if (!s) continue;
       this.countCorrect(s, this.q!);
       this.award(s, a.points, now + a.seq / 1e6, true);
       s.streak++;
-      if (s.streak % GAME.streakEvery === 0) {
+      if ((GAME.streakMilestones as readonly number[]).includes(s.streak)) {
         this.award(s, GAME.streakBonus, now, true);
-        out.push(this.t(this.rand() < GAME.giftChance ? this.line('streakGift', s.spoken, this.giveGift(s, now)) : this.line('streak', s.spoken)));
+        streakers.push({ s, gift: this.rand() < GAME.giftChance ? this.giveGift(s, now) : '' });
       }
     }
+    out.push(...this.streakLines(streakers));
     // cùng lúc chốt điểm: ai trả lời trước xếp trên
     this.correct.forEach((a, i) => {
       const s = this.students.get(a.username);
@@ -1068,6 +1121,12 @@ export class Classroom {
     const top = this.seats(3).filter((s) => s.score > 0);
     this.setPhase('praise', now, GAME.praiseSec);
     const keys = ['praiseFirst', 'praiseSecond', 'praiseThird'] as const;
+    if (GAME.praiseShort) {
+      // chế độ nhanh: 1 câu đọc top 3, quà vẫn đặt lên bàn
+      top.forEach((s) => this.giveGift(s, now));
+      const names = top.map((s) => `${s.spoken} ${s.score} điểm`).join(', ');
+      return this.mainOf([this.t(this.line('praiseQuick', names))]);
+    }
     return this.mainOf([
       this.line0('praiseIntro'),
       ...top.map((s, i) => this.t(this.line(keys[i], s.spoken, String(s.score), this.giveGift(s, now)))),
@@ -1674,7 +1733,7 @@ export class Classroom {
     const greet = period !== this.lastPeriod || this.round % GAME.timeGreetEvery === 0 ? [this.line0(PERIOD_LINES[period])] : [];
     this.lastPeriod = period;
     // bản cô Ngân: trước mỗi tiết 45 giây chọn tổ, hết giờ mới vào phần giới thiệu tiết
-    if (GAME.teamPickSec > 0) {
+    if (GAME.teamPickSec > 0 && (this.round - 1) % GAME.teamPickEvery === 0) {
       this.setPhase('team', now, GAME.teamPickSec);
       this.teamReminded = false;
       return this.mainOf([...voted, ...greet, this.line0('teamIntro')]);
@@ -1880,6 +1939,8 @@ export class Classroom {
       showIcons: (this.titles.get(username) ?? []).map((x) => x.split(' ')[0]).join(''),
       // câu đang hỏi: trả lời đúng / sai / chưa (ngoài giờ hỏi thì không hiện)
       answered: !asking ? '' : this.correct.some((a) => a.username === username) ? 'right' : this.wrong.has(username) ? 'wrong' : '',
+      // điểm vừa được của câu này: "+10" bay lên trên đầu bạn trả lời đúng
+      gain: asking ? (this.correct.find((a) => a.username === username)?.points ?? 0) : 0,
     });
     const r = this.recess;
     return {

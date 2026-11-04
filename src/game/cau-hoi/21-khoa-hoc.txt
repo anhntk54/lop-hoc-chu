@@ -37,12 +37,10 @@ MẬT KHẨU | Dãy ký tự bí mật để đăng nhập, đặt xong là quê
 PHẦN MỀM | Chương trình chạy trên máy tính, cập nhật đúng lúc đang gấp. | 2
 VIRUS MÁY TÍNH | Chương trình độc hại, tải phim lậu là dính. | 3
 ĐIỆN TOÁN ĐÁM MÂY | Lưu dữ liệu trên mạng, ảnh trong máy đầy thì đẩy hết lên đây. | 3 | CLOUD
-USB | Thanh nhỏ cắm máy tính lưu dữ liệu, cắm ngược ba lần mới vào. | 2
 MÀN HÌNH | Phần hiển thị hình ảnh, mỗi ngày nhìn nó hơn mười tiếng. | 1
 CẢM ỨNG | Chạm tay vào màn hình là dùng được, tay ướt là bấm loạn xạ. | 2
-CAMERA | Ống kính trên điện thoại, bật chế độ làm đẹp là thành người khác. | 1
-QR CODE | Ô vuông đen trắng quét để chuyển khoản, đi chợ cũng không cần tiền mặt. | 2 | MÃ QR
-GPS | Định vị chỉ đường, có lúc chỉ vào tận ngõ cụt. | 2 | ĐỊNH VỊ
+MÃ QR | Ô vuông đen trắng quét để chuyển khoản, đi chợ cũng không cần tiền mặt. | 2 | QR CODE
+ĐỊNH VỊ | Bật lên điện thoại để chỉ đường, có lúc dẫn vào tận ngõ cụt. | 2 | GPS
 VỆ TINH | Bay quanh Trái Đất truyền sóng, có cả trạm vũ trụ người ở. | 2
 ĐIỆN GIÓ | Cánh quạt khổng lồ ven biển Ninh Thuận, Bạc Liêu, chụp ảnh sống ảo đẹp. | 2
 THỦY ĐIỆN | Nhà máy điện từ đập nước, Hoà Bình là cái nổi tiếng. | 3

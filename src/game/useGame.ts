@@ -76,7 +76,15 @@ export function useGame() {
               dirty.current = true;
             }
           : undefined;
-        voice.say(l.text, true, () => mainSpeaking.current--, false, onStart);
+        // chế độ nhanh: đọc xong đề mới hiện bảng chữ, nhận đáp án
+        const onDone = l.showAfter
+          ? () => {
+              mainSpeaking.current--;
+              roomRef.current?.showBoard();
+              dirty.current = true;
+            }
+          : () => mainSpeaking.current--;
+        voice.say(l.text, true, onDone, false, onStart);
       } else if (l.warn) {
         voice.say(l.text, true); // nhắc sắp hết giờ: chen lên đọc liền, đồng hồ vẫn chạy
       } else {

@@ -61,7 +61,6 @@ XẾP HÌNH | Ráp cả nghìn mảnh thành bức tranh, rơi mất một mản
 RUBIK | Khối vuông xoay sáu mặt sáu màu, có người giải trong vài giây. | 2
 ĐÔ MI NÔ | Xếp thẳng hàng cả tiếng đồng hồ, chạm nhẹ một cái đổ cả dãy. | 3 | DOMINO
 BÀI TÂY | Năm mươi hai lá, có cơ rô chuồn bích, Tết nào cả nhà cũng ngồi quây quần. | 3 | BỘ BÀI
-GAME ONLINE | Ngồi máy tính đánh với người khắp nơi, mẹ gọi ăn cơm cũng không nghe. | 2
 LIÊN QUÂN | Game điện thoại năm đánh năm, thua thì đổ lỗi cho đồng đội. | 2
 FREE FIRE | Game bắn súng sinh tồn, nhảy dù từ máy bay xuống đảo. | 3
 MINECRAFT | Game xây dựng bằng khối vuông, đào xuống dưới là gặp quái. | 3
@@ -71,4 +70,4 @@ MARIO | Ông thợ sửa ống nước người Ý, nhảy đập nấm cứu c�
 POKEMON | Thu phục quái thú vào quả bóng đỏ trắng, có chuột điện màu vàng. | 2
 TRƯỢT PATIN | Mang giày có bánh xe lướt quanh công viên, ngã là ôm người lạ. | 3 | PATIN
 ĐUA THUYỀN | Cả đội cùng chèo theo nhịp trống về đích, lễ hội đầu năm hay có. | 3
-BOXING | Đeo găng đấm nhau trên võ đài, dân văn phòng tập để xả stress với sếp. | 2 | ĐẤM BỐC, QUYỀN ANH
+ĐẤM BỐC | Đeo găng đấm nhau trên võ đài, dân văn phòng tập để xả stress với sếp. | 2 | QUYỀN ANH, BOXING

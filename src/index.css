@@ -13,7 +13,7 @@ body,
 
 /* Nền stage. Đổi ảnh: bỏ ảnh vào public/assets/bg/ rồi thay dòng background */
 .stage-bg {
-  background: #c8642a url('/assets/bg/lop.webp') top center / 1080px auto no-repeat;
+  background: #c8642a url('/assets/bg/lop.webp?v=goc') top center / 1080px auto no-repeat;
 }
 
 /* Hiệu ứng khi đủ tim */
