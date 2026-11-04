@@ -20,7 +20,7 @@ export interface Question {
 
 const LEVEL = { '1': 'easy', '2': 'medium', '3': 'hard' } as const;
 
-export const SLOTS = ['meo', 'su', 'anh'] as const;
+export const SLOTS = ['meo', 'su', 'anh', 'dh'] as const;
 export type Slot = (typeof SLOTS)[number];
 
 /** Đọc các file câu hỏi. `errors` gom dòng sai cú pháp để script kiểm tra báo ra */

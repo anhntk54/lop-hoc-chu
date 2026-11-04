@@ -192,7 +192,7 @@ export const LINES = {
   thankTier0: [
     (n, g) => `Ôi cô cảm ơn ${n} nha, ${g} xinh quá. Cô có thêm động lực dạy rồi nè.`,
     (n, g) => `${n} tặng cô ${g}! Cô thương bạn nhỏ quá à.`,
-    (n, g) => `Cảm ơn ${n} nha, cô cắm ${g} này lên bàn liền.`,
+    (n, g) => `Cảm ơn ${n} nha, cô giữ ${g} này thật kỹ.`,
   ] as L2,
   thankTier1: [
     (n, g) => `Oa, ${n} tặng cô ${g} luôn! Cô cảm ơn nhiều lắm nha.`,
@@ -206,10 +206,10 @@ export const LINES = {
     (n, g) => `Không tin nổi, ${n} tặng cô ${g}! Cô cảm ơn từ tận đáy lòng, cả lớp hoan hô ${n} nào!`,
     (n, g) => `${n} ơi, ${g} lận! Lớp mình hôm nay có nhà hảo tâm lớn rồi. Cô cảm ơn nhiều lắm!`,
   ] as L2,
-  // quỹ hoa của cô đạt mốc (g = số bông)
+  // quỹ lớp đạt mốc (g = số bông hoa)
   fundGoal: [
-    (g) => `Quỹ hoa của cô hôm nay đủ ${g} bông rồi! Cô cảm ơn cả lớp nhiều lắm, có các bạn nhỏ cô dạy vui quá.`,
-    (g) => `Yeah, ${g} bông hoa rồi! Bàn của cô đầy hoa luôn. Cảm ơn cả lớp nha!`,
+    (g) => `Quỹ lớp mình hôm nay đủ ${g} bông hoa rồi! Cô cảm ơn tấm lòng của cả lớp nhiều lắm, có các bạn nhỏ cô dạy vui quá.`,
+    (g) => `Quỹ lớp đã đủ ${g} bông hoa! Cô trân trọng từng bông một. Cảm ơn cả lớp nha!`,
   ] as L1,
 
   // ---------- Học bạ: lên lớp (g = "lớp 3" / "tốt nghiệp"), huy hiệu mới (b = "🧮 Thần đồng toán") ----------
@@ -327,6 +327,13 @@ export const LINES = {
     (a) => `Không ai ra hả? Tiếng Anh là | E: ${a}. ${a}! | F: Lần sau nhớ nha các bạn nhỏ.`,
     (a) => `Đáp án là | E: ${a} | F: Về nhà học thêm tiếng Anh với cô nha.`,
   ] as L1,
+
+  // ---------- Đuổi hình bắt chữ (emoji) ----------
+  pictureReveal: [
+    (answer, rest) => `Hình này là ${answer} đó các bạn nhỏ! ${rest}`,
+    (answer, rest) => `Đuổi hình bắt chữ: ${answer}! Nhìn kỹ là ra liền. ${rest}`,
+    (answer, rest) => `Đáp án là ${answer}. Hình ghép khéo ghê chưa. ${rest}`,
+  ] as L2,
 
   // ---------- Câu lịch sử (câu 9, 17) ----------
   historyReveal: [

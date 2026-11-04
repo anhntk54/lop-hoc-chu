@@ -20,6 +20,9 @@ export function teamOf(comment: string): number {
   return n >= 1 && n <= GAME.teamCount ? n : 0;
 }
 
+/** Số câu chữ thường trong 1 tiết (không phải toán, không phải câu có chỗ riêng) */
+const PLAIN_SLOTS = GAME.roundPlan.filter((d) => !d.startsWith('math') && !(SLOTS as readonly string[]).includes(d)).length;
+
 /** Bậc bó hoa theo số xu của món quà (GAME.giftTiers): 0 bông hoa, 1 bó nhỏ, 2 bó lớn, 3 xe hoa */
 export function tierOf(coins: number) {
   let t = 0;
@@ -580,8 +583,10 @@ export class Classroom {
       if (d.startsWith('math')) q = makeMath(Number(d.slice(4)) as MathLevel, this.rand);
       else if ((SLOTS as readonly string[]).includes(d)) q = this.pickOne(d as Slot, out.filter((x) => !x.math), now);
       else {
-        // chủ đề cả lớp chọn: cách 1 câu chữ thường lấy 1 câu chủ đề đó, tối đa GAME.voteTopicQuestions câu
-        const useTopic = this.topic && plain % 2 === 0 && fav < GAME.voteTopicQuestions ? this.topic : '';
+        // chủ đề cả lớp chọn: tối đa GAME.voteTopicQuestions câu chủ đề đó; câu chữ thường nhiều thì cách 1 câu lấy 1,
+        // ít (bản riêng chỉ còn 5 câu chữ thường) thì lấy liền
+        const step = PLAIN_SLOTS >= 2 * GAME.voteTopicQuestions ? 2 : 1;
+        const useTopic = this.topic && plain % step === 0 && fav < GAME.voteTopicQuestions ? this.topic : '';
         q = this.pickOne(d as Question['difficulty'], out.filter((x) => !x.math), now, useTopic);
         if (useTopic && q?.category === useTopic) fav++;
         plain++;
@@ -674,10 +679,12 @@ export class Classroom {
     const n = this.lettersOf(q).length;
     const word = q.slot === 'anh' ? `một từ tiếng Anh gồm ${n} chữ cái` : `một từ gồm ${n} chữ cái`;
     const kind = /^Đây là\s+/i.exec(q.kind);
+    // đuổi hình bắt chữ: "Đuổi hình bắt chữ! Đây là một từ gồm 12 chữ cái, là một thành ngữ."
+    const dh = q.slot === 'dh' ? 'Đuổi hình bắt chữ! ' : '';
     // "Đây là một món ăn." -> "Đây là một từ gồm 5 chữ cái, là một món ăn."
-    if (kind) return `Đây là ${word}, là ${q.kind.slice(kind[0].length)}`;
+    if (kind) return `${dh}Đây là ${word}, là ${q.kind.slice(kind[0].length)}`;
     // "Câu lịch sử nè." -> "Câu lịch sử nè. Đây là một từ gồm 8 chữ cái."
-    return `${q.kind} Đây là ${word}.`;
+    return `${dh}${q.kind} Đây là ${word}.`;
   }
 
   private startQuestion(now: number): Say[] {
@@ -691,7 +698,8 @@ export class Classroom {
     }
     this.q = this.roundQs[this.qNo - 1] ?? null;
     if (!this.q) return this.startResults(now, true);
-    this.tiles = this.q.math ? [] : scramble(this.q.answer, this.rand);
+    // câu toán hiện phép tính, đuổi hình bắt chữ hiện emoji: không xáo chữ
+    this.tiles = this.q.math || this.q.slot === 'dh' ? [] : scramble(this.q.answer, this.rand);
     this.boardShown = false;
     this.revealed = new Set();
     this.bonusUsed = false;
@@ -704,7 +712,9 @@ export class Classroom {
     const out: Say[] = [...back];
     if (this.golden) out.push(this.line0('goldenIntro'));
     else if (this.q.math) out.push(this.line0('mathIntro'));
-    out.push(this.t(`Câu ${this.qNo}. ${this.intro(this.q)} ${this.q.clue}`));
+    // đuổi hình bắt chữ: không đọc emoji, chỉ mời nhìn hình
+    const clue = this.q.slot === 'dh' ? 'Nhìn hình đoán chữ nha các bạn nhỏ.' : this.q.clue;
+    out.push(this.t(`Câu ${this.qNo}. ${this.intro(this.q)} ${clue}`));
     // đọc đề xong cô hô bắt đầu (lúc đó mới hiện bảng chữ); đồng hồ dừng trong lúc cô nói nên hô xong mới đếm giờ
     out.push({ ...this.line0('go'), go: true });
     return this.mainOf(out);
@@ -933,7 +943,8 @@ export class Classroom {
     let main: string;
     if (top) {
       const rest = this.line('revealTop', top.spoken) + (this.correct.length > 1 ? ' ' + this.line('revealCount', String(this.correct.length)) : '');
-      main = this.line(math ? 'mathReveal' : riddle ? 'riddleReveal' : eng ? 'englishReveal' : this.q!.slot === 'su' ? 'historyReveal' : 'reveal', answer, rest);
+      const slot = this.q!.slot;
+      main = this.line(math ? 'mathReveal' : riddle ? 'riddleReveal' : eng ? 'englishReveal' : slot === 'dh' ? 'pictureReveal' : slot === 'su' ? 'historyReveal' : 'reveal', answer, rest);
       if (this.golden) out.unshift(this.t(this.rand() < 0.5 ? this.line('goldenGift', top.spoken, this.giveGift(top, now)) : this.line('goldenWinner', top.spoken)));
     } else main = this.line(math ? 'mathNobody' : riddle ? 'riddleNobody' : eng ? 'englishNobody' : 'revealNobody', answer);
     out.unshift({ ...this.t(main), main: true });

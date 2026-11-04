@@ -226,7 +226,7 @@ for (const lv of [1, 2, 3, 4] as const) {
   const perRound = (d: string) => GAME.roundPlan.filter((x) => x === d).length;
   const easy = BANK.filter((q) => q.difficulty === 'easy' && !q.slot).length;
   const ofSlot = (s: string) => BANK.filter((q) => q.slot === s).length;
-  const rounds = Math.min(Math.floor(easy / perRound('easy')), ...['meo', 'su', 'anh'].map((s) => Math.floor(ofSlot(s) / perRound(s)))) - 2;
+  const rounds = Math.min(Math.floor(easy / perRound('easy')), ...['meo', 'su', 'anh', 'dh'].map((s) => Math.floor(ofSlot(s) / perRound(s)))) - 2;
   for (let r = 0; r < rounds; r++) {
     c.newRound((t += 1000));
     for (const id of c.usedLog.splice(0)) {

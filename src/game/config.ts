@@ -11,11 +11,12 @@ export const GAME = {
   // 10 câu chữ (4 dễ, 2 vừa, 4 khó) + 4 câu toán nhẩm khó dần ở câu 5, 10, 15, 19
   // + 2 câu tiếng Anh ở câu 3, 12 + 2 câu đố mẹo ở câu 7, 13 + 2 câu lịch sử ở câu 9, 17 (chủ kênh chốt 2026-11-04).
   // Câu 20 là câu hỏi vàng nhân đôi điểm.
+  // bản riêng (2026-11-04): thêm 5 câu đuổi hình bắt chữ (emoji) ở câu 2, 6, 11, 14, 18 -> còn 5 câu chữ thường
   roundPlan: [
-    'easy', 'easy', 'anh', 'easy', 'math1',
-    'easy', 'meo', 'medium', 'su', 'math2',
-    'medium', 'anh', 'meo', 'hard', 'math3',
-    'hard', 'su', 'hard', 'math4', 'hard',
+    'easy', 'dh', 'anh', 'easy', 'math1',
+    'dh', 'meo', 'medium', 'su', 'math2',
+    'dh', 'anh', 'meo', 'dh', 'math3',
+    'hard', 'su', 'dh', 'math4', 'hard',
   ] as const,
   introSec: 8, // cô giới thiệu đầu tiết
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)

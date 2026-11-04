@@ -9,11 +9,13 @@ const files = Object.fromEntries(fs.readdirSync(dir).filter((f) => f.endsWith('.
 const errors: string[] = [];
 const bank = parseBank(files, errors);
 const MAX_LETTERS = 14; // nhiều hơn thì miếng chữ trên bảng quá nhỏ
+const MAX_LETTERS_DH = 16; // đuổi hình bắt chữ không xáo chữ, chỉ có ô đáp án nên dài hơn được
 
 const seen = new Map<string, string>();
 for (const q of bank) {
   const n = compactVi(q.answer).length;
-  if (n < 2 || n > MAX_LETTERS) errors.push(`${q.id}: đáp án ${n} chữ (cho phép 2-${MAX_LETTERS})`);
+  const max = q.slot === 'dh' ? MAX_LETTERS_DH : MAX_LETTERS;
+  if (n < 2 || n > max) errors.push(`${q.id}: đáp án ${n} chữ (cho phép 2-${max})`);
   if (seen.has(q.id)) errors.push(`${q.id}: trùng trong cùng chủ đề`);
   seen.set(q.id, q.clue);
   // gợi ý lộ nguyên đáp án (so cả từ, có dấu)

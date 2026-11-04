@@ -1,0 +1,100 @@
+# Đuổi hình bắt chữ
+# Bản riêng (2026-11-04): hình bằng emoji ghép, 5 câu mỗi tiết (GAME.roundPlan 'dh'), file đuôi -dh.
+# Cột gợi ý là CHUỖI EMOJI hiện to trên bảng đen; cô KHÔNG đọc emoji, chỉ nói "Đuổi hình bắt chữ! Đây là ... gồm X chữ cái".
+# Nhiều câu chơi chữ như chương trình gốc: bánh (🍞) + xe (🚗) = BÁNH XE, cá (🐟) + heo (🐷) = CÁ HEO.
+# Mỗi dòng: ĐÁP ÁN | emoji | độ khó (1 dễ, 2 vừa, 3 khó) | cách viết khác cũng tính đúng
+> Đây là một từ ghép.
+BÁNH XE | 🍞 ➕ 🚗 | 1
+CÁ HEO | 🐟 ➕ 🐷 | 1
+CÁ NGỰA | 🐟 ➕ 🐴 | 1
+BÓNG ĐÈN | ⚽ ➕ 💡 | 1
+BÓNG BAY | ⚽ ➕ ✈️ | 1
+BÓNG RỔ | ⚽ ➕ 🧺 | 2
+ĐÁ BÓNG | 🪨 ➕ ⚽ | 1 | BÓNG ĐÁ
+ĐÁ CẦU | 🪨 ➕ 🌉 | 2
+CỜ VUA | 🚩 ➕ 👑 | 1
+GÀ TRỐNG | 🐔 ➕ 🥁 | 1
+ĐỒNG HỒ | 🪙 ➕ 🏞️ | 2
+ĐỒNG LÚA | 🪙 ➕ 🌾 | 2
+MỰC TÍM | 🦑 ➕ 🟣 | 2
+CÀ CHUA | 🍆 ➕ 🍋 | 2
+TRÁI TIM | 🍎 ➕ ❤️ | 1
+SAO BIỂN | ⭐ ➕ 🌊 | 1
+SAO CHỔI | ⭐ ➕ 🧹 | 2
+SAO HỎA | ⭐ ➕ 🔥 | 2
+CÂY KEM | 🌳 ➕ 🍦 | 1
+CÂY BÚT | 🌳 ➕ ✏️ | 1
+LÁ THƯ | 🍃 ➕ ✉️ | 2
+NÓN LÁ | 👒 ➕ 🍃 | 1
+HOA TAI | 🌸 ➕ 👂 | 2
+HOA ĐÀO | 🌸 ➕ 🍑 | 1
+PHÁO HOA | 🧨 ➕ 🌸 | 1
+BÀI TẬP | 🃏 ➕ 🏋️ | 2
+NƯỚC MẮT | 💧 ➕ 👁️ | 1
+NƯỚC CAM | 💧 ➕ 🍊 | 1
+NƯỚC ĐÁ | 💧 ➕ 🪨 | 2
+MƯA ĐÁ | 🌧️ ➕ 🪨 | 2
+ÁO MƯA | 👕 ➕ 🌧️ | 1
+KÍNH MÁT | 👓 ➕ ❄️ | 2
+MẮT MÈO | 👁️ ➕ 🐱 | 1
+CHÂN GÀ | 🦶 ➕ 🐔 | 1
+TAI THỎ | 👂 ➕ 🐰 | 1
+MẶT TRĂNG | 😀 ➕ 🌙 | 1
+GHẾ ĐÁ | 🪑 ➕ 🪨 | 1
+TIỀN ĐIỆN | 💵 ➕ ⚡ | 2
+ĐIỆN THOẠI | ⚡ ➕ 💬 | 2
+LỬA TRẠI | 🔥 ➕ ⛺ | 1
+NHẢY DÂY | 🦘 ➕ 🪢 | 2
+NGƯỜI TUYẾT | 🧍 ➕ ❄️ | 1
+TRỐNG TRƯỜNG | 🥁 ➕ 🏫 | 1
+CHUỘT MÁY TÍNH | 🐭 ➕ 💻 | 2
+CƠM GÀ | 🍚 ➕ 🐔 | 1
+TRỨNG GÀ | 🥚 ➕ 🐔 | 1
+TRỨNG VỊT | 🥚 ➕ 🦆 | 1
+SỮA BÒ | 🥛 ➕ 🐄 | 1
+THỊT BÒ | 🥩 ➕ 🐄 | 1
+MẬT ONG | 🍯 ➕ 🐝 | 1
+CUA BIỂN | 🦀 ➕ 🌊 | 1
+HẠT MƯA | 🌰 ➕ 🌧️ | 2
+HOA QUẢ | 🌸 ➕ 🍎 | 1
+HỘP SỮA | 📦 ➕ 🥛 | 1
+BÁNH TRUNG THU | 🍞 ➕ 🌕 | 2
+TÀU NGẦM | 🚢 ➕ 🌊 ⬇️ | 2
+XE ĐẠP | 🚗 ➕ 🦵 | 1
+> Đây là một địa danh của Việt Nam.
+VỊNH HẠ LONG | 🏝️ ⬇️ 🐉 | 2
+HỒ GƯƠM | 🏞️ ➕ 🗡️ | 2 | HỒ HOÀN KIẾM
+THÁP RÙA | 🗼 ➕ 🐢 | 2
+CHÙA MỘT CỘT | 🛕 1️⃣ 🏛️ | 2
+> Đây là một thành ngữ.
+NƯỚC ĐỔ ĐẦU VỊT | 💧 ⬇️ 🦆 | 2
+ĐÀN GẢY TAI TRÂU | 🎸 👂 🐃 | 2
+ĐẦU VOI ĐUÔI CHUỘT | 🐘 ➕ 🐭 | 2
+CÁ LỚN NUỐT CÁ BÉ | 🐳 👄 🐟 | 2
+NƯỚC CHẢY ĐÁ MÒN | 💧 ➡️ 🪨 | 3
+MƯA TO GIÓ LỚN | 🌧️ ⬆️ 💨 | 2
+ĂN CHÁO ĐÁ BÁT | 😋 🥣 🦵 🥣 | 3
+CHÓ CẮN ÁO RÁCH | 🐕 🦷 👕 | 3
+MẸ TRÒN CON VUÔNG | 👩 ⭕ 👶 🟥 | 3
+NƯỚC MẮT CÁ SẤU | 💧 👁️ 🐊 | 3
+ĐẸP NHƯ TIÊN | ✨ 🟰 🧚 | 2
+CHẬM NHƯ RÙA | 🐌 🟰 🐢 | 1
+NHANH NHƯ CHỚP | 🏃 🟰 ⚡ | 1
+KHỎE NHƯ VOI | 💪 🟰 🐘 | 1
+MỘT NẮNG HAI SƯƠNG | 1️⃣ ☀️ 2️⃣ 💧 | 3
+GIỌT NƯỚC TRÀN LY | 💧 🌊 🥛 | 3
+GÀ TRỐNG NUÔI CON | 🐓 🍼 🐣 | 2
+NHƯ NƯỚC VỚI LỬA | 💧 ⚔️ 🔥 | 2
+NƯỚC SÔI LỬA BỎNG | 💧 ♨️ 🔥 | 3
+TRỨNG KHÔN HƠN VỊT | 🥚 🧠 ➕ 🦆 | 3
+CƯỠI NGỰA XEM HOA | 🏇 👀 🌸 | 3
+VỊT NGHE SẤM | 🦆 👂 ⛈️ | 2
+CHÂN CỨNG ĐÁ MỀM | 🦵 💪 🪨 ☁️ | 3
+MƯA DẦM THẤM LÂU | 🌧️ 🌧️ 💧 ⏳ | 3
+ÁO GẤM ĐI ĐÊM | 👘 🚶 🌙 | 3
+CÁ CHẬU CHIM LỒNG | 🐟 🪣 🐦 🔒 | 3
+RỪNG VÀNG BIỂN BẠC | 🌳 🟡 🌊 ⚪ | 3
+NHƯ CÁ GẶP NƯỚC | 🐟 🤝 💧 | 2
+MẸ GÀ CON VỊT | 🐔 ➕ 🦆 | 2
+ĐỒNG TÂM HIỆP LỰC | 🤝 ❤️ 💪 | 3
+HỌC MỘT BIẾT MƯỜI | 📖 1️⃣ 🧠 🔟 | 3

@@ -80,7 +80,6 @@ export function GameStage({ game }: { game: GameState }) {
         animate={{ scale: closeUp && !asking ? 1.9 : 1 }}
         transition={{ duration: 0.7, ease: 'easeInOut' }}
       >
-        <LeftWall />
         {/* sàn lớp trong ảnh nền hơi chói: phủ 1 lớp tối nhẹ từ chân bảng trở xuống (chủ kênh chỉnh 2026-11-04) */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[600px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/20 to-[#3b1d07]/28 mix-blend-multiply" />
         <Header v={v} name={game.channelName} />
@@ -89,7 +88,8 @@ export function GameStage({ game }: { game: GameState }) {
         <DayTop v={v} />
         <TeamBoard v={v} />
         <TalkTop v={v} />
-        <GiftTable v={v} />
+        <GiftPile v={v} />
+        <ClassFund v={v} />
         <Vase v={v} />
         <Teacher v={v} now={now} />
         <Punished v={v} />
@@ -109,67 +109,47 @@ export function GameStage({ game }: { game: GameState }) {
   );
 }
 
-// Tường bên trái cô (bản riêng): che cửa sổ lớn + cửa ra vào của ảnh nền, thay bằng 1 cửa sổ nhỏ
-function LeftWall() {
-  return (
-    <svg className="pointer-events-none absolute left-0 top-0" width={176} height={900} viewBox="0 0 176 900">
-      <defs>
-        <linearGradient id="tuong" x1="0" x2="1">
-          <stop offset="0" stopColor="#e9cf9d" />
-          <stop offset="1" stopColor="#f5e2b8" />
-        </linearGradient>
-      </defs>
-      {/* tường + chân tường + sàn chỗ cửa ra vào */}
-      <rect x={0} y={66} width={166} height={746} fill="url(#tuong)" />
-      <rect x={0} y={796} width={166} height={16} fill="#9a5b28" />
-      <rect x={0} y={812} width={166} height={80} fill="#d38654" />
-      {/* cửa sổ nhỏ: khung gỗ, 4 ô kính, trời xanh + cây */}
-      <rect x={26} y={440} width={108} height={150} rx={6} fill="#7a4a1d" />
-      <rect x={36} y={450} width={88} height={130} fill="#9fd6f2" />
-      <circle cx={60} cy={560} r={30} fill="#5aa84b" />
-      <circle cx={98} cy={570} r={24} fill="#6dbb59" />
-      <rect x={78} y={450} width={4} height={130} fill="#7a4a1d" />
-      <rect x={36} y={512} width={88} height={4} fill="#7a4a1d" />
-      <rect x={20} y={588} width={120} height={10} rx={3} fill="#8b5426" />
-    </svg>
-  );
-}
-
-// Bàn quà sát tường sau lưng cô: quà cô nhận trong buổi bày lên, bó càng to icon càng to
-const PILE_PER_ROW = 6;
-function GiftTable({ v }: { v: StageView }) {
+// Quà cô nhận trong buổi: xếp thẳng ra chỗ cửa lớp bên trái (sau lưng cô), bó càng to icon càng to, chồng dần lên
+const PILE_PER_ROW = 5;
+function GiftPile({ v }: { v: StageView }) {
   const pile = v.gifts;
   return (
-    <div className="pointer-events-none absolute left-[4px] top-[600px] z-[1] h-[210px] w-[150px]">
-      {/* mặt bàn + chân */}
-      <svg className="absolute left-0 top-[86px]" width={150} height={124} viewBox="0 0 150 124">
-        <rect x={4} y={0} width={142} height={16} rx={4} fill="#c68a3c" stroke="#57320f" strokeWidth={3} />
-        <rect x={10} y={16} width={130} height={56} fill="#965c22" stroke="#57320f" strokeWidth={3} />
-        <rect x={16} y={72} width={12} height={46} fill="#70411b" stroke="#57320f" strokeWidth={2} />
-        <rect x={122} y={72} width={12} height={46} fill="#70411b" stroke="#57320f" strokeWidth={2} />
-        <text x={75} y={52} textAnchor="middle" fontSize={17} fontWeight={800} fill="#ffe9b8">
-          🎁 Quà của cô
-        </text>
-      </svg>
-      {/* quà xếp từ mặt bàn lên, hàng sau cao hơn */}
+    <div className="pointer-events-none absolute left-[2px] top-[640px] z-[1] h-[230px] w-[150px]">
       {pile.map((tier, i) => {
         const t = GAME.giftTiers[tier];
-        const size = 22 * t.size;
+        const size = 26 * t.size;
         const row = Math.floor(i / PILE_PER_ROW);
         const col = i % PILE_PER_ROW;
         return (
           <motion.div
             key={i}
-            initial={i === pile.length - 1 ? { scale: 0, x: 200, y: -60 } : false}
+            initial={i === pile.length - 1 ? { scale: 0, x: 220, y: -40 } : false}
             animate={{ scale: 1, x: 0, y: 0 }}
             transition={{ delay: i === pile.length - 1 ? GAME.closeUpToMs / 1000 - 1.2 : 0, type: 'spring', stiffness: 140, damping: 14 }}
-            className="absolute leading-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]"
-            style={{ fontSize: size, left: 8 + col * 22 - size / 4, top: 92 - size + 4 - row * 22 }}
+            className="absolute leading-none drop-shadow-[0_3px_2px_rgba(0,0,0,0.35)]"
+            style={{ fontSize: size, left: 6 + col * 26 + (row % 2) * 12 - size / 4, top: 210 - size - row * 24 }}
           >
             {t.icon}
           </motion.div>
         );
       })}
+    </div>
+  );
+}
+
+// Quỹ lớp: cột phải, giữa bảng Thi đua tổ và Top tương tác. Mỗi xu quà = 1 bông hoa vào quỹ, có mốc trong ngày
+function ClassFund({ v }: { v: StageView }) {
+  const f = v.fund;
+  const pct = Math.min(100, (f.today / f.goal) * 100);
+  return (
+    <div className="absolute right-[8px] top-[428px] z-20 w-[168px] -rotate-1 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-2 pt-3 text-center text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+      <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[28px]">📌</div>
+      <div className="text-[20px] font-extrabold leading-tight text-[#be185d]">💝 Quỹ lớp</div>
+      <div className="text-[30px] font-extrabold leading-tight text-[#be185d]">{f.today}</div>
+      <div className="h-[12px] w-full overflow-hidden rounded-full bg-pink-100">
+        <div className="h-full rounded-full bg-gradient-to-r from-pink-400 to-rose-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-1 text-[16px] font-semibold leading-tight">Mục tiêu hôm nay {f.goal} 🌹</div>
     </div>
   );
 }
@@ -211,7 +191,7 @@ function FundParty({ v }: { v: StageView }) {
           exit={{ opacity: 0 }}
           className="absolute left-1/2 top-[650px] z-[70] w-[880px] -translate-x-1/2 rounded-[30px] border-4 border-white bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 px-6 py-4 text-center font-extrabold text-white shadow-2xl"
         >
-          <div className="text-[44px] leading-tight">🎆 Quỹ hoa của cô đủ {v.fund.party} bông! 🎆</div>
+          <div className="text-[44px] leading-tight">🎆 Quỹ lớp đủ {v.fund.party} bông hoa! 🎆</div>
           <div className="text-[30px]">Cô cảm ơn cả lớp nhiều lắm 💕</div>
         </motion.div>
       )}
@@ -273,7 +253,15 @@ function Board({ v, now }: { v: StageView; now: number }) {
               <span className="rounded-full bg-[#ffd84a] px-4 text-[28px] font-bold text-[#7a2e0e]">⭐ CÂU HỎI VÀNG x2</span>
             ) : (
               <span className={`rounded-full border-2 px-4 text-[26px] ${v.slot ? 'border-[#ffe680] text-[#ffe680]' : 'border-[#f4f1e6]/60'}`}>
-                {v.slot === 'meo' ? '🤪 Đố mẹo' : v.slot === 'su' ? '📜 Lịch sử' : v.slot === 'anh' ? '🔤 Tiếng Anh' : v.category}
+                {v.slot === 'meo'
+                  ? '🤪 Đố mẹo'
+                  : v.slot === 'su'
+                    ? '📜 Lịch sử'
+                    : v.slot === 'anh'
+                      ? '🔤 Tiếng Anh'
+                      : v.slot === 'dh'
+                        ? '🖼️ Đuổi hình bắt chữ'
+                        : v.category}
               </span>
             )}
             {v.phase !== 'reveal' ? <Timer left={left} /> : <span className="text-[34px] text-[#9df29d]">Đáp án</span>}
@@ -281,7 +269,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
           {!v.boardShown ? (
             // cô đang đọc đề: chưa hiện chữ xáo / phép tính, hô bắt đầu mới hiện
             <div className="flex flex-1 flex-col items-center justify-center text-center">
-              {!v.math && <div className="line-clamp-2 text-[38px] leading-[48px]">{v.clue}</div>}
+              {!v.math && v.slot !== 'dh' && <div className="line-clamp-2 text-[38px] leading-[48px]">{v.clue}</div>}
               <motion.div
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 1.4, repeat: Infinity }}
@@ -290,6 +278,17 @@ function Board({ v, now }: { v: StageView; now: number }) {
                 👂 Nghe cô đọc đề nè…
               </motion.div>
             </div>
+          ) : v.slot === 'dh' ? (
+            // đuổi hình bắt chữ: hình ghép bằng emoji thật to, bên dưới là ô đáp án
+            <motion.div
+              key={v.clue}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 160, damping: 14 }}
+              className={`mt-3 shrink-0 whitespace-nowrap text-center text-[84px] leading-[110px] ${v.phase === 'reveal' ? 'opacity-60' : ''}`}
+            >
+              {v.clue}
+            </motion.div>
           ) : v.math ? (
             // câu toán: phép tính viết to bằng phấn, người xem gõ số
             <motion.div
@@ -675,13 +674,13 @@ function WeekBoard({ v, left }: { v: StageView; left: number }) {
 function DayTop({ v }: { v: StageView }) {
   const rows = (v.todayTop ?? []).slice(0, 4); // top 4 thôi để không che đầu cô
   return (
-    <div className="absolute left-[10px] top-[232px] z-20 w-[332px] -rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-3 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+    <div className="absolute left-[8px] top-[228px] z-20 w-[342px] -rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-3 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[30px]">📌</div>
-      <div className="whitespace-nowrap text-center text-[21px] font-extrabold leading-tight text-[#b45309]">🏆 Học sinh xuất sắc hôm nay</div>
+      <div className="whitespace-nowrap text-center text-[23px] font-extrabold leading-tight text-[#b45309]">🏆 Học sinh xuất sắc hôm nay</div>
       {rows.length === 0 && <div className="py-3 text-center text-[20px] text-[#8a6a3a]">Chưa có ai, trả lời đúng là lên bảng!</div>}
       <div className="mt-1 space-y-[2px]">
         {rows.map((r, i) => (
-          <motion.div key={r.username} layout className="flex items-center gap-2 text-[22px] leading-[27px]">
+          <motion.div key={r.username} layout className="flex items-center gap-2 text-[25px] leading-[31px]">
             <span className="w-7 text-center">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
             <span className="min-w-0 flex-1 truncate font-semibold">{r.nickname}</span>
             <b className="text-[#c2410c]">{r.points}</b>
@@ -747,13 +746,6 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* quỹ hoa của cô hôm nay: số bông / mốc kế tiếp */}
-      <div className="absolute -bottom-3 left-1/2 w-[190px] -translate-x-1/2 rounded-full bg-white/95 px-3 py-[2px] text-center text-[20px] font-bold text-pink-600 shadow">
-        🌹 Quỹ hoa {v.fund.today}/{v.fund.goal}
-        <div className="mb-[2px] h-[6px] w-full overflow-hidden rounded-full bg-pink-100">
-          <div className="h-full rounded-full bg-pink-500 transition-all duration-500" style={{ width: `${Math.min(100, (v.fund.today / v.fund.goal) * 100)}%` }} />
-        </div>
-      </div>
     </div>
   );
 }
@@ -1073,13 +1065,13 @@ function DeskGifts({ desk, x, y, w, show, scale }: { desk: StageView['seats'][nu
 function TalkTop({ v }: { v: StageView }) {
   const rows = (v.talkTop ?? []).slice(0, 5);
   return (
-    <div className="absolute left-[852px] top-[612px] z-[8] w-[220px] rotate-1 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+    <div className="absolute left-[842px] top-[606px] z-[8] w-[232px] rotate-1 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[28px]">📌</div>
-      <div className="whitespace-nowrap text-center text-[19px] font-extrabold leading-tight text-[#b45309]">💬 Top tương tác</div>
+      <div className="whitespace-nowrap text-center text-[22px] font-extrabold leading-tight text-[#b45309]">💬 Top tương tác</div>
       {rows.length === 0 && <div className="py-2 text-center text-[17px] text-[#8a6a3a]">Bình luận để lên bảng nha!</div>}
       <div className="mt-1 space-y-[1px]">
         {rows.map((r, i) => (
-          <motion.div key={r.username} layout className="flex items-center gap-1 text-[19px] leading-[25px]">
+          <motion.div key={r.username} layout className="flex items-center gap-1 text-[22px] leading-[28px]">
             <span className="w-6 text-center">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
             <span className="min-w-0 flex-1 truncate font-semibold">{r.nickname}</span>
           </motion.div>
