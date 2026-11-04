@@ -905,6 +905,16 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
     else assert.equal(e.phase, 'recess');
   }
   assert.deepEqual(kinds, ['everest', 'chuong'], 'tiết 2 Everest, tiết 4 Rung Chuông Đồng');
+  // bảng sự kiện: tiết 1 báo "sau tiết 2", tiết 2 báo "hết tiết này là tới" + cô báo trước bằng giọng
+  const f = new Classroom(BANK, t, () => 0.5);
+  f.showBank = SHOW;
+  f.newRound((t += 1000));
+  assert.deepEqual(f.nextShow(), { kind: 'everest', name: 'Đường lên đỉnh Everest', afterRound: 2, now: false, soon: false });
+  for (let k = 0; k < 200 && f.phase !== 'recess'; k++) f.tick((t = f.phaseEndsAt));
+  assert.equal(f.nextShow()!.afterRound, 2, 'ra chơi tiết 1: phiên tới vẫn sau tiết 2');
+  const intro2 = f.newRound((t += 1000));
+  assert.ok(f.nextShow()!.soon);
+  assert.ok(intro2.some((l) => LINES.showSoon.some((fn) => l.text.includes(fn('Đường lên đỉnh Everest')))), 'đầu tiết 2 cô báo hết tiết là tới Everest');
   assert.ok([...outfits].every((o) => (GAME.outfits as readonly string[]).includes(o)));
 }
 

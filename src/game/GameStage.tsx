@@ -116,6 +116,7 @@ export function GameStage({ game }: { game: GameState }) {
         {/* sàn lớp trong ảnh nền hơi chói: phủ 1 lớp tối nhẹ từ chân bảng trở xuống (chủ kênh chỉnh 2026-11-04) */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[600px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/20 to-[#3b1d07]/28 mix-blend-multiply" />
         <Header v={v} name={game.channelName} />
+        <EventBadge v={v} />
         <Motto />
         <Board v={v} now={now} />
         <DayTop v={v} />
@@ -199,7 +200,7 @@ function CloseUpInset({ v }: { v: StageView }) {
       className="absolute left-1/2 top-[930px] z-[60] h-[430px] w-[820px] -translate-x-1/2 overflow-hidden rounded-[30px] border-[6px] border-white bg-gradient-to-b from-[#fde7c3] to-[#e8b77a] shadow-2xl"
     >
       <div className="absolute left-4 top-3 rounded-full bg-red-600 px-3 text-[22px] font-bold text-white">🎥 Cận cảnh</div>
-      <img src="/assets/nv/co-ngan/06-cuoi.webp" className="absolute bottom-[-40px] left-[120px] h-[470px]" />
+      <img src={v.show ? `/assets/nv/co-ngan/${v.show.kind}/${v.show.kind === "everest" ? "10-cuoi-vui" : "06-rung-chuong-cuoi-tuoi"}.webp` : v.outfit && v.outfit !== "trang" ? `/assets/nv/co-ngan/${v.outfit}/06-cuoi-che-mieng.webp` : "/assets/nv/co-ngan/06-cuoi.webp"} className="absolute bottom-[-40px] left-[120px] h-[470px]" />
       <img src={`/assets/nv/${g}/${POSE[g].vui}.webp`} className="absolute bottom-[-20px] left-[430px] h-[330px]" />
       <motion.div animate={{ rotate: [-8, 8, -8] }} transition={{ duration: 1, repeat: Infinity }} className="absolute left-[380px] top-[150px]" style={{ fontSize: 60 * tier.size }}>
         {tier.icon}
@@ -564,6 +565,36 @@ function TeamBoard({ v }: { v: StageView }) {
           </motion.div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Bảng sự kiện bên phải tên kênh: cho khán giả biết lớp có 2 game lớn và phiên tới là game nào, sau tiết mấy
+function EventBadge({ v }: { v: StageView }) {
+  const n = v.nextShow;
+  if (!n) return null;
+  const games = [
+    { kind: 'everest', label: '🏔️ Đường lên đỉnh Everest' },
+    { kind: 'chuong', label: '🔔 Rung Chuông Đồng' },
+  ];
+  return (
+    <div className="absolute left-[784px] top-[12px] z-20 w-[288px] overflow-hidden rounded-[18px] border-[3px] border-[#7c3aed] bg-gradient-to-b from-[#2e1065] to-[#4c1d95] text-white shadow-[0_6px_0_#3b0764]">
+      <div className="bg-[#7c3aed] py-[1px] text-center text-[18px] font-extrabold tracking-wide text-[#fde68a]">🎪 SỰ KIỆN TRONG LỚP</div>
+      <div className="px-2 pt-1">
+        {games.map((g) => (
+          <div key={g.kind} className={`truncate text-[19px] font-bold leading-[26px] ${g.kind === n.kind ? 'text-[#fde68a]' : 'opacity-70'}`}>
+            {g.label}
+          </div>
+        ))}
+      </div>
+      <motion.div
+        key={`${n.kind}${n.now}${n.soon}`}
+        animate={n.now || n.soon ? { scale: [1, 1.06, 1] } : {}}
+        transition={{ duration: 1, repeat: Infinity }}
+        className={`mx-2 mb-2 mt-1 rounded-lg px-2 text-center text-[18px] font-extrabold leading-[26px] ${n.now ? 'bg-[#dc2626]' : n.soon ? 'bg-[#f59e0b] text-[#3b0764]' : 'bg-white/15'}`}
+      >
+        {n.now ? `🔴 ĐANG DIỄN RA` : n.soon ? '⏰ Hết tiết này là tới!' : `⏭ Phiên tới: sau tiết ${n.afterRound}`}
+      </motion.div>
     </div>
   );
 }
@@ -1090,9 +1121,9 @@ function FastestBoard({ v }: { v: StageView }) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="absolute left-[392px] top-[622px] z-30 w-[470px] overflow-hidden rounded-[16px] border-[3px] border-[#7a2e0e] bg-[#fff6dd]/97 shadow-xl"
+      className="absolute left-[378px] top-[618px] z-30 w-[460px] overflow-hidden rounded-[16px] border-[3px] border-[#7a2e0e] bg-[#fff6dd]/97 shadow-xl"
     >
-      <div className="flex items-center justify-between bg-[#7a2e0e] px-3 py-[2px] text-[21px] font-bold text-[#ffe9b8]">
+      <div className="flex items-center justify-between bg-[#7a2e0e] px-3 py-[2px] text-[25px] font-bold text-[#ffe9b8]">
         <span>⚡ Top {GAME.fastestShown} nhanh nhất</span>
         <span>{v.correctCount} bạn đúng</span>
       </div>
@@ -1103,16 +1134,16 @@ function FastestBoard({ v }: { v: StageView }) {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.15 * i }}
-          className={`flex items-center gap-2 px-3 text-[22px] leading-[33px] text-[#4a2c0e] ${i % 2 ? 'bg-[#f6e3b4]/60' : ''}`}
+          className={`flex items-center gap-2 px-3 text-[29px] leading-[42px] text-[#4a2c0e] ${i % 2 ? 'bg-[#f6e3b4]/60' : ''}`}
         >
-          <span className="w-8 text-center text-[24px]">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
+          <span className="w-9 shrink-0 text-center text-[28px]">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
           <span className="min-w-0 flex-1 truncate font-semibold">{a.nickname}</span>
-          <span className="w-[120px] text-right font-mono text-[20px] text-[#6b4a22]">{secText(a.ms)}</span>
-          <b className="w-[52px] text-right text-[#c2410c]">+{a.points}</b>
+          <span className="shrink-0 whitespace-nowrap text-right text-[24px] font-bold tabular-nums text-[#6b4a22]">{secText(a.ms)}</span>
+          <b className="w-[58px] shrink-0 text-right text-[30px] text-[#c2410c]">+{a.points}</b>
         </motion.div>
       ))}
       {v.laterCount > 0 && (
-        <div className="border-t border-[#e9d8a6] px-3 text-center text-[19px] font-semibold leading-[30px] text-[#6b4a22]">
+        <div className="border-t border-[#e9d8a6] px-3 text-center text-[22px] font-semibold leading-[34px] text-[#6b4a22]">
           {v.laterCount} bạn khác đúng chậm hơn: mỗi bạn +{v.laterPoints}
         </div>
       )}
@@ -1352,12 +1383,14 @@ function FlowerWalk({ v }: { v: StageView }) {
 }
 
 // Học sinh cá biệt: bị cô phạt đứng cạnh bảng (bên phải), đeo bảng tên đỏ
-const STAND_SPOTS = [870, 965];
+// đứng phạt ở góc phải, dưới bảng Top tương tác, trên hàng ghế đầu: trước đây đứng cạnh bảng đen thì che mất ô chữ
+const STAND_SPOTS = [993, 1047];
+const STAND_FEET = 930;
 function Punished({ v }: { v: StageView }) {
   return (
     <>
       {v.punished.slice(0, STAND_SPOTS.length).map((s, i) => {
-        const H = 185;
+        const H = 118;
         const g = s.girl ? 'nu' : 'nam';
         return (
           <motion.div
@@ -1365,12 +1398,13 @@ function Punished({ v }: { v: StageView }) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             className="pointer-events-none absolute z-30"
-            style={{ left: STAND_SPOTS[i] - (H * 0.47) / 2, top: 640 - H, width: H * 0.47, height: H }}
+            style={{ left: STAND_SPOTS[i] - (H * 0.47) / 2, top: STAND_FEET - H, width: H * 0.47, height: H }}
           >
             <img src={`/assets/nv/${g}/${POSE[g].buon}.webp`} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
-            <div className="absolute -top-[52px] left-1/2 w-[120px] -translate-x-1/2 rounded-md bg-red-600 px-1 text-center text-[15px] font-bold leading-tight text-white shadow">
-              😅 Học sinh cá biệt
-              <div className="truncate text-[14px] font-semibold">{s.nickname}</div>
+            {/* bảng tên đeo trước bụng (giơ trên đầu thì đè lên bảng Top tương tác) */}
+            <div className="absolute bottom-[6px] left-1/2 w-[58px] -translate-x-1/2 rounded bg-red-600 px-[2px] text-center text-[11px] font-bold leading-[13px] text-white shadow">
+              😅 Cá biệt
+              <div className="truncate text-[10px] font-semibold">{s.nickname}</div>
             </div>
           </motion.div>
         );

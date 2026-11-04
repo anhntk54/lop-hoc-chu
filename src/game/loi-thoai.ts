@@ -297,6 +297,12 @@ export const LINES = {
   ] as L0,
 
   // ---------- 2 game lớn (bản riêng): Đường lên đỉnh Everest, Rung Chuông Đồng ----------
+  // báo trước ở đầu tiết: hết tiết này là tới game lớn (g = tên game)
+  showSoon: [
+    (g) => `Thông báo nè cả lớp: hết tiết này là tới ${g} nha! Học cho tốt, lát nữa thi cho đã.`,
+    (g) => `Các bạn ơi, học xong tiết này mình chơi ${g}. Ai chưa follow thì follow kênh để không lỡ nha.`,
+    (g) => `Chuẩn bị tinh thần đi các bạn, cuối tiết này là ${g}, câu hỏi khó hơn bình thường đó!`,
+  ] as L1,
   showIntroEverest: [
     'Cả lớp ơi, hôm nay mình không ra chơi, mình đi leo núi! Chào mừng tới Đường lên đỉnh Everest. Gõ A, B, C hoặc D, ai đúng cũng được điểm, không cần nhanh, cần đúng. Đội leo núi tập hợp nha!',
     'Đổi gió chút nha các bạn. Cô Ngân mặc đồ leo núi rồi nè, mình chơi Đường lên đỉnh Everest. Mỗi câu gõ một chữ A, B, C hoặc D, gõ một lần thôi. Ai tới đỉnh trước, cô cắm cờ cho!',

@@ -565,7 +565,7 @@ export class Classroom {
     }
     const b = auto ? `Cô xếp ${auto} bạn chưa chọn vào tổ ít người.` : 'Bạn nào cũng có tổ rồi.';
     this.setPhase('intro', now, GAME.introSec);
-    return this.mainOf([this.t(this.line('teamClose', this.teamCountsText(now), b)), this.review ? this.line0('reviewIntro') : this.line0('intro')]);
+    return this.mainOf([this.t(this.line('teamClose', this.teamCountsText(now), b)), this.review ? this.line0('reviewIntro') : this.line0('intro'), ...this.showSoon()]);
   }
   /** Cuối tiết: tổ nhiều điểm nhất được cờ thi đua (hoà thì các tổ hoà cùng được) */
   private teamResult(now: number): Say[] {
@@ -1278,6 +1278,27 @@ export class Classroom {
     return pool[0];
   }
 
+  /**
+   * Bảng sự kiện cạnh tên kênh: game lớn kế tiếp là game nào, sau tiết mấy.
+   * `now` = đang chơi; `soon` = hết tiết này là tới (tiết đang học hoặc đang tổng kết tiết đó).
+   */
+  nextShow() {
+    if (GAME.showEvery <= 0 || !this.showBank.mc.length) return null;
+    if (this.show) return { kind: this.show.kind, name: SHOW_NAME[this.show.kind], afterRound: this.round, now: true, soon: false };
+    // tiết hiện tại đã xong (ra chơi, chọn chủ đề) thì tính từ tiết sau
+    const done = this.phase === 'recess' || this.phase === 'vote';
+    const base = Math.max(1, done ? this.round + 1 : this.round);
+    const afterRound = Math.ceil(base / GAME.showEvery) * GAME.showEvery;
+    const kind: ShowKind = this.showNo % 2 === 0 ? 'everest' : 'chuong';
+    return { kind, name: SHOW_NAME[kind], afterRound, now: false, soon: !done && afterRound === this.round };
+  }
+
+  /** Đầu tiết có game lớn ở cuối: cô báo trước cho cả lớp chuẩn bị */
+  private showSoon(): Say[] {
+    const n = this.nextShow();
+    return n?.soon ? [this.t(this.line('showSoon', n.name))] : [];
+  }
+
   /** Nút "Game lớn" ở trang điều khiển: chơi ngay 1 game */
   forceShow(kind: ShowKind, now: number): Say[] {
     if (!this.showBank.mc.length) return [];
@@ -1647,7 +1668,7 @@ export class Classroom {
       return this.mainOf([...voted, ...greet, this.line0('teamIntro')]);
     }
     this.setPhase('intro', now, GAME.introSec);
-    return this.mainOf([...voted, ...greet, this.review ? this.line0('reviewIntro') : this.line0('intro')]);
+    return this.mainOf([...voted, ...greet, this.review ? this.line0('reviewIntro') : this.line0('intro'), ...this.showSoon()]);
   }
 
   /** Bỏ qua phần đang chạy (nút "Qua phần tiếp" ở trang điều khiển) */
@@ -1906,6 +1927,7 @@ export class Classroom {
       classSize: this.students.size,
       // trang phục cô Ngân: bộ của tiết, đang chơi game lớn thì bộ của game
       outfit: this.show ? this.show.kind : this.outfit,
+      nextShow: this.nextShow(),
       show: this.showView(),
       // thi đua tổ (tắt chọn tổ thì rỗng)
       teams: GAME.teamPickSec > 0 ? this.teamStats(now) : [],
