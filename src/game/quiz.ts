@@ -145,7 +145,7 @@ export interface Student {
   desk: DeskGift[]; // quà cô thưởng đặt trên bàn (xoá khi sang tiết mới)
   days: number; // chuyên cần: số ngày đi học liền (server báo về, 0 = chưa biết)
   bubble?: { text: string; at: number }; // bình luận gần nhất hiện thành bong bóng trên đầu
-  standUntil: number; // bị cô phạt lên bục đứng (học sinh cá biệt) tới lúc này
+  standLeft: number; // gõ sai bị phạt lên đứng cạnh cô (học sinh cá biệt): còn đứng chừng này câu nữa
   team: number; // tổ 1..4 (0 = chưa có tổ, chỉ trong lúc đang chọn tổ)
   life: Life; // học bạ cả đời (server gửi về lúc vào lớp, cộng dồn trong buổi)
   lastTalkAt?: number; // lần cuối được tính 1 tương tác (chống gõ dồn)
@@ -425,7 +425,7 @@ export class Classroom {
     this.clock = Math.max(this.clock, now);
     let s = this.students.get(e.username);
     if (!s) {
-      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standUntil: 0, team: 0, life: emptyLife() };
+      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standLeft: 0, team: 0, life: emptyLife() };
       // vào lớp giữa tiết: xếp ngay vào tổ ít người (đang giờ chọn tổ thì để bạn tự chọn, hết giờ cô xếp)
       if (GAME.teamPickSec > 0 && this.phase !== 'team') s.team = this.smallestTeam(now);
       this.students.set(e.username, s);
@@ -1102,16 +1102,27 @@ export class Classroom {
       if (this.golden) out.unshift(this.t(this.rand() < 0.5 ? this.line('goldenGift', top.spoken, this.giveGift(top, now)) : this.line('goldenWinner', top.spoken)));
     } else main = this.line(math ? 'mathNobody' : riddle ? 'riddleNobody' : eng ? 'englishNobody' : 'revealNobody', answer);
     out.unshift({ ...this.t(main), main: true });
-    // cà khịa 1 bạn trả lời sai (60% số câu, tên đọc được)
-    const wrongs = [...this.wrong].map((u) => this.students.get(u)).filter((s): s is Student => !!s && s.spoken !== 'bạn');
-    if (wrongs.length && this.rand() < GAME.roastChance) {
-      const w = wrongs[Math.floor(this.rand() * wrongs.length)];
-      // thỉnh thoảng phạt lên bục đứng thật (học sinh cá biệt), tối đa 2 bạn cùng lúc
-      const standing = [...this.students.values()].filter((s) => s.standUntil > now).length;
-      if (standing < 2 && w.standUntil <= now && this.rand() < GAME.standChance) {
-        w.standUntil = now + GAME.standSec * 1000;
-        out.push(this.t(this.line('roastStand', w.spoken)));
-      } else out.push(this.t(this.line(math ? 'mathWrong' : riddle ? 'riddleWrong' : 'roastWrong', w.spoken)));
+    // gõ sai: lên đứng cạnh cô GAME.standQuestions câu (chủ kênh chốt 2026-11-05), tối đa GAME.standMax bạn cùng lúc,
+    // ai sai trước lên trước. Bạn đang đứng: qua mỗi câu bớt 1, hết thì về chỗ
+    for (const s of this.students.values()) if (s.standLeft > 0) s.standLeft--;
+    let free = GAME.standMax - [...this.students.values()].filter((s) => s.standLeft > 0).length;
+    const sentUp: Student[] = [];
+    for (const u of this.wrong) {
+      if (free <= 0) break;
+      const s = this.students.get(u);
+      if (!s || s.standLeft > 0) continue;
+      s.standLeft = GAME.standQuestions;
+      sentUp.push(s);
+      free--;
+    }
+    const named = sentUp.filter((s) => s.spoken !== 'bạn');
+    if (named.length) out.push(this.t(this.line('roastStand', named[0].spoken)));
+    else {
+      // cà khịa 1 bạn trả lời sai (tên đọc được)
+      const wrongs = [...this.wrong].map((u) => this.students.get(u)).filter((s): s is Student => !!s && s.spoken !== 'bạn');
+      if (wrongs.length && this.rand() < GAME.roastChance) {
+        out.push(this.t(this.line(math ? 'mathWrong' : riddle ? 'riddleWrong' : 'roastWrong', wrongs[Math.floor(this.rand() * wrongs.length)].spoken)));
+      }
     }
     return this.mainOf([...out, ...this.checkMonitor()]);
   }
@@ -1136,6 +1147,8 @@ export class Classroom {
 
   private startResults(now: number, outOfQuestions = false): Say[] {
     this.setPhase('results', now, GAME.resultsSec);
+    // phạt đứng chỉ tính trong giờ học: hết tiết thì cả lớp về chỗ, ra chơi / game lớn không ai đứng phạt
+    for (const s of this.students.values()) s.standLeft = 0;
     // hết 20 câu: cô thay bộ trang phục khác (bốc ngẫu nhiên, không trùng bộ đang mặc)
     const others = GAME.outfits.filter((o) => o !== this.outfit);
     this.outfit = others[Math.floor(this.rand() * others.length)];
@@ -1718,6 +1731,7 @@ export class Classroom {
     for (const s of this.students.values()) {
       s.score = 0;
       s.streak = 0;
+      s.standLeft = 0; // tiết mới: bạn đang đứng phạt về chỗ hết
       s.reachedAt = 0;
       s.desk = [];
       // chịu tải hàng ngàn người: bạn đã rời live lâu (im quá GAME.forgetAfterMs) thì xoá khỏi lớp cho nhẹ.
@@ -1918,13 +1932,13 @@ export class Classroom {
     const seated = this.seats(GAME.seats + GAME.standing);
     // lớp trưởng, lớp phó: 3 bạn điểm tiết cao nhất (chỉ tính 20 câu của tiết này); dùng lại danh sách ghế, khỏi xếp lại
     const titles = new Map(seated.slice(0, 3).filter((s) => s.score > 0).map((s, i) => [s.username, i === 0 ? 'lop-truong' : 'lop-pho']));
-    const pub = ({ username, nickname, avatar, girl, score, session, lastActive, joinedAt, desk, days, bubble, standUntil, life, team }: Student) => ({
+    const pub = ({ username, nickname, avatar, girl, score, session, lastActive, joinedAt, desk, days, bubble, standLeft, life, team }: Student) => ({
       team,
       desk,
       days,
       grade: gradeOf(life.points), // học bạ: lớp mấy (13 = tốt nghiệp)
       bubble: bubble && now - bubble.at < GAME.bubbleMs ? bubble.text : '',
-      standing: standUntil > now, // bị phạt lên bục đứng: ghế trống, đứng cạnh bảng
+      standing: standLeft > 0, // gõ sai bị phạt đứng cạnh cô: ghế trống
       sleeping: now - lastActive > GAME.sleepAfterMs,
       username,
       nickname,
@@ -1970,7 +1984,7 @@ export class Classroom {
         return s ? { username: s.username, nickname: s.nickname, girl: s.girl, at: this.walk!.at, tier: this.walk!.tier } : null;
       })(),
       // học sinh cá biệt đang đứng trên bục (kể cả bạn không có ghế)
-      punished: [...this.students.values()].filter((s) => s.standUntil > now).map(({ username, nickname, girl }) => ({ username, nickname, girl })),
+      punished: [...this.students.values()].filter((s) => s.standLeft > 0).map(({ username, nickname, girl, standLeft }) => ({ username, nickname, girl, left: standLeft })),
       loveFans: this.love?.fans.length ?? 0, // đang rủ "ai yêu cô gõ số 1": số bạn đã gõ (tim bay lên)
       // đang bình chọn vui: các lựa chọn và số phiếu
       poll: this.poll && this.poll.opts.map((o) => ({ ...o, n: [...this.poll!.votes.values()].filter((k) => k === o.key).length })),

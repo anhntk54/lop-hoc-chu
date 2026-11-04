@@ -131,3 +131,4 @@ Khách chủ yếu vào chơi lúc nghỉ ngơi, chỉ muốn trả lời và th
 - Còn 5 giây cô chỉ nói ngắn "Sắp hết giờ rồi!" (không đùa thêm).
 - Giọng: câu không ghi "M:"/"F:" cũng là giọng nữ (voice.ts mặc định F). Tốc độ mặc định 1.0 (trước 1.1), chỉnh ở thanh "Tốc độ giọng" trang điều khiển.
 - Test cũ (quiz.check.ts) chạy với nhịp cũ (`FAST` ở đầu file), chế độ nhanh test riêng ở cuối file.
+- Gõ sai đứng phạt (chủ kênh chốt 2026-11-05, thay luật cũ 30% / 45 giây): ai gõ sai câu tiết học là lên đứng ở khoảng sàn giữa cô giáo và dãy bàn đầu (chỗ chủ kênh khoanh), đứng 3 câu rồi về chỗ (`standQuestions`), tối đa 6 bạn (`standMax`), ai sai trước lên trước. Chỉ tính trong giờ học: hết tiết cả lớp về chỗ, ra chơi / game lớn không ai đứng. Hình phạt (chủ kênh chốt 2026-11-05): giơ tay đứng, nhún lên xuống, bảng đỏ "Gõ sai · còn N câu".

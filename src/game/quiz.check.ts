@@ -458,9 +458,9 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   const said = c.tick((t = c.phaseEndsAt));
   for (let k = 0; k < 3 && c.phase !== 'reveal'; k++) said.push(...c.tick((t = c.phaseEndsAt)));
   assert.ok(said.some((l) => LINES.roastStand.some((f) => f('Bạn 2') === l.text.slice(3))), 'cô phạt lên bục');
-  assert.deepEqual(c.view(t).punished.map((p) => p.username), ['u2']);
+  assert.ok(c.view(t).punished.some((p) => p.username === 'u2'), 'gõ sai lên đứng cạnh cô');
   assert.ok(seat('u2').standing);
-  assert.equal(c.view(t + GAME.standSec * 1000).punished.length, 0, 'hết giờ phạt thì về chỗ');
+  assert.equal(c.view(t).punished[0].left, GAME.standQuestions, 'gõ sai đứng cạnh cô 3 câu');
   // ngồi im lâu: ngủ gật
   assert.ok(c.view(t + GAME.sleepAfterMs + 1).seats.every((s) => s.sleeping));
 }
@@ -938,6 +938,29 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(streakSaid[4].length, 1, '4 bạn cùng đủ 5 câu: gộp 1 câu');
   assert.ok(streakSaid[4][0].includes('5 câu') && streakSaid[4][0].includes('và 1 bạn nữa'), streakSaid[4][0]);
   for (let i = 1; i <= 4; i++) assert.equal(c.students.get(`u${i}`)!.streak, 5);
+}
+
+// ---------- gõ sai: lên đứng cạnh cô 3 câu, tối đa 3 bạn, ai sai trước lên trước ----------
+{
+  const c = new Classroom(Array.from({ length: 30 }, (_, i) => mk('BẢNG ĐEN' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i % 26] + (i >= 26 ? 'X' : ''))), t);
+  c.newRound(t);
+  const ask = () => {
+    while (c.phase !== 'question') c.tick((t += 500));
+    c.showBoard();
+  };
+  const toReveal = () => {
+    while ((c.phase as string) !== 'reveal') c.tick((t += 500));
+  };
+  ask();
+  for (let i = 1; i <= 5; i++) chat(c, i, 'X'.repeat(c.answerLetters.length), t, (t += 10)); // 5 bạn sai
+  toReveal();
+  assert.deepEqual(c.view(t).punished.map((p) => p.username), ['u1', 'u2', 'u3', 'u4', 'u5'], 'ai gõ sai cũng lên đứng (tối đa 6)');
+  for (let q = 2; q <= 4; q++) {
+    ask();
+    toReveal();
+    if (q < 4) assert.equal(c.view(t).punished.length, 5, `còn đứng ở câu ${q}`);
+  }
+  assert.equal(c.view(t).punished.length, 0, 'đứng đủ 3 câu thì về chỗ');
 }
 
 // ---------- chế độ nhanh: đọc đề ngắn, đọc xong mới hiện bảng + nhận đáp án, đủ 5 bạn đúng thì chốt sớm, điểm danh 1 câu sau câu 10 ----------

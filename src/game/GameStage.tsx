@@ -1367,14 +1367,15 @@ function FlowerWalk({ v }: { v: StageView }) {
 }
 
 // Học sinh cá biệt: bị cô phạt đứng cạnh bảng (bên phải), đeo bảng tên đỏ
-// đứng phạt ở góc phải, dưới bảng Top tương tác, trên hàng ghế đầu: trước đây đứng cạnh bảng đen thì che mất ô chữ
-const STAND_SPOTS = [993, 1047];
-const STAND_FEET = 930;
+// gõ sai: đứng phạt 3 câu ở khoảng sàn trống giữa cô giáo và dãy bàn đầu (chủ kênh khoanh chỗ, 2026-11-05),
+// xếp 1 hàng từ cạnh cô sang phải. Hình phạt (chủ kênh chốt): giơ tay đứng phạt, nhún lên xuống
+const STAND_SPOTS = [420, 492, 564, 636, 708, 780];
+const STAND_FEET = 880;
 function Punished({ v }: { v: StageView }) {
   return (
     <>
       {v.punished.slice(0, STAND_SPOTS.length).map((s, i) => {
-        const H = 118;
+        const H = 120;
         const g = s.girl ? 'nu' : 'nam';
         return (
           <motion.div
@@ -1384,11 +1385,18 @@ function Punished({ v }: { v: StageView }) {
             className="pointer-events-none absolute z-30"
             style={{ left: STAND_SPOTS[i] - (H * 0.47) / 2, top: STAND_FEET - H, width: H * 0.47, height: H }}
           >
-            <img src={`/assets/nv/${g}/${POSE[g].buon}.webp`} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
+            <motion.img
+              src={`/assets/nv/${g}/${POSE[g].tay}.webp`}
+              animate={{ y: [0, 10, 0], scaleY: [1, 0.94, 1] }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
+              style={{ transformOrigin: 'bottom center' }}
+              className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]"
+            />
             {/* bảng tên đeo trước bụng (giơ trên đầu thì đè lên bảng Top tương tác) */}
             <div className="absolute bottom-[6px] left-1/2 w-[58px] -translate-x-1/2 rounded bg-red-600 px-[2px] text-center text-[11px] font-bold leading-[13px] text-white shadow">
-              😅 Cá biệt
+              😅 Gõ sai
               <div className="truncate text-[10px] font-semibold">{s.nickname}</div>
+              <div className="text-[10px] font-semibold">còn {s.left} câu</div>
             </div>
           </motion.div>
         );

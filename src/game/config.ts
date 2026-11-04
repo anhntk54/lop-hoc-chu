@@ -46,8 +46,9 @@ export const GAME = {
   walkMs: 6000, // tặng hoa: bạn nhỏ đi lên bục đưa hoa cho cô rồi về chỗ
   bubbleMs: 5000, // bong bóng chat trên đầu (không hiện câu trả lời, không hiện câu có từ cấm)
   sleepAfterMs: 5 * 60_000, // ngồi im chừng này thì ngủ gật 💤, thỉnh thoảng cô gọi dậy
-  standChance: 0.3, // lúc trêu bạn trả lời sai: tỉ lệ cô phạt lên bục đứng (học sinh cá biệt)
-  standSec: 45,
+  // gõ sai: lên đứng cạnh cô (học sinh cá biệt) chừng này câu rồi về chỗ; tối đa standMax bạn cùng lúc, ai sai trước lên trước
+  standQuestions: 3,
+  standMax: 6, // 6 chỗ đứng trên sàn giữa cô và dãy bàn đầu
   bonusSec: 10, // hết giờ chưa ai đúng: mở 1 chữ, thêm chừng này giây
   praiseEvery: 10, // cứ chừng này câu cô dừng lại điểm danh top 3, tặng quà (chế độ nhanh: chỉ sau câu 10; trước là 5)
   praiseSec: 3, // đọc xong còn dừng chừng này giây để các bạn nhỏ chào cô, thả tim rồi mới ra câu tiếp
