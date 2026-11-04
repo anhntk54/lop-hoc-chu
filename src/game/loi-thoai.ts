@@ -113,7 +113,7 @@ export const LINES = {
   loveThanks: [
     (c, n) => `Ôi ${c} bạn yêu cô luôn, cô cảm động quá! Cảm ơn ${n} nha, còn hơn lương về.`,
     (c, n) => `${c} bạn gõ số một rồi nè! Cảm ơn ${n}, cô sạc đầy pin rồi.`,
-    (c, n) => `Cô thấy rồi nha, ${n} và các bạn, tổng cộng ${c} người thương cô. Hôm nay khỏi cần trà sữa.`,
+    (c, n) => `Cô thấy rồi nha, ${n} và các bạn, tổng cộng ${c} bạn thương cô. Hôm nay khỏi cần trà sữa.`,
   ] as L2,
 
   // kết quả bình chọn vui: l = lựa chọn đông nhất, c = số bạn

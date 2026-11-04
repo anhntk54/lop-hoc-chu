@@ -534,11 +534,6 @@ export class Classroom {
     else {
       const nice = pool.filter((q) => q.category !== prev && perCat(q.category) < 2);
       if (nice.length) pool = nice;
-      // bản riêng: phần lớn câu chữ thường lấy từ bộ Gen Z / công sở / ăn uống yêu đương
-      if (!slot && this.rand() < GAME.hotShare) {
-        const hot = pool.filter((x) => (GAME.hotTopics as readonly string[]).includes(x.id.split(':')[0]));
-        if (hot.length) pool = hot;
-      }
     }
     if (!pool.length) pool = this.bank.filter((q) => kind(q));
     if (!pool.length) return null;
@@ -550,7 +545,13 @@ export class Classroom {
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     pool.sort((a, b) => at(a) - at(b));
-    const q = pool[0];
+    let q = pool[0];
+    // bản riêng: phần lớn câu chữ thường lấy từ bộ Gen Z / công sở / ăn uống yêu đương, nhưng chỉ trong nhóm câu
+    // lâu chưa hỏi nhất (cùng lần hỏi với pool[0]): bộ hot hết câu mới thì lấy câu mới bộ khác, không hỏi lại câu cũ
+    if (!slot && !fav.length && !favAny.length && this.rand() < GAME.hotShare) {
+      const hot = pool.find((x) => at(x) === at(pool[0]) && (GAME.hotTopics as readonly string[]).includes(x.id.split(':')[0]));
+      if (hot) q = hot;
+    }
     this.history[q.id] = now;
     this.usedLog.push(q.id);
     return q;
