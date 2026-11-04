@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { Classroom, LineBag, compactVi, dayPeriod, plain, scramble, topicName } from './quiz';
+import { Classroom, LineBag, teamOf, compactVi, dayPeriod, plain, scramble, topicName } from './quiz';
 import { parseBank, type Question } from './questions';
 import { GAME } from './config';
 import { makeMath } from './math';
@@ -14,6 +14,9 @@ const mk = (answer: string, d: Question['difficulty'] = 'easy', id = answer): Qu
 const who = (i: number) => ({ username: `u${i}`, nickname: `Bạn ${i}`, spoken: `Bạn ${i}`, avatar: '' });
 const chat = (c: Classroom, i: number, comment: string, createTime: number, now: number) => c.chat({ ...who(i), comment, createTime }, now);
 let t = 1_000_000;
+// các test cũ chạy không có giờ chọn tổ (bản cô Ngân); phần chia tổ test riêng ở cuối file
+const TEAM_SEC = GAME.teamPickSec;
+GAME.teamPickSec = 0;
 
 // ---------- chữ ----------
 assert.equal(compactVi('  Bảng   Đen! '), 'bảngđen');
@@ -583,6 +586,58 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
     c.reportLog.map((r) => [r.attempts, r.correct]),
     [[6, 4]],
   );
+}
+
+// ---------- chia tổ (bản cô Ngân): 45 giây chọn tổ, ai chưa chọn máy xếp, bạn vào giữa tiết xếp ngay ----------
+{
+  GAME.teamPickSec = TEAM_SEC;
+  assert.equal(teamOf('tổ 2'), 2);
+  assert.equal(teamOf('TO3'), 3);
+  assert.equal(teamOf('t4'), 4);
+  assert.equal(teamOf('1'), 1);
+  assert.equal(teamOf('tổ ba'), 3);
+  assert.equal(teamOf('tổ 5'), 0);
+  assert.equal(teamOf('chào cô'), 0);
+  const c = new Classroom([mk('MÈO'), mk('CHÓ', 'easy', 'cho')], t, () => 0.1);
+  chat(c, 1, 'chào cô', t, t); // vào trước khi mở tiết: đã được xếp tổ, vẫn đổi được trong giờ chọn
+  c.newRound(t);
+  assert.equal(c.phase, 'team');
+  chat(c, 1, 'tổ 3', t, t);
+  chat(c, 2, 'tổ 3', t, t);
+  chat(c, 3, 'to 1', t, t);
+  chat(c, 3, 'tổ 2', t, t); // đổi ý: theo lần sau
+  for (let i = 4; i < 10; i++) chat(c, i, 'hello', t, t); // 6 bạn không chọn
+  assert.equal(c.view(t).noTeam, 6);
+  const remind = c.tick((t = c.phaseEndsAt - GAME.teamRemindLeftSec * 1000));
+  assert.ok(remind.some((l) => l.text.includes('Tổ 3 2 bạn')), 'còn 15 giây cô đọc số bạn mỗi tổ');
+  const close = c.tick((t = c.phaseEndsAt));
+  assert.equal(c.phase, 'intro');
+  assert.ok(close.some((l) => l.text.includes('6 bạn chưa chọn')));
+  const st = c.students;
+  assert.equal(st.get('u1')!.team, 3);
+  assert.equal(st.get('u3')!.team, 2);
+  assert.ok([...st.values()].every((s) => s.team >= 1 && s.team <= 4), 'không sót ai');
+  const sizes = c.teamStats(t).map((x) => x.members);
+  assert.ok(Math.max(...sizes) - Math.min(...sizes) <= 1, `chia đều: ${sizes}`);
+  chat(c, 50, 'hi cô', t, t); // vào giữa tiết: xếp ngay
+  assert.ok(st.get('u50')!.team > 0);
+  // bạn tổ 3 trả lời đúng -> cuối tiết tổ 3 thắng cờ
+  c.tick((t = c.phaseEndsAt));
+  assert.equal(c.phase, 'question');
+  for (let k = 0; k < 40 && c.phase !== 'results'; k++) {
+    if (c.phase === 'question') chat(c, 1, c.q!.answer, t, t);
+    c.tick((t = c.phaseEndsAt));
+  }
+  assert.equal(c.phase, 'results');
+  assert.deepEqual(c.lastTeamWin, [3]);
+  assert.equal(c.teamWins[2], 1);
+  assert.equal(c.view(t).teams[2].wins, 1);
+  // tiết sau: giữ tổ cũ, điểm tổ tính lại
+  c.newRound(t);
+  assert.equal(c.phase, 'team');
+  assert.equal(st.get('u1')!.team, 3);
+  assert.equal(c.teamStats(t)[2].score, 0, 'điểm tổ tính lại mỗi tiết');
+  GAME.teamPickSec = 0;
 }
 
 console.log('quiz.check: tất cả đều đúng');

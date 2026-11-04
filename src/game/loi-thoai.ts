@@ -50,6 +50,8 @@ export const LINES = {
     'Vào học! Ai trả lời đúng nhanh nhất được mười điểm, chậm hơn thì ít điểm hơn. Chép bài bạn thì được đúng một điểm thôi nha.',
     'Lớp trưởng đâu, hô cả lớp đứng dậy coi. Thôi khỏi, ngồi luôn đi, vào câu một.',
     'Tiết mới tới rồi. Bàn đầu đang trống, ai giỏi thì lên ngồi.',
+    'Cô Ngân vào lớp rồi đây! Cả lớp ổn định, tổ nào trả lời giỏi thì tổ đó thắng nha.',
+    'Lớp cô Ngân bắt đầu học nè. Hai mươi câu, mỗi câu đúng là cộng điểm cho cả tổ của mình.',
     'Cả lớp chú ý lên bảng. Chữ cô xáo lung tung, việc của các bạn nhỏ là xếp lại cho đúng.',
   ] as L0,
 
@@ -230,6 +232,32 @@ export const LINES = {
   voteNobody: [
     'Chưa ai chọn hết, vậy cô tự chọn câu hỏi nha.',
     'Không ai bình chọn hả? Thôi cô trộn đủ chủ đề luôn.',
+  ] as L0,
+
+  // ---------- Chia tổ (bản riêng cô Ngân): 45 giây chọn tổ trước mỗi tiết ----------
+  teamIntro: [
+    'Trước khi vào học, cô Ngân chia lớp làm bốn tổ nha. Gõ tổ một, tổ hai, tổ ba hoặc tổ bốn vào bình luận. Ai không chọn thì cô xếp cho.',
+    'Các bạn nhỏ chọn tổ nào! Có bốn tổ, gõ tổ một, tổ hai, tổ ba hay tổ bốn đều được. Bạn nào chưa chọn cô Ngân xếp giùm luôn.',
+    'Giờ thi đua tổ nè! Muốn vào tổ nào thì gõ tổ và số tổ, ví dụ tổ ba. Bốn mươi lăm giây thôi nha.',
+  ] as L0,
+  teamRemind: [
+    (a) => `Còn mười lăm giây chọn tổ nha các bạn nhỏ. ${a}`,
+    (a) => `Sắp hết giờ chọn tổ rồi! ${a} Ai chưa chọn thì gõ lẹ lên.`,
+    (a) => `Nhanh tay chọn tổ nào! ${a}`,
+  ] as L1,
+  teamClose: [
+    (a, b) => `Hết giờ chọn tổ! ${a} ${b} Thi đua thôi các bạn nhỏ ơi!`,
+    (a, b) => `Cô Ngân chốt danh sách tổ nha. ${a} ${b} Tổ nào nhiều điểm nhất thì thắng tiết này.`,
+    (a, b) => `Xong rồi! ${a} ${b} Cả tổ cùng cố gắng nha.`,
+  ] as L2,
+  teamWin: [
+    (t, s) => `Tổ thắng tiết này là ${t}, được ${s} điểm. Cả tổ giỏi quá, cô Ngân tặng cờ thi đua!`,
+    (t, s) => `Thi đua tổ: ${t} về nhất với ${s} điểm. Vỗ tay cho ${t} nào!`,
+    (t, s) => `${t} thắng rồi, ${s} điểm! Các tổ khác tiết sau cố gắng lấy lại cờ nha.`,
+  ] as L2,
+  teamNobody: [
+    'Tiết này chưa tổ nào có điểm hết, tiết sau cố lên nha.',
+    'Bốn tổ đều chưa ghi điểm. Tiết sau cô chờ tổ nào giỏi nhất đó.',
   ] as L0,
 
   // ---------- Câu đố mẹo (câu 7, 13) ----------

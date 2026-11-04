@@ -37,6 +37,9 @@ for (let r = 0; r < CROWD_ROWS; r++) {
   }
 }
 const NAMED_STANDING = 6; // chỉ hiện tên vài bạn đứng trước, còn lại để đám đông cho gọn
+// màu 4 tổ (bản riêng cô Ngân): tổ 1 đỏ, tổ 2 xanh dương, tổ 3 xanh lá, tổ 4 vàng
+const TEAM_COLOR = ['#ef4444', '#3b82f6', '#16a34a', '#f59e0b'];
+const TEAM_ICON = ['🔴', '🔵', '🟢', '🟡'];
 
 const POSE = {
   nam: { dung: '01-dung', tay: '02-giong-tay', nghi: '03-suy-nghi', vui: '05-vui-mung', buon: '06-buon', ngac: '07-ngac-nhien', chao: '08-vay-chao' },
@@ -48,7 +51,7 @@ type PoseKey = keyof typeof POSE.nam;
 const ALL_IMGS = [
   ...Object.values(POSE.nam).map((p) => `/assets/nv/nam/${p}.webp`),
   ...Object.values(POSE.nu).map((p) => `/assets/nv/nu/${p}.webp`),
-  ...['01-dung', '02-giang-bai', '03-chi-trai', '04-chi-phai', '05-vui', '06-buon', '07-suy-nghi', '08-vay-chao'].map((p) => `/assets/nv/co-giao/${p}.webp`),
+  ...['01-dung', '02-cuoi-che-mieng'].map((p) => `/assets/nv/co-ngan/${p}.webp`),
 ];
 
 function useNow(ms = 250) {
@@ -79,6 +82,7 @@ export function GameStage({ game }: { game: GameState }) {
       <Motto />
       <Board v={v} now={now} />
       <DayTop v={v} />
+      <TeamBoard v={v} />
       <Vase v={v} />
       <Teacher v={v} now={now} />
       <Punished v={v} />
@@ -98,7 +102,9 @@ export function GameStage({ game }: { game: GameState }) {
 
 function Header({ v, name }: { v: StageView; name: string }) {
   const sub =
-    v.phase === 'recess'
+    v.phase === 'team'
+      ? `Chọn tổ · Tiết ${v.round}`
+      : v.phase === 'recess'
       ? 'Giờ ra chơi'
       : v.phase === 'vote'
         ? 'Chọn chủ đề tiết sau'
@@ -187,6 +193,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
         </div>
       )}
 
+      {v.phase === 'team' && <TeamPick v={v} left={left} />}
       {v.phase === 'praise' && <Praise v={v} />}
       {v.phase === 'vote' && v.vote && <Vote v={v} left={left} />}
       {v.phase === 'results' && <Results v={v} />}
@@ -328,6 +335,76 @@ function Results({ v }: { v: StageView }) {
             <span className="w-12 text-[#ffe680]">{['🥇', '🥈', '🥉', '4', '5'][i]}</span>
             <span className="flex-1 truncate">{s.nickname}</span>
             <span>{s.score}đ</span>
+          </motion.div>
+        ))}
+      </div>
+      {v.teamWin.length > 0 && (
+        <div className="mt-auto text-[36px] text-[#ffe680]">
+          🚩 {v.teamWin.map((n) => `Tổ ${n}`).join(' & ')} thắng tiết này!
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Chia tổ (bản riêng cô Ngân) ----------
+// 45 giây đầu tiết: 4 ô tổ trên bảng đen, số bạn mỗi tổ nhảy lên khi có người chọn
+function TeamPick({ v, left }: { v: StageView; left: number }) {
+  return (
+    <div className="flex h-full flex-col items-center">
+      <div className="flex w-full items-center justify-between">
+        <span className="rounded-full bg-[#ffd84a] px-4 text-[26px] font-bold text-[#7a2e0e]">🚩 Chọn tổ thi đua</span>
+        <Timer left={left} />
+      </div>
+      <div className="mt-1 text-[32px] leading-tight">
+        Gõ <b className="text-[#ffe680]">tổ 1</b>, <b className="text-[#ffe680]">tổ 2</b>, <b className="text-[#ffe680]">tổ 3</b> hoặc <b className="text-[#ffe680]">tổ 4</b>
+      </div>
+      <div className="mt-2 grid w-full grid-cols-2 gap-2 px-2">
+        {v.teams.map((t, i) => (
+          <div key={t.no} className="rounded-2xl border-[3px] bg-white/10 text-center leading-[38px]" style={{ borderColor: TEAM_COLOR[i] }}>
+            <div className="text-[32px] font-bold" style={{ color: TEAM_COLOR[i] }}>
+              {TEAM_ICON[i]} Tổ {t.no}
+            </div>
+            <motion.div key={t.members} initial={{ scale: 1.4 }} animate={{ scale: 1 }} className="text-[28px] leading-[32px]">
+              {t.members} bạn{t.wins > 0 && <span className="ml-2 text-[24px] text-[#ffe680]">🚩{t.wins}</span>}
+            </motion.div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-auto text-[24px] leading-tight opacity-85">
+        {v.noTeam > 0 ? `${v.noTeam} bạn chưa chọn, hết giờ cô Ngân xếp giùm` : 'Chưa chọn thì cô Ngân tự xếp vào tổ ít người'}
+      </div>
+    </div>
+  );
+}
+
+// Bảng thi đua tổ: ghim bên phải bảng đen, điểm tiết này của cả tổ, tổ dẫn đầu nổi lên trên, 🚩 = số tiết đã thắng
+function TeamBoard({ v }: { v: StageView }) {
+  if (!v.teams.length) return null;
+  const rows = [...v.teams].sort((a, b) => b.score - a.score || b.wins - a.wins || a.no - b.no);
+  const lead = rows[0].score > 0 ? rows[0].no : 0;
+  return (
+    <div className="absolute right-[8px] top-[150px] z-20 w-[168px] rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+      <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[28px]">📌</div>
+      <div className="text-center text-[19px] font-extrabold leading-tight text-[#b45309]">🚩 Thi đua tổ</div>
+      <div className="mt-1 space-y-[4px]">
+        {rows.map((t) => (
+          <motion.div
+            key={t.no}
+            layout
+            className="rounded-lg px-2 py-[2px] text-white shadow"
+            style={{ background: TEAM_COLOR[t.no - 1], outline: t.no === lead ? '3px solid #ffd84a' : undefined }}
+          >
+            <div className="flex items-center justify-between text-[20px] font-extrabold leading-tight">
+              <span>
+                {t.no === lead ? '👑 ' : ''}Tổ {t.no}
+              </span>
+              <span>{t.score}đ</span>
+            </div>
+            <div className="flex justify-between text-[15px] font-semibold leading-tight opacity-95">
+              <span>{t.members} bạn</span>
+              <span>{t.wins > 0 ? `🚩x${t.wins}` : ''}</span>
+            </div>
           </motion.div>
         ))}
       </div>
@@ -494,22 +571,24 @@ function DayTop({ v }: { v: StageView }) {
   );
 }
 
-// ---------- Cô giáo ----------
+// ---------- Cô giáo (cô Ngân, bản riêng: 2 tư thế đứng / cười che miệng, ảnh trong nhan-vat/co-giao-tinh-cach) ----------
 function Teacher({ v, now }: { v: StageView; now: number }) {
-  let pose = '01-dung';
-  if (now - v.lastFlowerAt < 3000) pose = '05-vui';
-  else if (v.phase === 'intro') pose = '08-vay-chao';
-  else if (v.phase === 'question') pose = '04-chi-phai';
-  else if (v.phase === 'bonus') pose = '07-suy-nghi';
-  else if (v.phase === 'reveal') pose = v.correctCount > 0 ? '05-vui' : '06-buon';
-  else if (v.phase === 'praise') pose = '05-vui';
-  else if (v.phase === 'vote') pose = '02-giang-bai';
-  else if (v.phase === 'results') pose = '02-giang-bai';
-  else if (v.phase === 'recess') pose = v.recess?.stage === 'play' ? '08-vay-chao' : v.recess?.stage === 'result' ? '05-vui' : '03-chi-trai';
   const gotFlower = now - v.lastFlowerAt < 3000;
+  // lúc vui (được hoa, có bạn đúng, phát quà, ra chơi có kết quả) thì cười che miệng, còn lại đứng hiền
+  const happy =
+    gotFlower ||
+    (v.phase === 'reveal' && v.correctCount > 0) ||
+    v.phase === 'praise' ||
+    (v.phase === 'recess' && v.recess?.stage === 'result') ||
+    (v.phase === 'team' && now % 6000 < 2000);
+  const pose = happy ? '02-cuoi-che-mieng' : '01-dung';
   return (
     <div className="absolute left-[96px] top-[410px] h-[490px] w-[300px]">
-      <img src={`/assets/nv/co-giao/${pose}.webp`} className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]" />
+      <img src={`/assets/nv/co-ngan/${pose}.webp`} className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]" />
+      {/* bảng tên cài ngực áo (trên đầu cô là bảng Học sinh xuất sắc nên không đặt ở đó) */}
+      <div className="absolute left-1/2 top-[128px] z-10 -translate-x-1/2 -rotate-3 whitespace-nowrap rounded-full border-[3px] border-[#fff6dd] bg-gradient-to-b from-[#ff6b9a] to-[#d63384] px-3 py-[1px] text-[22px] font-extrabold text-white shadow-[0_3px_0_#9d174d]">
+        🌸 Cô Ngân
+      </div>
       <AnimatePresence>
         {gotFlower && (
           <motion.div
@@ -691,6 +770,11 @@ function Students({ v, now }: { v: StageView; now: number }) {
             )}
             {s.bubble && <ChatBubble text={s.bubble} scale={scale} />}
             <div className="nametag" style={{ fontSize: 19 * scale }}>
+              {s.team > 0 && (
+                <span className="mr-1 shrink-0 rounded-full px-[5px] font-extrabold text-white" style={{ background: TEAM_COLOR[s.team - 1] }}>
+                  {s.team}
+                </span>
+              )}
               {i < 5 && s.score > 0 && <span className="rank">{i + 1}</span>}
               {s.title && <span className="mr-1">{s.title === 'lop-truong' ? '👑' : '⭐'}</span>}
               {called && <span className="mr-1">📢</span>}

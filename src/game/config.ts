@@ -74,6 +74,13 @@ export const GAME = {
   voteSec: 15, // gõ 1 hoặc 2
   voteTopicQuestions: 5, // chủ đề thắng chiếm chừng này câu chữ thường của tiết sau
 
+  // ---------- Chia tổ (bản riêng cô Ngân) ----------
+  // Trước mỗi tiết có chừng này giây chọn tổ (gõ "tổ 1".."tổ 4", "t2", "3", "tổ ba"). Ai chưa chọn thì máy xếp vào tổ ít người nhất.
+  // Bạn vào lớp giữa tiết cũng được xếp ngay. 0 = tắt phần chọn tổ (test cũ dùng).
+  teamPickSec: 45,
+  teamCount: 4,
+  teamRemindLeftSec: 15, // còn chừng này giây thì cô nhắc chọn tổ
+
   // ---------- Chuyên cần, sinh nhật ----------
   attendMilestones: [3, 5, 7, 10, 14, 21, 30], // đi học liền đủ chừng này ngày thì cô khen to + tặng quà
   birthdayCooldownMs: 60_000, // 2 lần chúc sinh nhật cách nhau ít nhất 1 phút (chống spam)

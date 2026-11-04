@@ -10,7 +10,15 @@ import { makeMath, type MathLevel } from './math';
  * Một vòng: intro → 20 câu, có 4 câu toán (question → [bonus] → reveal) → results → recess (giờ ra chơi) → intro ...
  */
 
-export type Phase = 'intro' | 'question' | 'bonus' | 'reveal' | 'praise' | 'results' | 'recess' | 'vote';
+export type Phase = 'team' | 'intro' | 'question' | 'bonus' | 'reveal' | 'praise' | 'results' | 'recess' | 'vote';
+
+/** "tổ 2", "to2", "t2", "2", "tổ hai" -> 2; không phải chọn tổ thì 0 */
+const TEAM_WORDS: Record<string, number> = { mot: 1, hai: 2, ba: 3, bon: 4 };
+export function teamOf(comment: string): number {
+  const m = /^(?:to|t)?(\d|mot|hai|ba|bon)$/.exec(plain(comment));
+  const n = m ? (TEAM_WORDS[m[1]] ?? Number(m[1])) : 0;
+  return n >= 1 && n <= GAME.teamCount ? n : 0;
+}
 
 /** 1 dòng báo cáo sau buổi live: câu nào khó quá / dễ quá */
 export interface ReportRow {
@@ -40,6 +48,7 @@ export interface Student {
   days: number; // chuyên cần: số ngày đi học liền (server báo về, 0 = chưa biết)
   bubble?: { text: string; at: number }; // bình luận gần nhất hiện thành bong bóng trên đầu
   standUntil: number; // bị cô phạt lên bục đứng (học sinh cá biệt) tới lúc này
+  team: number; // tổ 1..4 (0 = chưa có tổ, chỉ trong lúc đang chọn tổ)
 }
 
 export interface DeskGift {
@@ -240,6 +249,11 @@ export class Classroom {
   private engageNo = 0;
   /** bạn nhỏ đang đi lên bục tặng hoa cô (mỗi lúc 1 bạn) */
   walk: { username: string; at: number } | null = null;
+  /** số tiết mỗi tổ thắng (cờ thi đua), vị trí 0 = tổ 1 */
+  teamWins: number[] = Array(GAME.teamCount).fill(0);
+  /** tổ thắng tiết vừa xong (hiện ở bảng tổng kết) */
+  lastTeamWin: number[] = [];
+  private teamReminded = false;
 
   readonly lines: LineBag;
 
@@ -286,7 +300,9 @@ export class Classroom {
     this.clock = Math.max(this.clock, now);
     let s = this.students.get(e.username);
     if (!s) {
-      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standUntil: 0 };
+      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standUntil: 0, team: 0 };
+      // vào lớp giữa tiết: xếp ngay vào tổ ít người (đang giờ chọn tổ thì để bạn tự chọn, hết giờ cô xếp)
+      if (GAME.teamPickSec > 0 && this.phase !== 'team') s.team = this.smallestTeam(now);
       this.students.set(e.username, s);
     } else {
       s.nickname = e.nickname;
@@ -344,6 +360,59 @@ export class Classroom {
   }
   /** giờ của nhịp gần nhất (để xếp ghế biết ai đã im lâu) */
   private clock = 0;
+
+  // ---------- chia tổ ----------
+  /** Số bạn đang chơi mỗi tổ (bình luận trong 10 phút, bạn đã rời live thì không tính khi chia cho đều) */
+  private teamSizes(now: number) {
+    const n = Array(GAME.teamCount).fill(0);
+    for (const s of this.students.values()) if (s.team && now - s.lastActive <= GAME.seatActiveMs) n[s.team - 1]++;
+    return n;
+  }
+  /** Tổ ít người nhất (bằng nhau thì bốc thăm) */
+  private smallestTeam(now: number) {
+    const n = this.teamSizes(now);
+    const min = Math.min(...n);
+    const ties = n.flatMap((x, i) => (x === min ? [i + 1] : []));
+    return ties[Math.floor(this.rand() * ties.length)];
+  }
+  /** Bảng thi đua: điểm tiết này của cả tổ (cộng điểm từng bạn), số bạn, số cờ đã thắng */
+  teamStats(now: number) {
+    const sizes = this.teamSizes(now);
+    const score = Array(GAME.teamCount).fill(0);
+    for (const s of this.students.values()) if (s.team) score[s.team - 1] += s.score;
+    return score.map((sc, i) => ({ no: i + 1, score: sc, members: sizes[i], wins: this.teamWins[i] }));
+  }
+  private teamCountsText(now: number) {
+    return this.teamSizes(now).map((n, i) => `Tổ ${i + 1} ${n} bạn.`).join(' ');
+  }
+  private teamChat(s: Student, e: ChatIn): Say[] {
+    const n = teamOf(e.comment);
+    if (n) s.team = n; // đổi ý trong giờ chọn tổ thì theo lần chọn sau
+    return [];
+  }
+  /** Hết giờ chọn tổ: quét cả lớp, ai chưa có tổ thì xếp vào tổ ít người nhất (không sót ai), rồi vào tiết */
+  private closeTeams(now: number): Say[] {
+    let auto = 0;
+    // xếp bạn đang chơi trước cho các tổ đều nhau, rồi tới bạn đã im lâu
+    const left = [...this.students.values()].filter((s) => !s.team).sort((a, b) => b.lastActive - a.lastActive);
+    for (const s of left) {
+      s.team = this.smallestTeam(now);
+      auto++;
+    }
+    const b = auto ? `Cô xếp ${auto} bạn chưa chọn vào tổ ít người.` : 'Bạn nào cũng có tổ rồi.';
+    this.setPhase('intro', now, GAME.introSec);
+    return this.mainOf([this.t(this.line('teamClose', this.teamCountsText(now), b)), this.review ? this.line0('reviewIntro') : this.line0('intro')]);
+  }
+  /** Cuối tiết: tổ nhiều điểm nhất được cờ thi đua (hoà thì các tổ hoà cùng được) */
+  private teamResult(now: number): Say[] {
+    if (GAME.teamPickSec <= 0) return [];
+    const st = this.teamStats(now);
+    const best = Math.max(...st.map((t) => t.score));
+    this.lastTeamWin = best > 0 ? st.filter((t) => t.score === best).map((t) => t.no) : [];
+    for (const no of this.lastTeamWin) this.teamWins[no - 1]++;
+    if (!this.lastTeamWin.length) return [this.line0('teamNobody')];
+    return [this.t(this.line('teamWin', this.lastTeamWin.map((n) => `tổ ${n}`).join(' và '), String(best)))];
+  }
 
   sessionTop(n: number): Student[] {
     return [...this.students.values()].filter((s) => s.session > 0).sort((a, b) => b.session - a.session || a.joinedAt - b.joinedAt).slice(0, n);
@@ -498,6 +567,7 @@ export class Classroom {
       this.phase === 'bonus' ||
       this.phase === 'praise' ||
       this.phase === 'vote' ||
+      this.phase === 'team' ||
       (this.phase === 'recess' && this.recess?.stage === 'play');
     return answering && left > GAME.chatterMinLeftMs;
   }
@@ -576,6 +646,7 @@ export class Classroom {
     if (this.poll && now - this.poll.at < GAME.loveWindowMs && this.poll.opts.some((o) => o.key === key) && !this.poll.votes.has(s.username)) {
       this.poll.votes.set(s.username, key);
     }
+    if (this.phase === 'team') return this.teamChat(s, e);
     if (this.phase === 'vote') return this.voteChat(s, e);
     if (this.phase === 'recess') return this.recessChat(s, e, now);
     if (this.phase !== 'question' && this.phase !== 'bonus') return [];
@@ -758,6 +829,7 @@ export class Classroom {
     }
     if (outOfQuestions) lines.push(this.t('Hết câu hỏi rồi, cô tổng kết luôn nha.'));
     lines.push(best && best.score > 0 ? this.t(this.line('results', best.spoken, String(best.score))) : this.line0('resultsNobody'));
+    lines.push(...this.teamResult(now));
     if (this.weekLeader && this.round % 3 === 0) lines.push(this.t(this.line('weekBoard', this.weekLeader)));
     return this.mainOf(lines);
   }
@@ -905,11 +977,18 @@ export class Classroom {
     // lớp vắng lâu: tiết này ôn bài bằng câu cũ (có bạn vào thì đổi sang câu mới ngay câu kế)
     this.review = this.isEmpty(now);
     this.pickRound(now);
-    this.setPhase('intro', now, GAME.introSec);
+    this.lastTeamWin = [];
     // lời chào theo giờ: đổi buổi thì chào, còn lại thỉnh thoảng nhắc
     const period = dayPeriod(now);
     const greet = period !== this.lastPeriod || this.round % GAME.timeGreetEvery === 0 ? [this.line0(PERIOD_LINES[period])] : [];
     this.lastPeriod = period;
+    // bản cô Ngân: trước mỗi tiết 45 giây chọn tổ, hết giờ mới vào phần giới thiệu tiết
+    if (GAME.teamPickSec > 0) {
+      this.setPhase('team', now, GAME.teamPickSec);
+      this.teamReminded = false;
+      return this.mainOf([...voted, ...greet, this.line0('teamIntro')]);
+    }
+    this.setPhase('intro', now, GAME.introSec);
     return this.mainOf([...voted, ...greet, this.review ? this.line0('reviewIntro') : this.line0('intro')]);
   }
 
@@ -943,6 +1022,11 @@ export class Classroom {
       this.warned = true;
       extra.push({ ...this.line0('timeWarn'), warn: true });
     }
+    // giờ chọn tổ: còn 15 giây thì cô đọc số bạn mỗi tổ, nhắc ai chưa chọn
+    if (this.phase === 'team' && !this.teamReminded && now < this.phaseEndsAt && this.phaseEndsAt - now <= GAME.teamRemindLeftSec * 1000) {
+      this.teamReminded = true;
+      extra.push({ ...this.t(this.line('teamRemind', this.teamCountsText(now))), warn: true });
+    }
     // phòng giọng hỏng / tắt tiếng: đồng hồ đã chạy hơn 1 giây (cô đọc xong) thì vẫn hiện bảng chữ
     if (asking && !this.boardShown && now - this.phaseStartedAt > 1000) this.boardShown = true;
     if (now < this.phaseEndsAt) return extra;
@@ -951,6 +1035,8 @@ export class Classroom {
 
   private advance(now: number): Say[] {
     switch (this.phase) {
+      case 'team':
+        return this.closeTeams(now);
       case 'intro':
         return this.startQuestion(now);
       case 'question':
@@ -1070,7 +1156,8 @@ export class Classroom {
     const asking = this.phase === 'question' || this.phase === 'bonus' || this.phase === 'reveal';
     const seated = this.seats(GAME.seats + GAME.standing);
     const titles = new Map(this.titleHolders().map((s, i) => [s.username, i === 0 ? 'lop-truong' : 'lop-pho']));
-    const pub = ({ username, nickname, avatar, girl, score, session, lastActive, joinedAt, desk, days, bubble, standUntil }: Student) => ({
+    const pub = ({ username, nickname, avatar, girl, score, session, lastActive, joinedAt, desk, days, bubble, standUntil, team }: Student) => ({
+      team,
       desk,
       days,
       bubble: bubble && now - bubble.at < GAME.bubbleMs ? bubble.text : '',
@@ -1133,6 +1220,11 @@ export class Classroom {
       sessionTop: this.sessionTop(5).map(({ username, nickname, session }) => ({ username, nickname, session })),
       champions: this.champions.slice(0, 5).map((c) => ({ ...c, times: this.champions.filter((x) => x.username === c.username).length })),
       classSize: this.students.size,
+      // thi đua tổ (tắt chọn tổ thì rỗng)
+      teams: GAME.teamPickSec > 0 ? this.teamStats(now) : [],
+      teamWin: this.lastTeamWin,
+      // giờ chọn tổ: số bạn chưa có tổ (hết giờ cô xếp)
+      noTeam: this.phase === 'team' ? [...this.students.values()].filter((s) => !s.team).length : 0,
       stats: this.stats,
       flowers: this.flowers,
       lastFlowerAt: this.lastFlowerAt,
