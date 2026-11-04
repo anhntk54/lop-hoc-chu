@@ -10,7 +10,7 @@ from scipy import ndimage
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'nhan-vat'
 OUT = ROOT / 'public' / 'assets'
-CHARS = {'co-giao-ao-dai-trang': 'co-giao', 'co-giao-tinh-cach': 'co-ngan', 'hoc-sinh-nam': 'nam', 'hoc-sinh-nu': 'nu'}
+CHARS = {'co-giao-ao-dai-trang': 'co-giao', 'co-giao-ngan': 'co-ngan', 'hoc-sinh-nam': 'nam', 'hoc-sinh-nu': 'nu'}
 TOL = 14          # lệch màu tối đa so với nền xám
 HOLE_MIN = 300    # vùng xám kín (giữa tay và thân) lớn hơn chừng này px mới coi là nền
 OUT_H = 560       # chiều cao ảnh xuất

@@ -40,7 +40,10 @@ type PoseKey = keyof typeof POSE.nam;
 const ALL_IMGS = [
   ...Object.values(POSE.nam).map((p) => `/assets/nv/nam/${p}.webp`),
   ...Object.values(POSE.nu).map((p) => `/assets/nv/nu/${p}.webp`),
-  ...['01-dung', '02-cuoi-che-mieng'].map((p) => `/assets/nv/co-ngan/${p}.webp`),
+  ...[
+    '01-dung', '02-gioi-thieu', '03-chi-bang', '04-vay-chao', '05-dang-tay', '06-cuoi', '07-tay-nguc', '08-ngon-cai',
+    '09-mung', '10-vo-tay', '11-nhun-vai', '12-gai-dau', '13-ngac-nhien', '14-ngon-tro', '15-chong-hong', '16-chi-trai',
+  ].map((p) => `/assets/nv/co-ngan/${p}.webp`),
 ];
 
 function useNow(ms = 250) {
@@ -561,17 +564,40 @@ function DayTop({ v }: { v: StageView }) {
   );
 }
 
-// ---------- Cô giáo (cô Ngân, bản riêng: 2 tư thế đứng / cười che miệng, ảnh trong nhan-vat/co-giao-tinh-cach) ----------
+// ---------- Cô giáo (cô Ngân, bản riêng: 16 tư thế, ảnh gốc trong nhan-vat/co-giao-ngan, tách nền ra public/assets/nv/co-ngan) ----------
+function teacherPose(v: StageView, now: number): string {
+  if (now - v.lastFlowerAt < 3000) return '06-cuoi'; // được tặng hoa: cười che miệng
+  if (v.walk) return '13-ngac-nhien'; // có bạn đang cầm hoa đi lên
+  if (v.birthday) return '09-mung';
+  if (v.clapping) return '10-vo-tay';
+  if (v.loveFans > 0) return '07-tay-nguc'; // các bạn gõ "yêu cô"
+  switch (v.phase) {
+    case 'team':
+    case 'intro':
+      return '04-vay-chao';
+    case 'question':
+      if (!v.boardShown) return '02-gioi-thieu'; // đang đọc đề
+      if (v.correctCount > 0) return '08-ngon-cai'; // có bạn đúng rồi
+      return now % 8000 < 4000 ? '03-chi-bang' : '01-dung'; // chờ trả lời: lúc chỉ bảng, lúc đứng
+    case 'bonus':
+      return '12-gai-dau'; // chưa ai ra, thêm giờ
+    case 'reveal':
+      return v.correctCount === 0 ? '11-nhun-vai' : v.golden ? '09-mung' : '08-ngon-cai';
+    case 'praise':
+      return '09-mung';
+    case 'results':
+    case 'vote':
+      return '14-ngon-tro';
+    case 'recess':
+      if (v.recess?.stage === 'play') return v.recess.game === 'callup' ? '16-chi-trai' : '05-dang-tay';
+      return v.recess?.stage === 'result' ? '15-chong-hong' : '07-tay-nguc';
+  }
+  return '01-dung';
+}
+
 function Teacher({ v, now }: { v: StageView; now: number }) {
   const gotFlower = now - v.lastFlowerAt < 3000;
-  // lúc vui (được hoa, có bạn đúng, phát quà, ra chơi có kết quả) thì cười che miệng, còn lại đứng hiền
-  const happy =
-    gotFlower ||
-    (v.phase === 'reveal' && v.correctCount > 0) ||
-    v.phase === 'praise' ||
-    (v.phase === 'recess' && v.recess?.stage === 'result') ||
-    (v.phase === 'team' && now % 6000 < 2000);
-  const pose = happy ? '02-cuoi-che-mieng' : '01-dung';
+  const pose = teacherPose(v, now);
   return (
     <div className="absolute left-[96px] top-[410px] h-[490px] w-[300px]">
       <img src={`/assets/nv/co-ngan/${pose}.webp`} className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]" />
