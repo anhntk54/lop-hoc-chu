@@ -1231,7 +1231,7 @@ function seatBox(i: number) {
   const cx = row.x1 + ((k + 0.5) * (row.x2 - row.x1)) / Math.max(1, row.n);
   const x = cx * K - w / 2;
   const y = (row.y + 0.64 * (row.b - row.y)) * K - show; // ngồi trên ghế băng, lưng quay ra khán giả
-  return { scale, w, h, show, x, y, ri };
+  return { scale, w, h, show, x, y, ri, k, gap: ((row.x2 - row.x1) * K) / Math.max(1, row.n) };
 }
 
 /** Bàn dài + ghế băng của 1 dãy (che hẳn dãy bàn lẻ vẽ sẵn trong ảnh nền) */
@@ -1274,7 +1274,9 @@ function Students({ v, now }: { v: StageView; now: number }) {
         <LongDesk key={ri} ri={ri} />
       ))}
       {v.seats.map((s, i) => {
-        const { scale, w, h, show, x, y, ri } = seatBox(i);
+        const { scale, w, h, show, x, y, ri, k, gap } = seatBox(i);
+        // bảng tên so le: bạn thứ 2, 4, 6... trong dãy tên thấp xuống 1 tầng, nên 2 tên cùng tầng cách nhau 2 ghế, hiện đủ tên dài hơn
+        const low = k % 2 === 1;
         const pose = studentPose(s, v, i, now);
         const g = s.girl ? 'nu' : 'nam';
         const hd = HEAD[g];
@@ -1311,7 +1313,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
               </motion.div>
             )}
             {s.bubble && <ChatBubble text={s.bubble} scale={scale} />}
-            <div className="nametag" style={{ fontSize: 19 * scale }}>
+            <div className="nametag" style={{ fontSize: 19 * scale, maxWidth: 2 * gap - 8, bottom: low ? `calc(100% - ${4 + 27 * scale}px)` : undefined, zIndex: low ? 2 : 1 }}>
               {s.team > 0 && (
                 <span className="mr-1 shrink-0 rounded-full px-[5px] font-extrabold text-white" style={{ background: TEAM_COLOR[s.team - 1] }}>
                   {s.team}

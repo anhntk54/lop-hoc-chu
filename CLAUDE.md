@@ -106,6 +106,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
   - Bảng núi / bảng chuông dưới bảng đen rộng 400 để không che Top tương tác.
 - Bảng "🎪 Sự kiện trong lớp" bên phải tên kênh (2026-11-04): liệt kê 2 game lớn, game tới tô vàng, dòng dưới "Phiên tới: sau tiết N" / "Hết tiết này là tới!" (nhấp nháy) / "Đang diễn ra". Đầu tiết có game ở cuối, cô báo trước bằng giọng (nhóm `showSoon`). `Classroom.nextShow()`.
 - Học sinh cá biệt đứng phạt ở góc phải dưới bảng Top tương tác (x 993, 1047, chân y 930), nhỏ lại, bảng tên đỏ đeo trước bụng (2026-11-04): trước đứng cạnh bảng đen thì che ô chữ.
+- Bảng tên học sinh ngồi xếp so le (2026-11-04): bạn thứ 2, 4, 6... trong dãy tên thấp xuống 1 tầng, tên rộng tối đa 2 khoảng ghế nên hiện đủ tên dài.
 - Bảng Top 5 nhanh nhất chữ to hơn (tên 29px, thời gian 24px không xuống dòng) (2026-11-04).
 - Toán nhẩm (2026-11-04, bản riêng): nhân chia nhiều hơn (2/3 số câu), cộng trừ luôn là số 3 chữ số với số 2 chữ số, không còn kiểu 6 + 4.
 - Bảng "⚡ Top 5 nhanh nhất" lúc hiện đáp án (2026-11-04, thay khung Nhanh nhất): tên, thời gian trả lời tới mili giây ("2,345 giây", tính từ lúc cô hô bắt đầu, giờ TikTok đổi sang giờ máy bằng độ lệch đo từ bình luận nên có thể dư vài trăm ms trễ mạng), điểm được cộng; dòng cuối "N bạn khác đúng chậm hơn: mỗi bạn +1".
