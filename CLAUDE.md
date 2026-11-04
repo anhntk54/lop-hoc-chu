@@ -30,7 +30,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài đố chữ: chữ cái xáo 
 - `tools/tach-nen.py`: tách nền xám ảnh trong `nhan-vat/` ra `public/assets/nv/`. Thay ảnh thì chạy lại.
 - Trang stage chạy game thật và gửi ảnh chụp trạng thái lên `/api/game/state`; trang điều khiển chỉ vẽ lại ảnh chụp đó (xem trước luôn khớp live).
 - `?view=stage&mute=1`: xem stage không phát tiếng (để Claude thử).
-- Thử trong khung preview của Claude: cổng 3500.
+- Cổng riêng: **3006** (BAT-LIVE.bat đặt PORT=3006). Link LIVE Studio: http://lvh.me:3006/?view=stage. Thử trong khung preview của Claude: cổng 3500 (hoặc cấu hình "lop-hoc-3006").
 
 ## Quyết định của chủ kênh
 
