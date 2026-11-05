@@ -269,6 +269,9 @@ function Board({ v, now }: { v: StageView; now: number }) {
           <div className="flex items-center justify-between">
             {v.golden ? (
               <span className="rounded-full bg-[#ffd84a] px-4 text-[28px] font-bold text-[#7a2e0e]">⭐ CÂU HỎI VÀNG x2</span>
+            ) : !v.slot && !v.boardShown ? (
+              // câu chữ thường đang đọc đề: ẩn nhãn chủ đề (cũng là gợi ý), chỉ hiện "Câu N"
+              <span />
             ) : (
               <span className={`rounded-full border-2 px-4 text-[26px] ${v.slot ? 'border-[#ffe680] text-[#ffe680]' : 'border-[#f4f1e6]/60'}`}>
                 {v.slot === 'meo'
@@ -303,7 +306,9 @@ function Board({ v, now }: { v: StageView; now: number }) {
             ) : (
             // cô đang đọc đề: chưa hiện chữ xáo / phép tính, hô bắt đầu mới hiện
             <div className="flex flex-1 flex-col items-center justify-center text-center">
-              {!v.math && v.slot !== 'dh' && <div className="line-clamp-2 text-[38px] leading-[48px]">{v.clue}</div>}
+              {/* cô đang đọc: chỉ hiện "Câu N", KHÔNG hiện gợi ý (chủ kênh 2026-11-05: hiện gợi ý thì người đọc nhanh đoán trước, không công bằng).
+                  Đọc xong mới hiện gợi ý + chữ xáo + ô đáp án cùng lúc */}
+              <div className="text-[72px] font-bold leading-none text-[#ffe680]">Câu {v.qNo}</div>
               <motion.div
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 1.4, repeat: Infinity }}
@@ -1424,11 +1429,9 @@ function Punished({ v }: { v: StageView }) {
               style={{ transformOrigin: 'bottom center' }}
               className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]"
             />
-            {/* bảng tên đeo trước bụng (giơ trên đầu thì đè lên bảng Top tương tác) */}
-            <div className="absolute bottom-[6px] left-1/2 w-[58px] -translate-x-1/2 rounded bg-red-600 px-[2px] text-center text-[11px] font-bold leading-[13px] text-white shadow">
-              😅 Gõ sai
-              <div className="truncate text-[10px] font-semibold">{s.nickname}</div>
-              <div className="text-[10px] font-semibold">còn {s.left} câu</div>
+            {/* chỉ hiện tên bạn đang đứng (chủ kênh bỏ chữ "Gõ sai · còn N câu", 2026-11-05) */}
+            <div className="nametag" style={{ fontSize: 15, maxWidth: 76 }}>
+              <span className="truncate">{s.nickname}</span>
             </div>
           </motion.div>
         );
