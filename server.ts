@@ -580,10 +580,9 @@ function newLiveRoom(roomId: string) {
   if (!roomId) return;
   todayScores();
   if (soLop.today.talkRoom === roomId) return;
-  const first = soLop.today.talkRoom === undefined && Object.keys(soLop.today.talk ?? {}).length > 0;
   soLop.today.talkRoom = roomId;
-  if (!first) soLop.today.talk = {};
-  console.log(first ? `[Top tương tác] ghi nhớ phiên live ${roomId}` : `[Top tương tác] phiên live mới ${roomId}: làm lại bảng`);
+  soLop.today.talk = {};
+  console.log(`[Top tương tác] phiên live mới ${roomId}: làm lại bảng`);
   writeSoLop();
 }
 const todayTalk = () => {
