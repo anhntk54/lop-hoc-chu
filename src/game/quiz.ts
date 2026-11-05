@@ -769,14 +769,16 @@ export class Classroom {
   /** Câu cô đọc trước gợi ý: "Đây là một từ gồm 5 chữ cái, là một món ăn." (hô bắt đầu xong mới hiện chữ trên bảng) */
   intro(q: Question) {
     if (q.math) return q.kind;
-    // chế độ nhanh: số chữ cái đã thấy trên bảng, chỉ nói loại từ ngắn gọn ("Một món ăn.")
+    // chế độ nhanh (chủ kênh duyệt cách đọc 2026-11-05): "Đây là một từ gồm 7 chữ cái." rồi đọc gợi ý, bỏ câu dẫn chung của bộ.
+    // Tiếng Anh: "Đây là một từ tiếng Anh gồm 5 chữ cái." Lịch sử, đuổi hình: giữ danh xưng của nhóm
+    // ("Đây là tên một vị vua gồm 11 chữ cái.", "Đuổi hình bắt chữ! Đây là một thành ngữ gồm 14 chữ cái.")
     if (GAME.quickRead) {
-      const k = /^Đây là\s+/i.exec(q.kind);
-      const rest = k ? q.kind.slice(k[0].length) : q.kind;
-      const short = rest.charAt(0).toUpperCase() + rest.slice(1);
-      // đuổi hình bắt chữ: "Đuổi hình bắt chữ! Một thành ngữ."
-      if (q.slot === 'dh') return `Đuổi hình bắt chữ! ${short}`;
-      return k ? short : q.kind;
+      const n = this.lettersOf(q).length;
+      const named = /^Đây là\s+/i.test(q.kind) ? `${q.kind.replace(/[.!\s]+$/, '')} gồm ${n} chữ cái.` : `Đây là một từ gồm ${n} chữ cái.`;
+      if (q.slot === 'dh') return `Đuổi hình bắt chữ! ${named}`;
+      if (q.slot === 'su') return named;
+      if (q.slot === 'anh') return `Đây là một từ tiếng Anh gồm ${n} chữ cái.`;
+      return `Đây là một từ gồm ${n} chữ cái.`;
     }
     const n = this.lettersOf(q).length;
     const word = q.slot === 'anh' ? `một từ tiếng Anh gồm ${n} chữ cái` : `một từ gồm ${n} chữ cái`;
@@ -804,6 +806,14 @@ export class Classroom {
     this.tiles = this.q.math || this.q.slot === 'dh' ? [] : scramble(this.q.answer, this.rand);
     this.boardShown = false;
     this.revealed = new Set();
+    // đuổi hình bắt chữ: hiện sẵn chữ cái đầu của mỗi chữ trong ô đáp án để người chơi có chỗ bám (chủ kênh duyệt 2026-11-05)
+    if (this.q.slot === 'dh' && GAME.dhFirstLetters) {
+      let i = 0;
+      for (const w of this.q.answer.trim().split(/\s+/)) {
+        this.revealed.add(i);
+        i += [...w.normalize('NFC')].length;
+      }
+    }
     this.bonusUsed = false;
     this.quietSaid = false;
     this.correct = [];

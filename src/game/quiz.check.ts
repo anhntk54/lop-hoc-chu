@@ -940,6 +940,15 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   for (let i = 1; i <= 4; i++) assert.equal(c.students.get(`u${i}`)!.streak, 5);
 }
 
+// ---------- đuổi hình bắt chữ: hiện sẵn chữ cái đầu mỗi chữ trong ô đáp án ----------
+{
+  const dh = BANK.find((q) => q.answer === 'CÁ CHẬU CHIM LỒNG')!;
+  const c = new Classroom([dh], t);
+  c.newRound(t);
+  while (c.phase !== 'question') c.tick((t += 500));
+  assert.equal(c.slots().map((x) => x ?? '_').join(''), 'C_ C___ C___ L___');
+}
+
 // ---------- gõ sai: lên đứng cạnh cô 3 câu, tối đa 3 bạn, ai sai trước lên trước ----------
 {
   const c = new Classroom(Array.from({ length: 30 }, (_, i) => mk('BẢNG ĐEN' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i % 26] + (i >= 26 ? 'X' : ''))), t);
@@ -973,7 +982,7 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.ok(!c.boardShown, 'cô đang đọc đề: bảng chữ chưa hiện');
   const qLine = asked.find((l) => l.text.includes('Câu 1.'))!;
   assert.ok(qLine && qLine.main && qLine.showAfter, 'đọc đề là câu chính (dừng giờ), đọc xong mới hiện bảng');
-  assert.ok(!qLine.text.includes('chữ cái'), 'không đọc số chữ cái');
+  assert.ok(/Đây là .* gồm \d+ chữ cái\./.test(qLine.text), 'đọc "Đây là ... gồm N chữ cái." (chủ kênh duyệt 2026-11-05)');
   assert.ok(!asked.some((l) => l.go), 'không hô bắt đầu');
   chat(c, 77, c.q!.answer, t, t); // gõ trước khi bảng hiện: không tính, không mất lượt
   assert.equal(c.correct.length, 0, 'đáp án gõ trước khi cô đọc xong đề không tính');

@@ -28,6 +28,7 @@ export const GAME = {
   quickRead: true,
   closeAfterTopN: 5, // đủ chừng này bạn đúng (top có điểm cao) thì chốt câu sau closeAfterTopSec giây. 0 = tắt
   closeAfterTopSec: 3,
+  dhFirstLetters: true, // đuổi hình bắt chữ: hiện sẵn chữ cái đầu mỗi chữ trong ô đáp án (hình emoji đôi khi trừu tượng)
   praiseShort: true, // điểm danh giữa tiết chỉ 1 câu đọc top 3
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)
   endAfterFirstSec: 0, // 0 = luôn đủ giờ cho cả lớp. Đặt vd 10: có người đúng thì 10 giây sau chốt luôn (hợp lúc phòng vắng)

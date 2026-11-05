@@ -35,7 +35,7 @@ TRẢ GÓP | Mua điện thoại hôm nay, trả tiền tới tận năm sau. | 
 THẺ TÍN DỤNG | Tấm thẻ cho tiêu tiền mình chưa có, cuối tháng ngân hàng nhắc khéo. | 2
 CHUYỂN KHOẢN | "Mình gửi rồi nha", kèm ảnh chụp màn hình làm bằng chứng. | 1 | CK
 QUÉT MÃ | Đưa điện thoại vào ô vuông đen trắng là trả tiền xong, khỏi cần tiền lẻ. | 1 | QUÉT QR, QUÉT MÃ QR
-SỐ DƯ | Con số trong ứng dụng ngân hàng, mở ra xem là tụt cảm xúc. | 1
+SỐ DƯ | Đi làm thì có, càng về cuối tháng càng giảm, đôi lúc có cũng như không, đó là gì trong tài khoản? | 1
 ỨNG LƯƠNG | Xin lấy trước tiền của tháng sau vì tháng này hết sạch rồi. | 2
 NỢ | Thứ bạn bè nhớ dai hơn cả ngày sinh nhật của bạn. | 1
 CHIA TIỀN | Ăn xong cả nhóm ngồi bấm máy tính xem mỗi người bao nhiêu. | 1 | CHIA BILL
