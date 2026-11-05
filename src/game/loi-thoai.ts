@@ -164,10 +164,11 @@ export const LINES = {
   ] as L0,
 
   // ---------- Chào theo giờ trong ngày (đọc đầu tiết) ----------
+  // chào buổi sáng: chỉ chào + nhắc ăn sáng rồi hãy đi làm (chủ kênh 2026-11-05: không rủ người đang đi đường, kẹt xe chơi)
   timeMorning: [
-    'Chào buổi sáng cả lớp! Ăn sáng chưa, hay lại cà phê thay cơm như cô?',
-    'Buổi sáng tốt lành! Ai đang kẹt xe trên đường đi làm thì vừa chờ đèn đỏ vừa học với cô nha, mà nhớ an toàn.',
-    'Sáng rồi cả lớp ơi! Đầu óc tỉnh táo nhất trong ngày, trả lời nhanh lên trước khi sếp giao việc.',
+    'Chào buổi sáng cả lớp! Nhớ ăn sáng đầy đủ rồi hãy đi làm nha.',
+    'Buổi sáng tốt lành cả lớp! Ăn sáng chưa đó? Ăn no rồi mới đi làm nha.',
+    'Chào buổi sáng! Cả lớp nhớ ăn sáng, uống ly nước rồi hãy đi làm, đừng để bụng đói nha.',
   ] as L0,
   timeNoon: [
     'Trưa rồi cả lớp ơi, ăn cơm văn phòng chưa? Hôm nay ăn gì, đừng nói là mì gói nha.',
@@ -191,6 +192,30 @@ export const LINES = {
   ] as L0,
 
   // ---------- Cô nhận hoa (bạn nhỏ lên bục đưa): cảm ơn theo bậc (n tên, g = "một bông hoa" / "một bó hoa nhỏ"...) ----------
+  // ---------- Lời đáp riêng cho quà trong bảng "Gửi tặng cô" (chủ kênh 2026-11-05), n = tên ----------
+  thankHeart: [
+    (n) => `Uii, ${n} bắn trúng tim cô rồi! Cô thương ${n} nhiều lắm nha.`,
+    (n) => `Á, trúng tim cô rồi ${n} ơi! Cô bắn lại một trái tim to đùng cho ${n} nè.`,
+    (n) => `${n} bắn tim cô kìa! Tim cô rung rinh luôn, cảm ơn ${n} nha.`,
+    (n) => `Ôi trái tim của ${n} bay tới rồi! Chúc ${n} hôm nay làm gì cũng suôn sẻ nha.`,
+    (n) => `Trúng phóc tim cô luôn! Cô gửi lại ${n} ngàn trái tim, chúc ${n} một ngày thật vui.`,
+    (n) => `${n} bắn tim là cô hết mệt liền. Cô thương ${n}, chúc ${n} ăn ngon ngủ kỹ nha.`,
+    (n) => `Uầy, ${n} bắn tim cô! Cô xin nhận và trả lại gấp đôi, chúc ${n} gặp toàn chuyện may mắn.`,
+  ] as L1,
+  thankRose: [
+    (n) => `${n} tặng cô bông hồng xinh quá! Cô cảm ơn nha, chúc ${n} hôm nay thật nhiều niềm vui.`,
+    (n) => `Ôi bông hồng của ${n} thơm ghê! Cô cắm vào bình liền, chúc ${n} luôn tươi như hoa nha.`,
+    (n) => `Cảm ơn ${n} nha, bông hồng này cô giữ kỹ lắm. Chúc ${n} một ngày suôn sẻ.`,
+    (n) => `${n} ơi cô cảm động quá! Chúc ${n} lúc nào cũng xinh tươi như bông hồng này.`,
+    (n) => `Có bông hồng của ${n} là cô dạy hăng hơn hẳn. Cảm ơn ${n}, chúc ${n} bình an nha.`,
+  ] as L1,
+  thankDonut: [
+    (n) => `Oa, ${n} mời cô ăn bánh donut! Ngọt như tấm lòng của ${n} vậy, cô cảm ơn nha.`,
+    (n) => `Bánh donut của ${n} nè! Cô ăn một miếng, chia cả lớp một miếng. Chúc ${n} ngày nào cũng ngọt ngào.`,
+    (n) => `Cảm ơn ${n} mời cô bánh nha! Đúng lúc cô đang đói, chúc ${n} ăn gì cũng ngon.`,
+    (n) => `${n} chiều cô quá trời! Bánh donut tròn tròn, chúc ${n} mọi việc tròn trịa luôn nha.`,
+    (n) => `Ui bánh donut! ${n} biết cô thích đồ ngọt ghê. Cô cảm ơn, chúc ${n} một ngày thật ngọt.`,
+  ] as L1,
   thankTier0: [
     (n, g) => `Ôi cô cảm ơn ${n} nha, ${g} xinh quá. Cô có thêm động lực dạy tới cuối tháng rồi nè.`,
     (n, g) => `${n} tặng cô ${g}! Hôm nay cô không than lương nữa.`,
@@ -198,7 +223,7 @@ export const LINES = {
   ] as L2,
   thankTier1: [
     (n, g) => `Oa, ${n} tặng cô ${g} luôn! Cô cảm ơn nhiều lắm nha.`,
-    (n, g) => `${g} đẹp quá ${n} ơi! Cô vui cả buổi, chắc chấm điểm dễ hơn chút xíu.`,
+    (n, g) => `${g} đẹp quá ${n} ơi! Cô vui cả buổi luôn đó.`,
   ] as L2,
   thankTier2: [
     (n, g) => `Trời ơi ${n} tặng cô ${g}! Cô cảm động quá, cả lớp vỗ tay cho ${n} nào!`,

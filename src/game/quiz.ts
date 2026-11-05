@@ -81,6 +81,12 @@ export function teamOf(comment: string): number {
 const PLAIN_SLOTS = GAME.roundPlan.filter((d) => !d.startsWith('math') && !(SLOTS as readonly string[]).includes(d)).length;
 
 /** Bậc bó hoa theo số xu của món quà (GAME.giftTiers): 0 bông hoa, 1 bó nhỏ, 2 bó lớn, 3 xe hoa */
+/** Quà có trong bảng "Gửi tặng cô" (GAME.giftMenu) thì lấy tên đọc + icon riêng, không thì null */
+export function giftOf(giftName = '') {
+  const n = giftName.toLowerCase();
+  return GAME.giftMenu.find((g) => g.match.some((m) => n.includes(m))) ?? null;
+}
+
 export function tierOf(coins: number) {
   let t = 0;
   GAME.giftTiers.forEach((g, i) => {
@@ -350,14 +356,14 @@ export class Classroom {
   private lastLoveAt: number;
   private engageNo = 0;
   /** bạn nhỏ đang đi lên bục tặng hoa cô (mỗi lúc 1 bạn), tier = bậc bó hoa (0 bông, 1 bó nhỏ, 2 bó lớn, 3 xe hoa) */
-  walk: { username: string; at: number; tier: number } | null = null;
+  walk: { username: string; at: number; tier: number; icon: string } | null = null;
   /** quỹ hoa hôm nay (số bông, xem flowersToday) và phần mới chưa gửi lên server */
   private flowerBase = 0;
   flowerDelta = 0;
   /** vừa đạt mốc quỹ hoa (biểu ngữ + pháo hoa) */
   fundParty: { goal: number; at: number } | null = null;
   /** quà cô nhận trong buổi, đặt trên bàn sau lưng cô: bậc từng món (giữ GAME.giftPileMax món mới nhất) */
-  giftPile: number[] = [];
+  giftPile: { tier: number; icon: string }[] = [];
   /** số tiết mỗi tổ thắng (cờ thi đua), vị trí 0 = tổ 1 */
   teamWins: number[] = Array(GAME.teamCount).fill(0);
   /** tổ thắng tiết vừa xong (hiện ở bảng tổng kết) */
@@ -990,7 +996,7 @@ export class Classroom {
   }
 
   /** Quà: luôn là hoa tặng cô, mỗi món quà = 10 tương tác (không nói ra). `count` = số món (combo) */
-  gift(e: Person, coins: number, now: number, count = 1): Say[] {
+  gift(e: Person, coins: number, now: number, count = 1, giftName = ''): Say[] {
     const s = this.touch(e, now);
     this.addTalk(s, GAME.talkPerGift * Math.max(1, count));
     this.flowers++;
@@ -1009,11 +1015,16 @@ export class Classroom {
     }
     // bạn nhỏ đi lên bục đưa hoa cho cô, cô cảm ơn ngay (đang có bạn đi thì thôi, tránh combo chen nhau)
     const tier = tierOf(coins);
-    this.giftPile = [...this.giftPile, tier].slice(-GAME.giftPileMax);
+    // quà trong bảng "Gửi tặng cô": cô cảm ơn đúng tên món, bạn nhỏ cầm đúng món đó (hoa hồng, bắn tim, bánh donut)
+    const known = giftOf(giftName);
+    const icon = known?.icon ?? GAME.giftTiers[tier].icon;
+    this.giftPile = [...this.giftPile, { tier, icon }].slice(-GAME.giftPileMax);
     if (!this.walk || now - this.walk.at > GAME.walkMs) {
-      this.walk = { username: e.username, at: now, tier };
+      this.walk = { username: e.username, at: now, tier, icon };
+      // món có lời đáp riêng (bắn tim, hoa hồng, bánh donut) thì đáp riêng; tặng nhiều xu (bậc lớn) vẫn dùng lời cảm ơn theo bậc
       const key = (['thankTier0', 'thankTier1', 'thankTier2', 'thankTier3'] as const)[tier];
-      out.unshift({ ...this.t(this.line(key, s.spoken, GAME.giftTiers[tier].name)), warn: true });
+      const text = known && tier < 2 ? this.line(known.thanks, s.spoken) : this.line(key, s.spoken, known?.say ?? GAME.giftTiers[tier].name);
+      out.unshift({ ...this.t(text), warn: true });
     }
     const asking = this.phase === 'question' || this.phase === 'bonus';
     if (asking && GAME.hintGiftCoins > 0 && coins >= GAME.hintGiftCoins && this.correct.length === 0 && this.revealOne()) {
@@ -1033,7 +1044,7 @@ export class Classroom {
 
   /** Câu cảm ơn quà (useGame quyết định có cảm ơn hay không để tránh lặp combo) */
   thank(e: Person, giftName: string, coins: number): Say {
-    return this.t(coins >= GAME.bigGiftCoins ? this.line('bigGift', e.spoken) : this.line('thankGift', e.spoken, giftName), true);
+    return this.t(coins >= GAME.bigGiftCoins ? this.line('bigGift', e.spoken) : this.line('thankGift', e.spoken, giftOf(giftName)?.say ?? giftName), true);
   }
   follow(e: Person): Say {
     return this.t(this.line('thankFollow', e.spoken));
@@ -2000,7 +2011,7 @@ export class Classroom {
       // bạn nhỏ đang đi lên bục tặng hoa
       walk: (() => {
         const s = this.walk && now - this.walk.at < GAME.walkMs ? this.students.get(this.walk.username) : undefined;
-        return s ? { username: s.username, nickname: s.nickname, girl: s.girl, at: this.walk!.at, tier: this.walk!.tier } : null;
+        return s ? { username: s.username, nickname: s.nickname, girl: s.girl, at: this.walk!.at, tier: this.walk!.tier, icon: this.walk!.icon } : null;
       })(),
       // học sinh cá biệt đang đứng trên bục (kể cả bạn không có ghế)
       punished: [...this.students.values()].filter((s) => s.standLeft > 0).map(({ username, nickname, girl, standLeft }) => ({ username, nickname, girl, left: standLeft })),

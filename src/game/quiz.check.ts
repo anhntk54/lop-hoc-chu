@@ -712,7 +712,7 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(v.fund.today, GAME.flowerGoals[0] - 3 + 1 + 99);
   assert.equal(v.fund.goal, GAME.flowerGoals.find((g) => g > v.fund.today));
   assert.equal(v.fund.party, GAME.flowerGoals.filter((g) => g <= v.fund.today).pop());
-  assert.deepEqual(v.gifts, [0, 2], 'quà bày trên bàn sau lưng cô theo bậc');
+  assert.deepEqual(v.gifts.map((g) => g.tier), [0, 2], 'quà bày trên bàn sau lưng cô theo bậc');
   assert.equal(c.flowerDelta, 100, 'chờ gửi server 100 bông');
   // server trả số đã lưu: giữ phần chưa gửi
   c.flowerDelta = 0;
@@ -938,6 +938,20 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(streakSaid[4].length, 1, '4 bạn cùng đủ 5 câu: gộp 1 câu');
   assert.ok(streakSaid[4][0].includes('5 câu') && streakSaid[4][0].includes('và 1 bạn nữa'), streakSaid[4][0]);
   for (let i = 1; i <= 4; i++) assert.equal(c.students.get(`u${i}`)!.streak, 5);
+}
+
+// ---------- quà trong bảng "Gửi tặng cô": cô cảm ơn đúng tên món, bạn nhỏ cầm đúng món, bày đúng món ----------
+{
+  const c = new Classroom([mk('BẢNG ĐEN')], t);
+  c.newRound(t);
+  const said = c.gift(who(1), 30, t, 1, 'Doughnut');
+  assert.ok(said.some((l) => LINES.thankDonut.some((f) => f('Bạn 1') === l.text.slice(3))), 'bánh donut: cô đáp lời riêng của món');
+  assert.equal(c.view(t).walk!.icon, '🍩');
+  const heart = c.gift(who(3), 5, t + 2 * GAME.walkMs, 1, 'Finger Heart');
+  assert.ok(heart.some((l) => LINES.thankHeart.some((f) => f('Bạn 3') === l.text.slice(3))), 'bắn tim: cô đáp "bắn trúng tim cô"...');
+  assert.equal(c.view(t).gifts[0].icon, '🍩');
+  c.gift(who(2), 3, t + GAME.walkMs + 1, 1, 'Quà lạ');
+  assert.equal(c.view(t + GAME.walkMs + 1).gifts[2].icon, GAME.giftTiers[0].icon, 'quà khác: icon theo bậc như cũ');
 }
 
 // ---------- đuổi hình bắt chữ: hiện sẵn chữ cái đầu mỗi chữ trong ô đáp án ----------

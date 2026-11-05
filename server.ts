@@ -208,6 +208,7 @@ async function connectTikTok(cleanUser: string) {
   conn.on(ControlEvent.CONNECTED, (state: { roomId?: string }) => {
     console.log(`[TikTok] Đã kết nối @${cleanUser}, room ${state?.roomId}`);
     liveStats = { ...liveStats, isConnected: true, isConnecting: false, roomId: state?.roomId || '', error: '' };
+    newLiveRoom(state?.roomId || '');
     broadcast('status', liveStats);
     reconnectTries = 0;
   });
@@ -522,7 +523,7 @@ interface SoLop {
   // chuyên cần: ngày gần nhất vào lớp, số ngày liền, tổng số ngày
   attend: Record<string, { nickname: string; last: string; streak: number; total: number }>;
   // điểm hôm nay (cho báo cáo buổi live) + tương tác hôm nay (bảng Top tương tác)
-  today: { date: string; scores: Record<string, { nickname: string; points: number }>; talk?: Record<string, { nickname: string; points: number }>; flowers?: number };
+  today: { date: string; scores: Record<string, { nickname: string; points: number }>; talk?: Record<string, { nickname: string; points: number }>; flowers?: number; talkRoom?: string };
   // học bạ cả đời: điểm cộng dồn mãi (lên lớp) + số câu đúng từng loại (huy hiệu)
   life: Record<string, LifeRow>;
 }
@@ -573,6 +574,18 @@ const todayScores = () => {
   if (soLop.today.date !== dayKey()) soLop.today = { date: dayKey(), scores: {}, talk: {}, flowers: 0 };
   return soLop.today.scores;
 };
+// Top tương tác làm lại mỗi phiên live mới (chủ kênh chốt 2026-11-05): mỗi buổi live TikTok có mã phòng riêng,
+// mã phòng đổi thì xoá điểm tương tác. Rớt mạng tự nối lại vào cùng buổi live (cùng mã phòng) thì giữ nguyên.
+function newLiveRoom(roomId: string) {
+  if (!roomId) return;
+  todayScores();
+  if (soLop.today.talkRoom === roomId) return;
+  const first = soLop.today.talkRoom === undefined && Object.keys(soLop.today.talk ?? {}).length > 0;
+  soLop.today.talkRoom = roomId;
+  if (!first) soLop.today.talk = {};
+  console.log(first ? `[Top tương tác] ghi nhớ phiên live ${roomId}` : `[Top tương tác] phiên live mới ${roomId}: làm lại bảng`);
+  writeSoLop();
+}
 const todayTalk = () => {
   todayScores(); // sang ngày mới thì xoá cả tương tác
   return (soLop.today.talk ??= {});

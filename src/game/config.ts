@@ -160,6 +160,15 @@ export const GAME = {
 
   // ---------- Quà: chia bậc bó hoa + quỹ hoa của cô (bản riêng, chủ kênh chốt 2026-11-04) ----------
   // bậc theo số xu của món quà (kim cương x số lượng). Mỗi xu = 1 bông vào quỹ hoa.
+  // Bảng "🎁 Gửi tặng cô Ngân" (chủ kênh 2026-11-05): vài món quà TikTok hay gặp, viết kiểu gửi tặng, KHÔNG giục, KHÔNG hứa
+  // lợi thế (TikTok cấm khuyến khích tặng quà, nhất là với trẻ em). match = tên quà TikTok (không phân biệt hoa thường),
+  // say = tên món cô đọc ("... tặng cô chiếc bánh donut"), icon = món bạn nhỏ cầm lên bục và bày sau lưng cô,
+  // thanks = nhóm lời đáp riêng của món trong loi-thoai.ts (bắn tim: "Uii bắn trúng tim cô rồi...").
+  giftMenu: [
+    { match: ['rose'], icon: '🌹', label: 'Hoa hồng', say: 'bông hồng', caption: 'Tặng cô hoa', thanks: 'thankRose' as const },
+    { match: ['finger heart'], icon: '🫰', label: 'Bắn tim', say: 'cái bắn tim', caption: 'Bắn tim cho cô', thanks: 'thankHeart' as const },
+    { match: ['doughnut', 'donut'], icon: '🍩', label: 'Bánh donut', say: 'chiếc bánh donut', caption: 'Mời cô ăn bánh', thanks: 'thankDonut' as const },
+  ],
   giftTiers: [
     { min: 1, name: 'một bông hoa', label: '🌹 1 bông hoa', icon: '🌹', size: 1 },
     { min: 10, name: 'một bó hoa nhỏ', label: '💐 Bó hoa nhỏ', icon: '💐', size: 1.4 },

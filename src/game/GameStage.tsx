@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { GameState, StageView } from './useGame';
 import { GAME } from './config';
 import { Hair } from './Hair';
+import { giftOf } from './quiz';
 import './stage.css';
 
 /**
@@ -117,6 +118,7 @@ export function GameStage({ game }: { game: GameState }) {
         <TalkTop v={v} />
         <GiftPile v={v} />
         <ClassFund v={v} />
+        <GiftMenu />
         <Vase v={v} />
         <Teacher v={v} now={now} />
         <Punished v={v} />
@@ -141,7 +143,7 @@ function GiftPile({ v }: { v: StageView }) {
   const pile = v.gifts;
   return (
     <div className="pointer-events-none absolute left-[2px] top-[640px] z-[1] h-[230px] w-[150px]">
-      {pile.map((tier, i) => {
+      {pile.map(({ tier, icon }, i) => {
         const t = GAME.giftTiers[tier];
         const size = 26 * t.size;
         const row = Math.floor(i / PILE_PER_ROW);
@@ -155,7 +157,7 @@ function GiftPile({ v }: { v: StageView }) {
             className="absolute leading-none drop-shadow-[0_3px_2px_rgba(0,0,0,0.35)]"
             style={{ fontSize: size, left: 6 + col * 26 + (row % 2) * 12 - size / 4, top: 210 - size - row * 24 }}
           >
-            {t.icon}
+            {icon}
           </motion.div>
         );
       })}
@@ -163,19 +165,32 @@ function GiftPile({ v }: { v: StageView }) {
   );
 }
 
+// Bảng "Gửi tặng cô Ngân" giữa Quỹ lớp và Top tương tác (chủ kênh 2026-11-05): viết kiểu gửi tặng, không giục,
+// không hứa điểm hay lợi thế (TikTok cấm khuyến khích tặng quà). Món và câu mô tả ở GAME.giftMenu
+function GiftMenu() {
+  return (
+    // cột hẹp bên phải bảng đen (như Quỹ lớp), mỗi món 1 dòng: không đè lên câu hỏi
+    <div className="absolute right-[8px] top-[484px] z-[8] w-[168px] rotate-1 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-1 pt-[2px] text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+      <div className="whitespace-nowrap text-center text-[16px] font-extrabold leading-tight text-[#be185d]">🎁 Gửi tặng cô 💕</div>
+      {GAME.giftMenu.map((g) => (
+        <div key={g.label} className="flex items-center gap-[2px] whitespace-nowrap text-[15px] font-semibold leading-[24px]">
+          <span className="w-6 text-center text-[19px]">{g.icon}</span>
+          {g.caption}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Quỹ lớp: cột phải, giữa bảng Thi đua tổ và Top tương tác. Mỗi xu quà = 1 bông hoa vào quỹ, có mốc trong ngày
 function ClassFund({ v }: { v: StageView }) {
   const f = v.fund;
-  const pct = Math.min(100, (f.today / f.goal) * 100);
   return (
-    <div className="absolute right-[8px] top-[428px] z-20 w-[168px] -rotate-1 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-2 pt-3 text-center text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+    // chỉ ghi "Quỹ lớp" + số bông (chủ kênh bỏ mục tiêu 2026-11-05), nằm trong cột hẹp bên phải bảng đen, không đè câu hỏi
+    <div className="absolute right-[8px] top-[428px] z-20 flex w-[168px] -rotate-1 items-baseline justify-between rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-1 pt-2 text-[#be185d] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[28px]">📌</div>
-      <div className="text-[20px] font-extrabold leading-tight text-[#be185d]">💝 Quỹ lớp</div>
-      <div className="text-[30px] font-extrabold leading-tight text-[#be185d]">{f.today}</div>
-      <div className="h-[12px] w-full overflow-hidden rounded-full bg-pink-100">
-        <div className="h-full rounded-full bg-gradient-to-r from-pink-400 to-rose-500 transition-all duration-700" style={{ width: `${pct}%` }} />
-      </div>
-      <div className="mt-1 text-[16px] font-semibold leading-tight">Mục tiêu hôm nay {f.goal} 🌹</div>
+      <span className="whitespace-nowrap text-[19px] font-extrabold leading-tight">💝 Quỹ lớp</span>
+      <span className="text-[28px] font-extrabold leading-tight">{f.today}</span>
     </div>
   );
 }
@@ -1374,7 +1389,7 @@ function FlowerWalk({ v }: { v: StageView }) {
       <img src={`/assets/nv/${g}/${POSE[g].vui}.webp`} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
       {/* bó hoa to nhỏ theo bậc quà */}
       <div className="absolute -right-4 top-[70px] leading-none" style={{ fontSize: 40 * GAME.giftTiers[w.tier].size }}>
-        {GAME.giftTiers[w.tier].icon}
+        {w.icon}
       </div>
       <div className="nametag" style={{ fontSize: 16, bottom: 'calc(100% - 4px)' }}>
         <span className="truncate">{w.nickname}</span>
@@ -1480,7 +1495,7 @@ function DeskGifts({ desk, x, y, w, show, scale }: { desk: StageView['seats'][nu
 function TalkTop({ v }: { v: StageView }) {
   const rows = (v.talkTop ?? []).slice(0, 5);
   return (
-    <div className="absolute left-[842px] top-[606px] z-[8] w-[232px] rotate-1 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+    <div className="absolute left-[842px] top-[616px] z-[8] w-[232px] rotate-1 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[28px]">📌</div>
       <div className="whitespace-nowrap text-center text-[22px] font-extrabold leading-tight text-[#b45309]">💬 Top tương tác</div>
       {rows.length === 0 && <div className="py-2 text-center text-[17px] text-[#8a6a3a]">Bình luận để lên bảng nha!</div>}
@@ -1519,8 +1534,8 @@ function GiftBanner({ gift, now }: { gift: GameState['lastGift']; now: number })
           exit={{ opacity: 0 }}
           className="absolute left-[24px] top-[470px] z-50 max-w-[560px] rounded-[26px] bg-gradient-to-r from-pink-500 to-rose-400 px-6 py-3 text-[30px] font-bold text-white shadow-xl"
         >
-          💐 <span className="inline-block max-w-[300px] truncate align-bottom">{gift.nickname}</span> tặng cô {gift.repeatCount > 1 ? `${gift.repeatCount} × ` : ''}
-          {gift.giftName}
+          {giftOf(gift.giftName)?.icon ?? '💐'} <span className="inline-block max-w-[300px] truncate align-bottom">{gift.nickname}</span> tặng cô {gift.repeatCount > 1 ? `${gift.repeatCount} × ` : ''}
+          {giftOf(gift.giftName)?.say ?? gift.giftName}
         </motion.div>
       )}
     </AnimatePresence>
