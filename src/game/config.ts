@@ -28,6 +28,7 @@ export const GAME = {
   quickRead: true,
   closeAfterTopN: 5, // đủ chừng này bạn đúng (top có điểm cao) thì chốt câu sau closeAfterTopSec giây. 0 = tắt
   closeAfterTopSec: 3,
+  earlySendGraceMs: 500, // đáp án gửi sớm hơn lúc bảng hiện quá chừng này ms (theo giờ gửi TikTok) thì không tính
   dhFirstLetters: true, // đuổi hình bắt chữ: hiện sẵn chữ cái đầu mỗi chữ trong ô đáp án (hình emoji đôi khi trừu tượng)
   praiseShort: true, // điểm danh giữa tiết chỉ 1 câu đọc top 3
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)
@@ -136,6 +137,7 @@ export const GAME = {
   attendMilestones: [3, 5, 7, 10, 14, 21, 30], // đi học liền đủ chừng này ngày thì cô khen to + tặng quà
   birthdayCooldownMs: 60_000, // 2 lần chúc sinh nhật cách nhau ít nhất 1 phút (chống spam)
   birthdayBannerSec: 10,
+  goodbyeBannerSec: 25, // nút "Chào tạm biệt": biểu ngữ tan lớp hiện chừng này giây
 
   championsKept: 50, // nhớ lớp trưởng của chừng này tiết gần nhất (đếm ai làm lớp trưởng nhiều lần)
 

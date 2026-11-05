@@ -93,6 +93,7 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
       <div className="flex flex-wrap gap-2">
         <Btn onClick={() => sendControl('custom', 'skip')}>⏭ Qua phần tiếp</Btn>
         <Btn onClick={() => sendControl('custom', 'newRound')}>🔄 Ván mới</Btn>
+        <Btn onClick={() => sendControl('custom', 'goodbye')}>👋 Chào tạm biệt (xuống live)</Btn>
         <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: view?.answer.toLowerCase() ?? '' })}>✅ 1 bạn trả lời đúng</Btn>
         <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: 'vào lớp' })}>🙋 1 bạn vào lớp</Btn>
         <Btn onClick={() => emitTest('gift', { ...fake(3), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 1 })}>🌹 Tặng hoa</Btn>

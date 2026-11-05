@@ -954,6 +954,43 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(c.view(t + GAME.walkMs + 1).gifts[2].icon, GAME.giftTiers[0].icon, 'quà khác: icon theo bậc như cũ');
 }
 
+// ---------- gửi đáp án lúc cô còn đọc nhưng bình luận tới trễ (sau khi bảng hiện): không tính, không mất lượt ----------
+{
+  Object.assign(GAME, FAST);
+  const c = new Classroom(BANK, t);
+  c.newRound(t);
+  while (c.phase !== 'question') c.tick((t += 500));
+  while (c.q!.math || c.q!.slot === 'meo') c.tick((t += 500)); // câu chữ (đáp án dài) cho dễ thử
+  const delay = 1000; // bình luận TikTok tới máy trễ 1 giây
+  chat(c, 801, 'chào cô', t - delay, t); // vài bình luận thường để đo độ lệch đồng hồ
+  chat(c, 802, 'hay quá', t - delay, t);
+  const shownAt = t + 2000;
+  c.showBoard(shownAt);
+  t = shownAt + 300;
+  chat(c, 9, c.q!.answer, shownAt - 2500, t); // gửi lúc cô còn đọc, tới sau khi bảng hiện
+  assert.equal(c.correct.length, 0, 'gửi trước khi bảng hiện: không tính dù tới trễ');
+  t = shownAt + 3000;
+  chat(c, 9, c.q!.answer, t - delay, t); // xem live thấy bảng rồi mới gõ
+  assert.equal(c.correct.length, 1, 'không mất lượt: gõ lại sau khi bảng hiện thì được tính');
+  assert.ok(c.view(t).fastest.length === 0 || c.view(t).fastest[0].ms > 0);
+}
+
+// ---------- nút "Chào tạm biệt": cô chào cuối buổi (có tên bạn dẫn đầu), biểu ngữ tan lớp ----------
+{
+  const c = new Classroom([mk('BẢNG ĐEN')], t);
+  c.newRound(t);
+  let said = c.goodbye(t);
+  assert.ok(said[0].main && LINES.goodbye.some((x) => said[0].text.endsWith(x)), 'chưa ai có điểm: câu chào chung');
+  assert.ok(c.view(t + 1000).goodbye, 'biểu ngữ tan lớp');
+  assert.equal(c.view(t + GAME.goodbyeBannerSec * 1000 + 1).goodbye, null);
+  while (c.phase !== 'question') c.tick((t += 500));
+  c.showBoard();
+  chat(c, 1, c.q!.answer, t, t);
+  while ((c.phase as string) !== 'reveal') c.tick((t += 500));
+  said = c.goodbye(t);
+  assert.ok(LINES.goodbyeTop.some((f) => f('Bạn 1') === said[0].text.slice(3)), 'có bạn dẫn đầu: cô nhắc tên');
+}
+
 // ---------- đuổi hình bắt chữ: hiện sẵn chữ cái đầu mỗi chữ trong ô đáp án ----------
 {
   const dh = BANK.find((q) => q.answer === 'CÁ CHẬU CHIM LỒNG')!;

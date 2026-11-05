@@ -192,6 +192,20 @@ export const LINES = {
   ] as L0,
 
   // ---------- Cô nhận hoa (bạn nhỏ lên bục đưa): cảm ơn theo bậc (n tên, g = "một bông hoa" / "một bó hoa nhỏ"...) ----------
+  // ---------- Nút "Chào tạm biệt" (chủ kênh bấm trước khi xuống live) ----------
+  goodbye: [
+    'Hôm nay lớp mình tới đây thôi nha cả lớp! Cô cảm ơn mọi người đã học cùng cô. Nhớ ăn uống đầy đủ, ngủ sớm, hẹn gặp lại cả lớp buổi sau nha!',
+    'Trống tan trường rồi cả lớp ơi! Cảm ơn các bạn đã ở lại học với cô tới giờ này. Ai chưa theo dõi kênh thì bấm theo dõi để buổi sau vào lớp sớm nha. Tạm biệt cả lớp!',
+    'Cô xin phép tan lớp nè. Hôm nay vui quá trời, cô thương cả lớp lắm. Về nghỉ ngơi cho khỏe, mai lại vào học với cô nha!',
+    'Tới giờ cô phải về chấm bài rồi! Cảm ơn cả lớp hôm nay chơi nhiệt tình quá. Chúc cả lớp một buổi tối thật vui, hẹn gặp lại buổi live sau nha!',
+    'Hết giờ học rồi cả lớp ơi! Cô cảm ơn từng bạn đã vào lớp, đã bình luận, đã thả tim cho cô. Nghỉ ngơi đi nha, hẹn gặp lại!',
+  ] as L0,
+  // có bạn dẫn đầu tiết đang học thì cô nhắc tên
+  goodbyeTop: [
+    (n) => `Hôm nay lớp mình tới đây thôi nha! Cô khen ${n} đang dẫn đầu lớp, giỏi lắm. Cảm ơn cả lớp đã học cùng cô, hẹn gặp lại buổi sau nha!`,
+    (n) => `Trống tan trường rồi cả lớp ơi! Chúc mừng ${n} đứng nhất tiết này. Cô cảm ơn mọi người, nhớ theo dõi kênh để buổi sau gặp lại cô nha. Tạm biệt!`,
+    (n) => `Cô xin phép tan lớp nè. ${n} hôm nay học giỏi quá, cả lớp vỗ tay cho ${n} nào! Cảm ơn tất cả, nghỉ ngơi cho khỏe, mai gặp lại nha!`,
+  ] as L1,
   // ---------- Lời đáp riêng cho quà trong bảng "Gửi tặng cô" (chủ kênh 2026-11-05), n = tên ----------
   thankHeart: [
     (n) => `Uii, ${n} bắn trúng tim cô rồi! Cô thương ${n} nhiều lắm nha.`,

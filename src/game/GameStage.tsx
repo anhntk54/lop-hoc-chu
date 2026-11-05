@@ -129,6 +129,7 @@ export function GameStage({ game }: { game: GameState }) {
       </motion.div>
       <GiftBanner gift={game.lastGift} now={now} />
       <BirthdayBanner v={v} />
+      <GoodbyeBanner v={v} />
       <FundParty v={v} />
       <LoveHearts n={v.loveFans} />
       <PollCard v={v} />
@@ -1520,7 +1521,7 @@ function TalkTop({ v }: { v: StageView }) {
 function Motto() {
   return (
     <div className="motto absolute left-1/2 top-[168px] -translate-x-1/2 whitespace-nowrap px-10 py-[6px] text-[38px] font-extrabold tracking-wider">
-      TIÊN HỌC LỄ – HẬU HỌC VĂN
+      NGHE HẾT ĐỀ – GÕ MỚI ĂN ĐIỂM
     </div>
   );
 }
@@ -1609,6 +1610,30 @@ function BirthdayBanner({ v }: { v: StageView }) {
         >
           <div className="text-[46px] leading-tight">🎉 Chúc mừng sinh nhật 🎂</div>
           <div className="mt-1 truncate text-[54px] leading-tight drop-shadow">{v.birthday.nickname}</div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Nút "Chào tạm biệt" ở trang điều khiển (chủ kênh bấm trước khi xuống live): biểu ngữ tan lớp
+function GoodbyeBanner({ v }: { v: StageView }) {
+  return (
+    <AnimatePresence>
+      {v.goodbye && (
+        <motion.div
+          key={v.goodbye.at}
+          initial={{ opacity: 0, y: -40, scale: 0.7 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -40 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 14 }}
+          className="absolute left-1/2 top-[620px] z-50 w-[900px] -translate-x-1/2 rounded-[30px] border-4 border-white bg-gradient-to-r from-sky-500 via-indigo-500 to-pink-500 px-6 py-4 text-center font-extrabold text-white shadow-2xl"
+        >
+          <motion.div animate={{ rotate: [-12, 12, -12] }} transition={{ duration: 1, repeat: Infinity }} className="inline-block text-[64px] leading-none">
+            👋
+          </motion.div>
+          <div className="mt-1 whitespace-nowrap text-[44px] leading-tight drop-shadow">Tan lớp rồi! Hẹn gặp lại cả lớp nha 💕</div>
+          <div className="mt-2 text-[30px] font-bold leading-tight">Nhớ theo dõi kênh để không lỡ buổi học sau</div>
         </motion.div>
       )}
     </AnimatePresence>

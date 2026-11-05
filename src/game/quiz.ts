@@ -349,6 +349,8 @@ export class Classroom {
   private birthdayDone = new Set<string>();
   private lastBirthdayAt = -Infinity;
   birthday: { nickname: string; at: number } | null = null;
+  /** chủ kênh bấm "Chào tạm biệt" lúc chuẩn bị xuống live */
+  goodbyeAt = 0;
   /** "Ai yêu cô thì gõ số 1": đang đếm ai gõ (trong GAME.loveWindowMs) */
   love: { at: number; fans: string[] } | null = null;
   /** bình chọn vui ("miền Bắc gõ B, miền Nam gõ N"): đang đếm phiếu */
@@ -754,9 +756,12 @@ export class Classroom {
 
   /** Đã hiện bảng chữ (chữ xáo / phép tính) chưa: cô đọc đề xong, hô bắt đầu mới hiện */
   boardShown = false;
-  showBoard() {
+  showBoard(now = this.clock) {
+    if (!this.boardShown) this.boardShownAt = now;
     this.boardShown = true;
   }
+  /** lúc bảng chữ hiện (giờ máy): đáp án GỬI trước lúc này là gõ khi cô chưa đọc xong đề, không tính */
+  private boardShownAt = 0;
 
   /** Lúc được nói thêm (chào, cảm ơn, cà khịa): đang chờ học sinh trả lời (hoặc lúc cô dừng giữa tiết) và còn đủ giờ */
   chatterWindow(now: number) {
@@ -906,6 +911,9 @@ export class Classroom {
     this.stats.received++;
     // cô chưa đọc xong đề (bảng chữ chưa hiện): đáp án gõ trước không tính, cũng không mất lượt
     if (GAME.quickRead && !this.boardShown) return [];
+    // gửi lúc cô còn đang đọc mà bình luận tới trễ (sau khi bảng hiện): xét theo giờ gửi TikTok (đổi sang giờ máy), không tính,
+    // không mất lượt. Người xem thật thấy bảng trên điện thoại trễ hơn máy vài giây nên luôn gửi sau mốc này (chủ kênh 2026-11-05)
+    if (GAME.quickRead && this.phase === 'question' && this.skewSamples > 1 && e.createTime + this.clockSkew < this.boardShownAt - GAME.earlySendGraceMs) return [];
     if (!this.isAttempt(this.q, e.comment) || this.tried.has(e.username)) return [];
     this.tried.add(e.username);
     this.stats.attempts++;
@@ -948,6 +956,15 @@ export class Classroom {
   }
 
   /** Chúc mừng sinh nhật: bánh kem lên bàn, cả lớp vỗ tay, biểu ngữ. Mỗi bạn 1 lần mỗi buổi, cách nhau ít nhất 1 phút */
+  /** Nút "Chào tạm biệt" (trang điều khiển): cô chào cuối buổi, cảm ơn bạn dẫn đầu tiết (nếu có), biểu ngữ tan lớp + vỗ tay */
+  goodbye(now: number): Say[] {
+    this.goodbyeAt = now;
+    this.clapUntil = now + GAME.clapSec * 1000;
+    const top = this.seats(1)[0];
+    const line = top && top.score > 0 && top.spoken !== 'bạn' ? this.line('goodbyeTop', top.spoken) : this.line0('goodbye').text.slice(3);
+    return this.mainOf([this.t(line)]);
+  }
+
   celebrate(s: Person, now: number): Say[] {
     const st = this.touch(s, now);
     if (this.birthdayDone.has(st.username) || now - this.lastBirthdayAt < GAME.birthdayCooldownMs) return [];
@@ -1827,7 +1844,7 @@ export class Classroom {
       extra.push({ ...this.line0('timeWarn'), warn: true });
     }
     // phòng giọng hỏng / tắt tiếng: đồng hồ đã chạy hơn 1 giây (cô đọc xong) thì vẫn hiện bảng chữ / nhận đáp án
-    if ((asking || (this.phase === 'show' && this.show?.stage === 'ask')) && !this.boardShown && now - this.phaseStartedAt > 1000) this.boardShown = true;
+    if ((asking || (this.phase === 'show' && this.show?.stage === 'ask')) && !this.boardShown && now - this.phaseStartedAt > 1000) this.showBoard(now);
     if (now < this.phaseEndsAt) return extra;
     return [...extra, ...this.advance(now)];
   }
@@ -2019,6 +2036,7 @@ export class Classroom {
       // đang bình chọn vui: các lựa chọn và số phiếu
       poll: this.poll && this.poll.opts.map((o) => ({ ...o, n: [...this.poll!.votes.values()].filter((k) => k === o.key).length })),
       birthday: this.birthday && now - this.birthday.at < GAME.birthdayBannerSec * 1000 ? this.birthday : null,
+      goodbye: this.goodbyeAt && now - this.goodbyeAt < GAME.goodbyeBannerSec * 1000 ? { at: this.goodbyeAt } : null,
       players: this.activePlayers(now),
       // cô đang đọc đề: chưa hiện chữ xáo / phép tính / ô đáp án, hô bắt đầu mới hiện
       boardShown: (this.phase !== 'question' && this.phase !== 'show') || this.boardShown, // game lớn: cô hô bắt đầu mới chạy đồng hồ, nhận đáp án
