@@ -127,22 +127,37 @@ class Voice {
         await new Promise<void>((resolve) => {
           // Tự gỡ kẹt: 1 câu treo (không tải xong, không báo lỗi) sẽ làm MC im cả buổi live.
           // Chưa phát được sau 8 giây thì bỏ câu; đang phát thì cắt khi quá độ dài câu + 4 giây.
+          // Bỏ câu là huỷ HẲN (dừng tải, không thử phát lại): trước đây câu bị bỏ vẫn tự phát khi tải xong,
+          // đè lên câu sau thành 2 giọng cùng lúc (sửa 2026-11-05)
+          let over = false;
           let guard = setTimeout(finish, 8000);
           function finish() {
+            if (over) return;
+            over = true;
             clearTimeout(guard);
-            if (!audio.ended) audio.pause();
+            audio.pause();
+            if (!audio.ended) {
+              audio.removeAttribute('src');
+              audio.load(); // dừng tải
+            }
             resolve();
           }
           audio.onplaying = () => {
+            if (over) {
+              audio.pause(); // câu đã bỏ mà vẫn kịp phát: tắt ngay
+              return;
+            }
             clearTimeout(guard);
             const ms = Number.isFinite(audio.duration) ? audio.duration * 1000 + 4000 : 40_000;
             guard = setTimeout(finish, ms);
           };
           audio.onended = finish;
           audio.onerror = finish;
-          // trình duyệt chặn tự phát tiếng: thử lại vài lần thay vì bỏ câu
-          const tryPlay = (left: number) =>
-            audio.play().catch(() => (left > 0 ? setTimeout(() => tryPlay(left - 1), 1500) : finish()));
+          // trình duyệt chặn tự phát tiếng: thử lại vài lần thay vì bỏ câu (câu đã bỏ thì thôi)
+          const tryPlay = (left: number) => {
+            if (over) return;
+            audio.play().catch(() => (left > 0 && !over ? setTimeout(() => tryPlay(left - 1), 1500) : finish()));
+          };
           tryPlay(4);
         });
         if (this.current !== audio) break; // stop() giữa chừng
