@@ -420,6 +420,21 @@ export const LINES = {
   ] as L1,
 
   // ---------- Câu đố mẹo (câu 7, 13) ----------
+  // mở màn tiết mục đố mẹo giữa tiết (2 câu liền, câu 11 và 12): cô dẫn hài trước câu đầu
+  riddleSegment: [
+    'Tới phần đố mẹo rồi cả lớp ơi! Hai câu liền nhau, vẫn tính điểm như thường, nghĩ thẳng là thua, nghĩ xéo mới thắng.',
+    'Tới giờ cô hack não cả lớp rồi nha! Hai câu đố mẹo, vẫn chấm điểm, đáp án càng ngớ ngẩn càng dễ đúng.',
+    'Lương chưa về thì cô đố mẹo cho vui! Hai câu liền, điểm vẫn tính đủ, ai bị cô lừa thì tự cốc đầu mình một cái.',
+    'Phần xoắn não bắt đầu! Hai câu đố mẹo, đừng tin vào mắt mình, cũng đừng tin cô luôn.',
+    'Cẩn thận nha cả lớp, cô sắp ra hai câu đố mẹo lừa không trượt phát nào, gõ sai là lên đứng đó!',
+    'Hai câu đố mẹo liền nhau đây! Ai đúng cả hai cô phong làm thánh lầy của lớp.',
+  ] as L0,
+  // câu đố mẹo thứ hai trong tiết mục (nói ngắn, không dẫn dài)
+  riddleSecond: [
+    'Câu đố mẹo thứ hai, cô lừa gắt hơn nha.',
+    'Câu đố mẹo thứ hai nè, cẩn thận.',
+    'Thêm một câu đố mẹo nữa, tỉnh táo lên.',
+  ] as L0,
   riddleReveal: [
     (answer, rest) => `Đáp án là ${answer}! Có ai bị cô lừa không, giơ tay lên coi? ${rest}`,
     (answer, rest) => `${answer} nha cả lớp! Câu đố mẹo đó, nghĩ thẳng là trật liền. ${rest}`,

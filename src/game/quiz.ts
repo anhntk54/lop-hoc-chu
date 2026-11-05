@@ -817,7 +817,14 @@ export class Classroom {
     else if (this.q.math && !GAME.quickRead) out.push(this.line0('mathIntro'));
     // đuổi hình bắt chữ: không đọc emoji, chỉ mời nhìn hình
     const clue = this.q.slot === 'dh' ? (GAME.quickRead ? 'Nhìn hình đoán nhanh!' : 'Nhìn hình đoán chữ nha cả lớp.') : this.q.clue;
-    out.push(this.t(`Câu ${this.qNo}. ${this.intro(this.q)} ${clue}`));
+    // tiết mục đố mẹo (2 câu liền giữa tiết): câu đầu cô dẫn hài, câu sau nói ngắn "câu đố mẹo thứ hai"
+    const prevSlot = this.roundQs[this.qNo - 2]?.slot;
+    if (this.q.slot === 'meo' && prevSlot !== 'meo') {
+      out.push(this.line0('riddleSegment'));
+      out.push(this.t(`Câu ${this.qNo}. ${clue}`));
+    } else if (this.q.slot === 'meo') {
+      out.push(this.t(`Câu ${this.qNo}. ${this.line0('riddleSecond').text.slice(3)} ${clue}`));
+    } else out.push(this.t(`Câu ${this.qNo}. ${this.intro(this.q)} ${clue}`));
     // chế độ nhanh: đọc đề ngắn, không hô bắt đầu; đọc xong là hiện bảng chữ, nhận đáp án, chạy giờ
     // (chủ kênh 2026-11-04: hiện bảng lúc cô còn đọc thì người chơi đoán trước, không công bằng)
     if (GAME.quickRead) {
@@ -1967,6 +1974,8 @@ export class Classroom {
       clue: this.q?.clue ?? '',
       kind: this.q?.kind ?? '',
       slot: this.q?.slot ?? '', // 'meo' câu đố mẹo, 'su' câu lịch sử: bảng hiện nhãn riêng
+      // tiết mục đố mẹo: câu thứ mấy trong 2 câu liền (1 = câu đầu, cô đang dẫn thì bảng hiện thẻ "chuẩn bị")
+      riddleNo: this.q?.slot === 'meo' ? (this.roundQs[this.qNo - 2]?.slot === 'meo' ? 2 : 1) : 0,
       math: this.q?.math?.show ?? '', // câu toán: phép tính hiện thay cho chữ xáo
       category: this.q?.category ?? '',
       answer: this.phase === 'recess' ? (r?.callQ?.answer ?? '') : (this.q?.answer ?? ''),

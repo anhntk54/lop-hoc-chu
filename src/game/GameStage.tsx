@@ -257,7 +257,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
             ) : (
               <span className={`rounded-full border-2 px-4 text-[26px] ${v.slot ? 'border-[#ffe680] text-[#ffe680]' : 'border-[#f4f1e6]/60'}`}>
                 {v.slot === 'meo'
-                  ? '🤪 Đố mẹo'
+                  ? `🤪 Đố mẹo ${v.riddleNo}/2`
                   : v.slot === 'su'
                     ? '📜 Lịch sử'
                     : v.slot === 'anh'
@@ -270,6 +270,22 @@ function Board({ v, now }: { v: StageView; now: number }) {
             {v.phase !== 'reveal' ? <Timer left={left} /> : <span className="text-[34px] text-[#9df29d]">Đáp án</span>}
           </div>
           {!v.boardShown ? (
+            v.riddleNo === 1 ? (
+              // mở màn phần đố mẹo: cô đang dẫn, bảng báo trước để cả lớp chuẩn bị
+              <motion.div
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 160, damping: 13 }}
+                className="flex flex-1 flex-col items-center justify-center text-center"
+              >
+                <motion.div animate={{ rotate: [-8, 8, -8] }} transition={{ duration: 1.2, repeat: Infinity }} className="text-[90px] leading-none">
+                  🤪
+                </motion.div>
+                <div className="mt-2 text-[58px] font-bold leading-none text-[#ffe680]">PHẦN ĐỐ MẸO</div>
+                <div className="mt-3 text-[36px]">2 câu liền · vẫn tính điểm</div>
+                <div className="mt-2 text-[32px] opacity-90">Chuẩn bị tinh thần, nghĩ xéo mới thắng!</div>
+              </motion.div>
+            ) : (
             // cô đang đọc đề: chưa hiện chữ xáo / phép tính, hô bắt đầu mới hiện
             <div className="flex flex-1 flex-col items-center justify-center text-center">
               {!v.math && v.slot !== 'dh' && <div className="line-clamp-2 text-[38px] leading-[48px]">{v.clue}</div>}
@@ -281,6 +297,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
                 👂 Nghe cô đọc đề nè…
               </motion.div>
             </div>
+            )
           ) : v.slot === 'dh' ? (
             // đuổi hình bắt chữ: hình ghép bằng emoji thật to, bên dưới là ô đáp án
             <motion.div

@@ -11,11 +11,14 @@ export const GAME = {
   // 10 câu chữ (4 dễ, 2 vừa, 4 khó) + 4 câu toán nhẩm khó dần ở câu 5, 10, 15, 19
   // + 2 câu tiếng Anh ở câu 3, 12 + 2 câu đố mẹo ở câu 7, 13 + 2 câu lịch sử ở câu 9, 17 (chủ kênh chốt 2026-11-04).
   // Câu 20 là câu hỏi vàng nhân đôi điểm.
-  // bản riêng (2026-11-04): thêm 5 câu đuổi hình bắt chữ (emoji) ở câu 2, 6, 11, 14, 18 -> còn 5 câu chữ thường
+  // bản riêng (2026-11-04): thêm 5 câu đuổi hình bắt chữ (emoji) -> còn 5 câu chữ thường
+  // 2026-11-05: đố mẹo thành tiết mục giữa tiết, 2 câu liền ở câu 11, 12 (ngay sau điểm danh câu 10), cô dẫn hài trước câu 11;
+  // vẫn là câu hỏi bình thường (tính điểm, phạt đứng), không phải giờ nghỉ.
+  // Đuổi hình ở câu 2, 6, 9, 14, 18; tiếng Anh 3, 13; lịch sử 8, 17
   roundPlan: [
     'easy', 'dh', 'anh', 'easy', 'math1',
-    'dh', 'meo', 'medium', 'su', 'math2',
-    'dh', 'anh', 'meo', 'dh', 'math3',
+    'dh', 'medium', 'su', 'dh', 'math2',
+    'meo', 'meo', 'anh', 'dh', 'math3',
     'hard', 'su', 'dh', 'math4', 'hard',
   ] as const,
   introSec: 5, // cô giới thiệu đầu tiết (giảm từ 8, chế độ nhanh 2026-11-04)

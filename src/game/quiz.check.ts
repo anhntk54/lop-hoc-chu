@@ -159,7 +159,7 @@ for (const q of BANK) {
     assert.equal(c.phase, 'question');
     const q = c.q!;
     plan.push(q.math ? GAME.roundPlan[k] : (q.slot ?? q.difficulty));
-    if (!q.math) cats.push(q.category);
+    if (!q.math) cats.push(q.slot === 'meo' ? `${q.category}#${k}` : q.category); // 2 câu đố mẹo liền nhau là cố ý (tiết mục giữa tiết)
     else {
       assert.match(q.answer, /^\d+$/, 'câu toán: đáp án là số');
       assert.equal(c.tiles.length, 0, 'câu toán không xáo chữ');
