@@ -6,7 +6,7 @@ import { containsBanned } from '../live/bannedWords';
 import { NameBatcher } from '../live/scoreboard';
 import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
-import { GAME } from './config';
+import { GAME, type RoomCfg } from './config';
 import { QUESTIONS, SHOW_BANK } from './bank';
 import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
 import type { ShowKind } from './show';
@@ -16,7 +16,7 @@ import { sfx } from './sfx';
 const MUTED = new URLSearchParams(window.location.search).get('mute') === '1';
 
 export type WeekRow = { username: string; nickname: string; points: number };
-export type StageView = ClassView & { weekTop: WeekRow[]; todayTop: WeekRow[]; talkTop: WeekRow[] };
+export type StageView = ClassView & { weekTop: WeekRow[]; todayTop: WeekRow[]; talkTop: WeekRow[]; cfg: RoomCfg };
 
 /** Top 5 hôm nay: điểm server đã lưu + điểm vừa ghi chưa kịp gửi lên (bảng cập nhật ngay, không chờ 20 giây) */
 function dayBoard(saved: WeekRow[], pending: Map<string, { nickname: string; points: number }>): WeekRow[] {
@@ -42,6 +42,13 @@ export function useGame() {
   const [channelName, setChannelName] = useState(GAME.defaultChannelName);
 
   const roomRef = useRef<Classroom | null>(null);
+  const cfg = useRef<RoomCfg>(GAME.defaultRoom); // cài đặt lớp (trang điều khiển)
+  const applyCfg = (room: Classroom | null) => {
+    voice.teacher = cfg.current.teacherVoice === 'nam' ? 'm' : 'f';
+    if (!room) return;
+    room.teacherName = cfg.current.teacherName;
+    room.showsOn = { everest: cfg.current.everest, chuong: cfg.current.chuong };
+  };
   const weekTop = useRef<WeekRow[]>([]);
   const todayTop = useRef<WeekRow[]>([]); // điểm cả ngày (server), cho bảng Học sinh xuất sắc hôm nay
   const talkTop = useRef<WeekRow[]>([]); // tương tác cả ngày (server), cho bảng Top tương tác
@@ -119,6 +126,11 @@ export function useGame() {
     onSpeaker: (d) => setStageCount(d.count),
     onGameState: (s) => {
       if (!IS_STAGE) setView(s as StageView);
+    },
+    onRoomCfg: (c) => {
+      cfg.current = { ...GAME.defaultRoom, ...(c as Partial<RoomCfg>) };
+      applyCfg(roomRef.current);
+      dirty.current = true;
     },
 
     onChat: (e) => {
@@ -255,6 +267,7 @@ export function useGame() {
       room.showBank = SHOW_BANK;
       room.weekLeader = weekTop.current[0] ? speakableName(weekTop.current[0].nickname) : '';
       roomRef.current = room;
+      applyCfg(room);
       say(room.newRound(Date.now()));
 
       // Nhịp game: 5 lần/giây đẩy đồng hồ, có đổi thì vẽ lại và gửi ảnh chụp cho trang điều khiển
@@ -280,7 +293,7 @@ export function useGame() {
           sfx.music(sh?.kind ?? null, !sh || busy ? 0 : room.showAsking() ? (room.phaseEndsAt - now <= 5000 ? 2 : 1) : step === 'gather' || step === 'honor' ? 1 : 0);
           if (!dirty.current && now - lastSent < 1000) return;
           dirty.current = false;
-          const v = { ...room.view(now), weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta), talkTop: dayBoard(talkTop.current, room.talkDelta) };
+          const v = { ...room.view(now), cfg: cfg.current, weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta), talkTop: dayBoard(talkTop.current, room.talkDelta) };
           sfx.watch(prevView, v);
           prevView = v;
           setView(v);

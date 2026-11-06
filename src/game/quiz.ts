@@ -413,7 +413,19 @@ export class Classroom {
 
   /** 1 câu cô nói (giọng nữ) */
   private t(text: string, priority = false): Say {
-    return { text: `F: ${text}`, priority };
+    // tên cô giáo đổi được ở trang điều khiển: lời thoại viết sẵn "cô Ngân" đọc theo tên mới
+    const name = this.teacherName;
+    const low = name.charAt(0).toLowerCase() + name.slice(1);
+    return { text: `F: ${text.split('Cô Ngân').join(name).split('cô Ngân').join(low)}`, priority };
+  }
+  teacherName = GAME.defaultRoom.teacherName;
+  /** 2 game lớn đang bật (trang điều khiển) */
+  showsOn: Record<ShowKind, boolean> = { everest: true, chuong: true };
+  /** game lớn kế tiếp: xen kẽ, game nào tắt thì bỏ qua; tắt cả 2 thì null (thay bằng giờ ra chơi) */
+  private nextKind(): ShowKind | null {
+    const first: ShowKind = this.showNo % 2 === 0 ? 'everest' : 'chuong';
+    const other: ShowKind = first === 'everest' ? 'chuong' : 'everest';
+    return this.showsOn[first] ? first : this.showsOn[other] ? other : null;
   }
   /** đánh dấu câu chính */
   private mainOf(lines: Say[]): Say[] {
@@ -1418,7 +1430,8 @@ export class Classroom {
     const done = this.phase === 'recess' || this.phase === 'vote';
     const base = Math.max(1, done ? this.round + 1 : this.round);
     const afterRound = Math.ceil(base / GAME.showEvery) * GAME.showEvery;
-    const kind: ShowKind = this.showNo % 2 === 0 ? 'everest' : 'chuong';
+    const kind = this.nextKind();
+    if (!kind) return null;
     return { kind, name: SHOW_NAME[kind], afterRound, now: false, soon: !done && afterRound === this.round };
   }
 
@@ -1435,7 +1448,7 @@ export class Classroom {
   }
 
   private startShow(now: number, forced?: ShowKind): Say[] {
-    const kind: ShowKind = forced ?? (this.showNo % 2 === 0 ? 'everest' : 'chuong');
+    const kind: ShowKind = forced ?? this.nextKind() ?? 'everest';
     this.showNo++;
     this.recess = null;
     const E = GAME.show.everest;
@@ -1872,7 +1885,7 @@ export class Classroom {
         return this.startQuestion(now);
       case 'results':
         // cứ GAME.showEvery tiết thì thay giờ ra chơi bằng 1 game lớn (xen kẽ Everest / Rung Chuông Đồng)
-        if (GAME.showEvery > 0 && this.round % GAME.showEvery === 0 && this.showBank.mc.length) return this.startShow(now);
+        if (GAME.showEvery > 0 && this.round % GAME.showEvery === 0 && this.showBank.mc.length && this.nextKind()) return this.startShow(now);
         return this.startRecess(now);
       case 'show':
         return this.showAdvance(now);

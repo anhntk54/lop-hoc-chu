@@ -104,6 +104,9 @@ export function GameStage({ game }: { game: GameState }) {
   }
   return (
     <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
+      {/* nền riêng tải lên ở trang điều khiển phủ lên nền gốc; ảnh riêng không có bảng đen nên game tự vẽ 1 tấm ở đúng chỗ */}
+      {v.cfg.bg && <img src={`/room-bg/${v.cfg.bg}`} className="absolute inset-0 h-full w-full object-cover" />}
+      {v.cfg.bg && <div className="absolute left-[332px] top-[244px] h-[384px] w-[592px] rounded-[10px] border-[12px] border-[#7a4a1d] bg-[#1d4a38] shadow-[0_8px_14px_rgba(0,0,0,0.4)]" />}
       {/* tặng hoa: chỉ có bạn nhỏ đi lên bục đưa cô (FlowerWalk), không zoom, không khung cận cảnh (chủ kênh bỏ 2026-11-04).
           Giữ motion.div như cũ (scale luôn 1): đổi sang div thường thì hình trên live khác đi */}
       <motion.div className="absolute inset-0" style={{ transformOrigin: '330px 700px' }} animate={{ scale: 1 }}>
@@ -111,7 +114,7 @@ export function GameStage({ game }: { game: GameState }) {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[600px] bg-gradient-to-b from-[#3b1d07]/0 via-[#3b1d07]/20 to-[#3b1d07]/28 mix-blend-multiply" />
         <Header v={v} name={game.channelName} />
         <EventBadge v={v} />
-        <Motto />
+        <Motto text={v.cfg.motto} />
         <Board v={v} now={now} />
         <DayTop v={v} />
         <TeamBoard v={v} />
@@ -534,7 +537,7 @@ function TeamPick({ v, left }: { v: StageView; left: number }) {
         ))}
       </div>
       <div className="mt-auto text-[24px] leading-tight opacity-85">
-        {v.noTeam > 0 ? `${v.noTeam} bạn chưa chọn, hết giờ cô Ngân xếp giùm` : 'Chưa chọn thì cô Ngân tự xếp vào tổ ít người'}
+        {v.noTeam > 0 ? `${v.noTeam} bạn chưa chọn, hết giờ cô xếp giùm` : 'Chưa chọn thì cô tự xếp vào tổ ít người'}
       </div>
     </div>
   );
@@ -578,10 +581,11 @@ function TeamBoard({ v }: { v: StageView }) {
 function EventBadge({ v }: { v: StageView }) {
   const n = v.nextShow;
   if (!n) return null;
+  // chỉ liệt kê game đang bật ở trang điều khiển
   const games = [
-    { kind: 'everest', label: '🏔️ Đường lên đỉnh Everest' },
-    { kind: 'chuong', label: '🔔 Rung Chuông Đồng' },
-  ];
+    { kind: 'everest', label: '🏔️ Đường lên đỉnh Everest', on: v.cfg.everest },
+    { kind: 'chuong', label: '🔔 Rung Chuông Đồng', on: v.cfg.chuong },
+  ].filter((g) => g.on || g.kind === n.kind);
   return (
     <div className="absolute left-[784px] top-[12px] z-20 w-[288px] overflow-hidden rounded-[18px] border-[3px] border-[#7c3aed] bg-gradient-to-b from-[#2e1065] to-[#4c1d95] text-white shadow-[0_6px_0_#3b0764]">
       <div className="bg-[#7c3aed] py-[1px] text-center text-[18px] font-extrabold tracking-wide text-[#fde68a]">🎪 SỰ KIỆN TRONG LỚP</div>
@@ -1100,7 +1104,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
       <img src={src} className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]" />
       {/* bảng tên cài ngực áo (trên đầu cô là bảng Học sinh xuất sắc nên không đặt ở đó) */}
       <div className="absolute left-1/2 top-[128px] z-10 -translate-x-1/2 -rotate-3 whitespace-nowrap rounded-full border-[3px] border-[#fff6dd] bg-gradient-to-b from-[#ff6b9a] to-[#d63384] px-3 py-[1px] text-[22px] font-extrabold text-white shadow-[0_3px_0_#9d174d]">
-        🌸 Cô Ngân
+        🌸 {v.cfg.teacherName}
       </div>
       <AnimatePresence>
         {gotFlower && (
@@ -1518,10 +1522,12 @@ function TalkTop({ v }: { v: StageView }) {
 }
 
 // Bảng khẩu hiệu đỏ trên bảng đen
-function Motto() {
+function Motto({ text }: { text: string }) {
+  // chữ đổi được ở trang điều khiển: dài thì nhỏ lại cho vừa bảng
+  const size = text.length > 34 ? 28 : text.length > 28 ? 33 : 38;
   return (
-    <div className="motto absolute left-1/2 top-[168px] -translate-x-1/2 whitespace-nowrap px-10 py-[6px] text-[38px] font-extrabold tracking-wider">
-      NGHE HẾT ĐỀ – GÕ MỚI ĂN ĐIỂM
+    <div className="motto absolute left-1/2 top-[168px] -translate-x-1/2 whitespace-nowrap px-10 py-[6px] font-extrabold tracking-wider" style={{ fontSize: size }}>
+      {text}
     </div>
   );
 }

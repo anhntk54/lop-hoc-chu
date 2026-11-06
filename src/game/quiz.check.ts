@@ -975,6 +975,22 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.ok(c.view(t).fastest.length === 0 || c.view(t).fastest[0].ms > 0);
 }
 
+// ---------- cài đặt lớp: đổi tên cô giáo, bật tắt 2 game lớn ----------
+{
+  const c = new Classroom(BANK, t);
+  c.newRound(t);
+  c.teacherName = 'Cô Lan';
+  const said = LINES.teamIntro.map(() => c.newRound(t)).flat().map((l) => l.text).join(' ');
+  assert.ok(!said.includes('Ngân'), 'đổi tên: lời thoại không còn đọc tên cũ');
+  c.show = null;
+  c.showBank = { mc: [{ id: 'x' } as never], codes: [] }; // nextShow chỉ cần có câu
+  assert.equal(c.nextShow()?.kind, 'everest');
+  c.showsOn = { everest: false, chuong: true };
+  assert.equal(c.nextShow()?.kind, 'chuong', 'tắt Everest: game kế tiếp là Rung Chuông Đồng');
+  c.showsOn = { everest: false, chuong: false };
+  assert.equal(c.nextShow(), null, 'tắt cả 2: không còn game lớn');
+}
+
 // ---------- nút "Chào tạm biệt": cô chào cuối buổi (có tên bạn dẫn đầu), biểu ngữ tan lớp ----------
 {
   const c = new Classroom([mk('BẢNG ĐEN')], t);
