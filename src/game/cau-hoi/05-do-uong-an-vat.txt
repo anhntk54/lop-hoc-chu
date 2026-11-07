@@ -36,7 +36,7 @@ BÁNH QUY | Bánh giòn tròn, hộp thiếc đẹp mà mở ra toàn là kim ch
 BÁNH SINH NHẬT | Có nến để thổi, ước một điều, rồi bị trét lên mặt. | 3
 BÁNH CUPCAKE | Bánh nhỏ trong cốc giấy, phủ kem, xinh quá không nỡ ăn. | 3 | CUPCAKE
 BÁNH BÔNG LAN | Bánh xốp mềm vàng, thơm trứng, mua ở tiệm đầu ngõ. | 3
-BÁNH PIA | Đặc sản Sóc Trăng, vỏ nhiều lớp, nhân đậu và sầu riêng. | 3
+BÁNH PIA | Đặc sản Sóc Trăng, vỏ nhiều lớp, nhân đậu và sầu riêng. | 3 | BÁNH PÍA
 BÁNH ĐẬU XANH | Đặc sản Hải Dương, hộp nhỏ ăn với trà, khô tới nỗi phải uống nước. | 3
 KẸO DỪA | Đặc sản Bến Tre, xứ của loại cây có quả uống được nước. | 2
 MẬT ONG | Ong làm ra, vàng sánh, ngọt lịm, pha với chanh khi bị đau họng. | 2
