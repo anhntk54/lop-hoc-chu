@@ -54,6 +54,7 @@ export function useGame() {
     room.supervisorOn = c.supervisor;
     room.supervisorIdleMs = Math.max(1, Number(c.supervisorMin) || GAME.defaultRoom.supervisorMin) * 60_000;
     room.dance = c.dance;
+    room.setStandWrong(!!c.standWrong);
     room.danceSec = Math.min(120, Math.max(10, Number(c.danceSec) || GAME.defaultRoom.danceSec));
     room.showsOn = { everest: cfg.current.everest, chuong: cfg.current.chuong };
   };

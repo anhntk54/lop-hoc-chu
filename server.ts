@@ -91,6 +91,7 @@ type RoomSettings = {
   danceText?: string;
   danceSec?: number;
   birthdayText?: string;
+  standWrong?: boolean;
 };
 let settings: { channelName?: string; tiktokUser?: string; room?: RoomSettings } = {};
 try {
@@ -564,6 +565,7 @@ app.post('/api/room-settings', (req, res) => {
   if (typeof b.chuong === 'boolean') patch.chuong = b.chuong;
   if (b.teacher === 'co' || b.teacher === 'thay') patch.teacher = b.teacher;
   if (typeof b.supervisor === 'boolean') patch.supervisor = b.supervisor;
+  if (typeof b.standWrong === 'boolean') patch.standWrong = b.standWrong;
   if (b.supervisorMin !== undefined) patch.supervisorMin = Math.min(60, Math.max(1, Math.round(Number(b.supervisorMin)) || 4));
   if (b.dance === 'off' || b.dance === 'mix' || b.dance === 'always') patch.dance = b.dance;
   if (b.danceSec !== undefined) patch.danceSec = Math.min(120, Math.max(10, Math.round(Number(b.danceSec)) || 30));

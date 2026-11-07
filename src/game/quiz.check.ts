@@ -1141,6 +1141,15 @@ const many = () => Array.from({ length: 30 }, (_, i) => mk('BẢNG ĐEN' + 'ABCD
   chat(c, 1, 'X'.repeat(c.answerLetters.length), t, (t += 10));
   while ((c.phase as string) !== 'reveal') c.tick((t += 500));
   assert.equal(c.view(t).punished.length, 0, 'tắt đứng phạt: gõ sai không lên bục');
+  // bật lại ở trang điều khiển: câu sau gõ sai là lên bục; tắt giữa chừng thì về chỗ ngay
+  c.setStandWrong(true);
+  while (c.phase !== 'question') c.tick((t += 500));
+  c.showBoard();
+  chat(c, 2, 'X'.repeat(c.answerLetters.length), t, (t += 10));
+  while ((c.phase as string) !== 'reveal') c.tick((t += 500));
+  assert.deepEqual(c.view(t).punished.map((p) => p.username), ['u2'], 'bật đứng phạt: gõ sai lên bục');
+  c.setStandWrong(false);
+  assert.equal(c.view(t).punished.length, 0, 'tắt giữa chừng: về chỗ ngay');
 }
 {
   // thầy giáo: lời thoại đổi "cô" thành "thầy", tên thầy, không đụng chữ khác

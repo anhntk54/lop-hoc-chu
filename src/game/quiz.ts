@@ -441,6 +441,13 @@ export class Classroom {
   /** giờ ra chơi nhảy múa thả tim (cài đặt lớp) */
   dance: RoomCfg['dance'] = 'off';
   danceSec = GAME.defaultRoom.danceSec;
+  /** gõ sai thì lên bục đứng phạt (công tắc ở Cài đặt lớp) */
+  standWrong = GAME.standWrong;
+  /** bật/tắt đứng phạt: tắt giữa tiết thì các bạn đang đứng về chỗ luôn */
+  setStandWrong(on: boolean) {
+    this.standWrong = on;
+    if (!on) for (const s of this.students.values()) s.standLeft = 0;
+  }
   /** thầy giám thị đang đưa 1 bạn ra ngoài, bạn khác vào thay */
   escort: { at: number; out: Student; seat: number; in: Student | null } | null = null;
   private lastEscortAt = -Infinity;
@@ -1230,7 +1237,7 @@ export class Classroom {
     for (const s of this.students.values()) if (s.standLeft > 0) s.standLeft--;
     let free = GAME.standMax - [...this.students.values()].filter((s) => s.standLeft > 0).length;
     const sentUp: Student[] = [];
-    for (const u of GAME.standWrong ? this.wrong : []) {
+    for (const u of this.standWrong ? this.wrong : []) {
       if (free <= 0) break;
       const s = this.students.get(u);
       if (!s || s.standLeft > 0) continue;

@@ -85,6 +85,7 @@ Dùng OBS cũng được: thêm nguồn **Browser**, cùng đường dẫn và k
   - **Người đứng lớp**: cô Ngân hoặc thầy giáo. Chọn thầy thì giọng nam hết (kể cả từ tiếng Anh), lời thoại và chữ trên màn hình tự đổi "cô" thành "thầy".
   - **Tên cô / thầy giáo**: bảng tên trên ngực và những câu tự xưng tên.
   - **Giọng đọc**: nữ (HoaiMy) hoặc nam (NamMinh) cho cô Ngân.
+  - **😅 Đứng phạt**: bật thì gõ sai lên bục đứng phạt 3 câu (tối đa 6 bạn), mặc định tắt.
   - **👮 Giám thị**: bật tắt, số phút ngồi im thì bị đưa ra ngoài.
   - **💃 Nhảy múa**: tắt / xen kẽ với trò ra chơi khác / mọi giờ ra chơi; số giây nhảy; dòng thông báo trên màn hình.
   - **🎂 Biểu ngữ SN**: chữ trên biểu ngữ sinh nhật, gõ `{ten}` để chèn tên bạn đó.
