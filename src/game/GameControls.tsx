@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { emitTest, sendControl } from '../live/page';
 import type { StageView } from './useGame';
-import { GAME, type RoomCfg } from './config';
+import { GAME, shownTeacherName, type RoomCfg } from './config';
 
 // Nút riêng của Lớp Học Chữ ở trang điều khiển: điều khiển ván + giả lập phòng đông để thử bot
 const HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'];
@@ -15,6 +15,10 @@ function RoomSettings() {
   const [cfg, setCfg] = useState<RoomCfg>(GAME.defaultRoom);
   const [name, setName] = useState('');
   const [motto, setMotto] = useState('');
+  const [mins, setMins] = useState('');
+  const [danceText, setDanceText] = useState('');
+  const [danceSec, setDanceSec] = useState('');
+  const [bdText, setBdText] = useState('');
   const [msg, setMsg] = useState('');
   const file = useRef<HTMLInputElement>(null);
   const load = (r: Partial<RoomCfg>) => setCfg({ ...GAME.defaultRoom, ...r });
@@ -52,15 +56,33 @@ function RoomSettings() {
         <span className="font-normal text-amber-300">{msg}</span>
       </div>
       <div className={row}>
-        <span className={label}>Tên cô giáo</span>
-        <input className={input} placeholder={cfg.teacherName} maxLength={24} value={name} onChange={(e) => setName(e.target.value)} />
-        <Btn disabled={!name.trim()} onClick={() => save({ teacherName: name }, 'Đã đổi tên cô giáo').then((ok) => ok && setName(''))}>
+        <span className={label}>Người đứng lớp</span>
+        <select
+          className={input}
+          value={cfg.teacher}
+          onChange={(e) => {
+            const teacher = e.target.value as RoomCfg['teacher'];
+            const patch: Partial<RoomCfg> = { teacher, teacherVoice: teacher === 'thay' ? 'nam' : 'nu' };
+            // tên còn theo người cũ thì đổi luôn tên mặc định
+            if (teacher === 'thay' && /^cô(\s|$)/i.test(cfg.teacherName)) patch.teacherName = GAME.defaultThayName;
+            if (teacher === 'co' && /^thầy(\s|$)/i.test(cfg.teacherName)) patch.teacherName = GAME.defaultRoom.teacherName;
+            save(patch, teacher === 'thay' ? 'Đã đổi sang thầy giáo (giọng nam)' : 'Đã đổi sang cô Ngân');
+          }}
+        >
+          <option value="co">👩‍🏫 Cô Ngân (giọng nữ)</option>
+          <option value="thay">👨‍🏫 Thầy giáo (giọng nam)</option>
+        </select>
+      </div>
+      <div className={row}>
+        <span className={label}>Tên {cfg.teacher === 'thay' ? 'thầy' : 'cô'} giáo</span>
+        <input className={input} placeholder={shownTeacherName(cfg)} maxLength={24} value={name} onChange={(e) => setName(e.target.value)} />
+        <Btn disabled={!name.trim()} onClick={() => save({ teacherName: name }, 'Đã đổi tên').then((ok) => ok && setName(''))}>
           Lưu
         </Btn>
       </div>
       <div className={row}>
-        <span className={label}>Giọng cô giáo</span>
-        <select className={input} value={cfg.teacherVoice} onChange={(e) => save({ teacherVoice: e.target.value as RoomCfg['teacherVoice'] }, 'Đã đổi giọng')}>
+        <span className={label}>Giọng đọc</span>
+        <select className={input} disabled={cfg.teacher === 'thay'} value={cfg.teacher === 'thay' ? 'nam' : cfg.teacherVoice} onChange={(e) => save({ teacherVoice: e.target.value as RoomCfg['teacherVoice'] }, 'Đã đổi giọng')}>
           <option value="nu">Nữ (HoaiMy)</option>
           <option value="nam">Nam (NamMinh)</option>
         </select>
@@ -83,6 +105,46 @@ function RoomSettings() {
           🔔 Rung Chuông Đồng
         </label>
       </div>
+      <div className={row}>
+        <span className={label}>👮 Giám thị</span>
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={cfg.supervisor} onChange={(e) => save({ supervisor: e.target.checked }, e.target.checked ? 'Đã bật thầy giám thị' : 'Đã tắt thầy giám thị')} />
+          Đưa bạn ngồi im quá
+        </label>
+        <input className="w-14 rounded-lg bg-slate-800 px-2 py-1" type="number" min={1} max={60} placeholder={String(cfg.supervisorMin)} value={mins} onChange={(e) => setMins(e.target.value)} />
+        <span className="text-slate-400">phút ra ngoài</span>
+        <Btn disabled={!mins} onClick={() => save({ supervisorMin: Number(mins) }, 'Đã đổi số phút giám thị').then((ok) => ok && setMins(''))}>
+          Lưu
+        </Btn>
+      </div>
+      <div className={row}>
+        <span className={label}>💃 Nhảy múa</span>
+        <select className={input} value={cfg.dance} onChange={(e) => save({ dance: e.target.value as RoomCfg['dance'] }, 'Đã đổi giờ ra chơi nhảy múa')}>
+          <option value="off">Tắt</option>
+          <option value="mix">Xen kẽ với trò ra chơi khác</option>
+          <option value="always">Mọi giờ ra chơi đều nhảy</option>
+        </select>
+        <input className="w-14 rounded-lg bg-slate-800 px-2 py-1" type="number" min={10} max={120} placeholder={String(cfg.danceSec)} value={danceSec} onChange={(e) => setDanceSec(e.target.value)} />
+        <span className="text-slate-400">giây</span>
+        <Btn disabled={!danceSec} onClick={() => save({ danceSec: Number(danceSec) }, 'Đã đổi thời gian nhảy').then((ok) => ok && setDanceSec(''))}>
+          Lưu
+        </Btn>
+      </div>
+      <div className={row}>
+        <span className={label}>Thông báo nhảy</span>
+        <input className={input} placeholder={cfg.danceText} maxLength={80} value={danceText} onChange={(e) => setDanceText(e.target.value)} />
+        <Btn disabled={!danceText.trim()} onClick={() => save({ danceText }, 'Đã đổi thông báo nhảy múa').then((ok) => ok && setDanceText(''))}>
+          Lưu
+        </Btn>
+      </div>
+      <div className={row}>
+        <span className={label}>🎂 Biểu ngữ SN</span>
+        <input className={input} placeholder={cfg.birthdayText} maxLength={60} value={bdText} onChange={(e) => setBdText(e.target.value)} />
+        <Btn disabled={!bdText.trim()} onClick={() => save({ birthdayText: bdText }, 'Đã đổi chữ biểu ngữ sinh nhật').then((ok) => ok && setBdText(''))}>
+          Lưu
+        </Btn>
+      </div>
+      <div className="pl-[102px] text-slate-500">Biểu ngữ sinh nhật: gõ {'{ten}'} để chèn tên bạn đó vào giữa câu, không gõ thì tên hiện ở dòng dưới.</div>
       <div className={row}>
         <span className={label}>Nền lớp học</span>
         <input ref={file} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
@@ -190,6 +252,28 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
         <Btn onClick={() => sendControl('custom', 'recess:pick')}>⚖️ Ra chơi: chọn phe</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:roll')}>🙋 Ra chơi: điểm danh</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:heart')}>❤️ Ra chơi: thả tim</Btn>
+        <Btn onClick={() => sendControl('custom', 'recess:dance')}>💃 Ra chơi: nhảy múa thả tim</Btn>
+        {(() => {
+          // thầy giám thị chỉ vào được khi có bạn đang ngồi và không phải giờ chọn tổ / game lớn / nhảy múa
+          const why = !view
+            ? 'chưa mở trang stage'
+            : !view.seats.length
+              ? 'lớp chưa có bạn nào ngồi'
+              : view.phase === 'show' || view.phase === 'team' || (view.phase === 'recess' && view.recess?.game === 'dance')
+                ? 'đang game lớn / chọn tổ / nhảy múa'
+                : view.escort
+                  ? 'thầy đang đưa 1 bạn ra'
+                  : '';
+          return (
+            <span className="flex items-center gap-1">
+              <Btn disabled={!!why} onClick={() => sendControl('custom', 'escort')}>
+                👮 Thử: giám thị đưa bạn im lâu nhất ra
+              </Btn>
+              {why && <span className="text-xs text-amber-300">({why})</span>}
+            </span>
+          );
+        })()}
+        <Btn onClick={() => emitTest('like', { ...fake(6), likeCount: 15 })}>❤️ 15 tim</Btn>
         <Btn onClick={() => sendControl('custom', 'show:everest')}>🏔️ Game: Đường lên đỉnh Everest</Btn>
         <Btn onClick={() => sendControl('custom', 'show:chuong')}>🔔 Game: Rung Chuông Đồng</Btn>
         <Btn onClick={() => Array.from({ length: 10 }, (_, i) => emitTest('chat', { ...fake(i), comment: view?.show?.step === 'stake' ? ['10', '20'][i % 2] : 'ABCD'[Math.floor(Math.random() * 4)] }))}>

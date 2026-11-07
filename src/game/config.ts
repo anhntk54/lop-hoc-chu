@@ -10,12 +10,48 @@ export interface RoomCfg {
   everest: boolean;
   chuong: boolean;
   bg: string; // tên file ảnh nền riêng trong data/nen-lop/, rỗng = nền gốc
+  /** nhân vật đứng lớp: 'co' cô Ngân, 'thay' thầy giáo (ảnh nhan-vat/thay-giao, giọng nam hết, lời thoại đổi "cô" thành "thầy") */
+  teacher: 'co' | 'thay';
+  /** thầy giám thị: bạn ngồi im quá supervisorMin phút thì thầy tới đưa ra ngoài, bạn đang chờ tương tác nhiều nhất vào thay */
+  supervisor: boolean;
+  supervisorMin: number;
+  /** giờ ra chơi nhảy múa thả tim: 'off' tắt, 'mix' xen với các trò khác, 'always' mọi giờ ra chơi */
+  dance: 'off' | 'mix' | 'always';
+  danceText: string; // dòng thông báo trên màn hình
+  danceSec: number; // thời gian nhảy (giây)
+  /** biểu ngữ sinh nhật: dòng tiêu đề; có {ten} thì thay bằng tên bạn đó (khi đó không hiện thêm dòng tên) */
+  birthdayText: string;
+}
+
+/** tên hiện trên bảng tên / đọc trong lời thoại: đứng lớp là thầy mà tên còn "Cô ..." thì dùng tên thầy mặc định */
+export function shownTeacherName(c: RoomCfg) {
+  return c.teacher === 'thay' && /^cô(\s|$)/i.test(c.teacherName) ? GAME.defaultThayName : c.teacherName;
 }
 
 export const GAME = {
   // Tên lớp mặc định (hiện trên bảng hiệu). Chủ kênh đổi ở ô "Tên lớp" trang điều khiển.
   defaultChannelName: 'Lớp Học Chữ',
-  defaultRoom: { teacherName: 'Cô Ngân', teacherVoice: 'nu', motto: 'NGHE HẾT ĐỀ – GÕ MỚI ĂN ĐIỂM', everest: true, chuong: true, bg: '' } as RoomCfg,
+  defaultRoom: {
+    teacherName: 'Cô Ngân',
+    teacherVoice: 'nu',
+    motto: 'NGHE HẾT ĐỀ – GÕ MỚI ĂN ĐIỂM',
+    everest: true,
+    chuong: true,
+    bg: '',
+    teacher: 'co',
+    supervisor: true,
+    supervisorMin: 4,
+    dance: 'mix',
+    danceText: 'Cả lớp cùng nhảy, thả tim tăng cường sức khoẻ nào! 💪❤️',
+    danceSec: 30,
+    birthdayText: '🎉 Chúc mừng sinh nhật 🎂',
+  } as RoomCfg,
+  defaultThayName: 'Thầy Minh', // đổi sang thầy giáo mà tên vẫn là "Cô ..." thì dùng tên này
+  // ---------- Thầy giám thị (2026-11-07) ----------
+  escortMs: 9000, // thầy đi vào, đưa bạn ra cửa, bạn mới đi vào ghế
+  escortGapMs: 25_000, // 2 lần thầy vào lớp cách nhau ít nhất chừng này
+  // ---------- Giờ ra chơi nhảy múa (2026-11-07) ----------
+  dancers: 10, // số bạn lên bảng nhảy (bạn đang ngồi, còn tương tác)
 
   // ---------- Một tiết học ----------
   questionsPerRound: 20,
@@ -63,6 +99,7 @@ export const GAME = {
   bubbleMs: 5000, // bong bóng chat trên đầu (không hiện câu trả lời, không hiện câu có từ cấm)
   sleepAfterMs: 5 * 60_000, // ngồi im chừng này thì ngủ gật 💤, thỉnh thoảng cô gọi dậy
   // gõ sai: lên đứng cạnh cô (học sinh cá biệt) chừng này câu rồi về chỗ; tối đa standMax bạn cùng lúc, ai sai trước lên trước
+  standWrong: false, // chủ kênh bỏ đứng phạt lên bục (2026-11-07): false = gõ sai không phải lên đứng, chỉ bị cà khịa
   standQuestions: 3,
   standMax: 6, // 6 chỗ đứng trên sàn giữa cô và dãy bàn đầu
   bonusSec: 10, // hết giờ chưa ai đúng: mở 1 chữ, thêm chừng này giây
@@ -90,7 +127,7 @@ export const GAME = {
   monitorEveryQ: 4, // lớp trưởng đổi người: cách ít nhất chừng này câu cô mới báo lại
 
   // ---------- Giờ ra chơi (sau mỗi tiết) ----------
-  recessPlaySec: { rps: 15, callup: 12, pick: 15, roll: 10, heart: 20 }, // chế độ nhanh: ra chơi + bình chọn ~35 giây
+  recessPlaySec: { rps: 15, callup: 12, pick: 15, roll: 10, heart: 20, dance: 30 }, // dance: lấy theo cài đặt lớp (danceSec) // chế độ nhanh: ra chơi + bình chọn ~35 giây
   recessResultSec: 5,
   recessBoardSec: 5, // bảng "học sinh giỏi hôm nay"
   rpsPoints: 2, // oẳn tù tì thắng cô
@@ -164,8 +201,9 @@ export const GAME = {
   forgetAfterMs: 2 * 60 * 60_000,
 
   // ---------- Lớp ----------
-  seats: 30, // 4 dãy bàn dài trên cùng (7, 7, 8, 8 bạn); dãy cuối nằm dưới giao diện TikTok nên để trống
-  rowSeats: [7, 7, 8, 8], // số bạn mỗi dãy, cộng lại = seats (chủ kênh chốt 2026-11-04: bàn dài, các bạn nhỏ lại)
+  seats: 45, // 4 dãy bàn dài trên cùng (11, 11, 11, 12 bạn); dãy cuối nằm dưới giao diện TikTok nên để trống
+  // số bạn mỗi dãy, cộng lại = seats. 2026-11-07 chủ kênh chọn 45 ghế, vẫn hiện đủ tên (trước 7, 7, 8, 8 = 30 ghế)
+  rowSeats: [11, 11, 11, 12],
   // hết ghế: không vẽ đám đông đứng 2 bên cửa nữa (chủ kênh bỏ 2026-11-04), các bạn vẫn chơi, tính điểm,
   // hiện ở bảng "Sĩ số · Đang chờ vào lớp"
   standing: 0,

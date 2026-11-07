@@ -6,7 +6,7 @@ import { containsBanned } from '../live/bannedWords';
 import { NameBatcher } from '../live/scoreboard';
 import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
-import { GAME, type RoomCfg } from './config';
+import { GAME, shownTeacherName, type RoomCfg } from './config';
 import { QUESTIONS, SHOW_BANK } from './bank';
 import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
 import type { ShowKind } from './show';
@@ -44,9 +44,17 @@ export function useGame() {
   const roomRef = useRef<Classroom | null>(null);
   const cfg = useRef<RoomCfg>(GAME.defaultRoom); // cài đặt lớp (trang điều khiển)
   const applyCfg = (room: Classroom | null) => {
-    voice.teacher = cfg.current.teacherVoice === 'nam' ? 'm' : 'f';
+    const c = cfg.current;
+    const thay = c.teacher === 'thay';
+    // thầy giáo: giọng nam hết (cả từ tiếng Anh), tên còn để "Cô ..." thì gọi theo tên thầy mặc định
+    voice.teacher = thay || c.teacherVoice === 'nam' ? 'm' : 'f';
     if (!room) return;
-    room.teacherName = cfg.current.teacherName;
+    room.thay = thay;
+    room.teacherName = shownTeacherName(c);
+    room.supervisorOn = c.supervisor;
+    room.supervisorIdleMs = Math.max(1, Number(c.supervisorMin) || GAME.defaultRoom.supervisorMin) * 60_000;
+    room.dance = c.dance;
+    room.danceSec = Math.min(120, Math.max(10, Number(c.danceSec) || GAME.defaultRoom.danceSec));
     room.showsOn = { everest: cfg.current.everest, chuong: cfg.current.chuong };
   };
   const weekTop = useRef<WeekRow[]>([]);
@@ -173,7 +181,7 @@ export function useGame() {
       // tim thật x GAME.heartBoost: đủ 300 tim (60 tim thật) là cả lớp vỗ tay
       const reached = (e.totalLikes - likeBase.current) * GAME.heartBoost >= GAME.likesPerClap;
       if (reached) likeBase.current = e.totalLikes;
-      say(room.like(e.likeCount, Date.now(), reached));
+      say(room.like(e.likeCount, Date.now(), reached, person({ ...e, avatar: '' })));
     },
 
     onControl: (c) => {
@@ -196,6 +204,7 @@ export function useGame() {
         if (name) say(room.celebrate(s ?? person({ username: `kenh:${name}`, nickname: name, avatar: '' }), Date.now()));
       }
       if (c.action === 'custom' && c.text === 'goodbye') say(room.goodbye(Date.now()));
+      if (c.action === 'custom' && c.text === 'escort') say(room.forceEscort(Date.now()));
       if (c.action === 'custom' && c.text?.startsWith('recess:')) say(room.forceRecess(c.text.slice(7) as RecessGame, Date.now()));
       if (c.action === 'custom' && c.text?.startsWith('show:')) say(room.forceShow(c.text.slice(5) as ShowKind, Date.now()));
     },
@@ -290,7 +299,10 @@ export function useGame() {
           const sh = room.show;
           const step = sh?.steps[sh.i]?.k;
           const busy = mainSpeaking.current > 0;
-          sfx.music(sh?.kind ?? null, !sh || busy ? 0 : room.showAsking() ? (room.phaseEndsAt - now <= 5000 ? 2 : 1) : step === 'gather' || step === 'honor' ? 1 : 0);
+          // giờ ra chơi nhảy múa: nhạc nhảy, cô nói thì lùi xa
+          const dancing = room.phase === 'recess' && room.recess?.game === 'dance' && room.recess.stage === 'play';
+          if (dancing) sfx.music('nhay', busy ? 0 : room.phaseEndsAt - now <= 5000 ? 2 : 1);
+          else sfx.music(sh?.kind ?? null, !sh || busy ? 0 : room.showAsking() ? (room.phaseEndsAt - now <= 5000 ? 2 : 1) : step === 'gather' || step === 'honor' ? 1 : 0);
           if (!dirty.current && now - lastSent < 1000) return;
           dirty.current = false;
           const v = { ...room.view(now), cfg: cfg.current, weekTop: weekTop.current, todayTop: dayBoard(todayTop.current, room.weekDelta), talkTop: dayBoard(talkTop.current, room.talkDelta) };

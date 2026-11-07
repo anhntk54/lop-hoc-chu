@@ -1,4 +1,5 @@
-import { GAME } from './config';
+import { GAME, type RoomCfg } from './config';
+import { teacherText } from './xung-ho';
 import { LINES, PICK_TOPICS, POLLS, REWARDS, type Poll } from './loi-thoai';
 import { SLOTS, type Question, type Slot } from './questions';
 import { makeMath, type MathLevel } from './math';
@@ -133,7 +134,7 @@ export interface ReportRow {
   correct: number;
   at: number;
 }
-export type RecessGame = 'rps' | 'callup' | 'pick' | 'roll' | 'heart';
+export type RecessGame = 'rps' | 'callup' | 'pick' | 'roll' | 'heart' | 'dance';
 type RecessStage = 'play' | 'result' | 'board';
 
 export interface Student {
@@ -155,6 +156,14 @@ export interface Student {
   team: number; // tổ 1..4 (0 = chưa có tổ, chỉ trong lúc đang chọn tổ)
   life: Life; // học bạ cả đời (server gửi về lúc vào lớp, cộng dồn trong buổi)
   lastTalkAt?: number; // lần cuối được tính 1 tương tác (chống gõ dồn)
+  /** thầy giám thị đưa ra ngoài vì ngồi im lâu: không có ghế tới khi bình luận lại */
+  out?: boolean;
+  /** chỗ trong hàng chờ ghế (cùng điểm thì ai nhỏ hơn ngồi trước); vào lớp = lúc vào, bị đưa ra rồi quay lại = lúc quay lại */
+  seatAt: number;
+  /** số lần tương tác trong buổi (bình luận, quà): thầy giám thị mời bạn tương tác nhiều nhất vào thay */
+  talk: number;
+  /** được thầy giám thị mời vào thay chỗ: cùng điểm thì ngồi trước bạn chưa được mời */
+  prio: number;
 }
 
 export interface DeskGift {
@@ -293,6 +302,9 @@ interface Recess {
   votes: Map<string, 1 | 2>;
   roll: Answerer[];
   hearts: number;
+  /** nhảy múa thả tim: tim thật từng bạn (cảm ơn bạn thả nhiều nhất), đã nhắc giữa giờ chưa */
+  likers: Map<string, number>;
+  cheered: boolean;
 }
 
 export class Classroom {
@@ -414,11 +426,20 @@ export class Classroom {
   /** 1 câu cô nói (giọng nữ) */
   private t(text: string, priority = false): Say {
     // tên cô giáo đổi được ở trang điều khiển: lời thoại viết sẵn "cô Ngân" đọc theo tên mới
-    const name = this.teacherName;
-    const low = name.charAt(0).toLowerCase() + name.slice(1);
-    return { text: `F: ${text.split('Cô Ngân').join(name).split('cô Ngân').join(low)}`, priority };
+    return { text: `F: ${teacherText(text, this.teacherName, this.thay)}`, priority };
   }
   teacherName = GAME.defaultRoom.teacherName;
+  /** đứng lớp là thầy giáo: lời thoại đổi "cô" thành "thầy" */
+  thay = false;
+  /** thầy giám thị (cài đặt lớp): bật/tắt, ngồi im bao lâu thì bị đưa ra ngoài */
+  supervisorOn = false;
+  supervisorIdleMs = GAME.defaultRoom.supervisorMin * 60_000;
+  /** giờ ra chơi nhảy múa thả tim (cài đặt lớp) */
+  dance: RoomCfg['dance'] = 'off';
+  danceSec = GAME.defaultRoom.danceSec;
+  /** thầy giám thị đang đưa 1 bạn ra ngoài, bạn khác vào thay */
+  escort: { at: number; out: Student; seat: number; in: Student | null } | null = null;
+  private lastEscortAt = -Infinity;
   /** 2 game lớn đang bật (trang điều khiển) */
   showsOn: Record<ShowKind, boolean> = { everest: true, chuong: true };
   /** game lớn kế tiếp: xen kẽ, game nào tắt thì bỏ qua; tắt cả 2 thì null (thay bằng giờ ra chơi) */
@@ -445,7 +466,7 @@ export class Classroom {
     this.clock = Math.max(this.clock, now);
     let s = this.students.get(e.username);
     if (!s) {
-      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standLeft: 0, team: 0, life: emptyLife() };
+      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standLeft: 0, team: 0, life: emptyLife(), seatAt: now, talk: 0, prio: 0 };
       // vào lớp giữa tiết: xếp ngay vào tổ ít người (đang giờ chọn tổ thì để bạn tự chọn, hết giờ cô xếp)
       if (GAME.teamPickSec > 0 && this.phase !== 'team') s.team = this.smallestTeam(now);
       this.students.set(e.username, s);
@@ -454,6 +475,12 @@ export class Classroom {
       s.spoken = e.spoken;
       if (e.avatar) s.avatar = e.avatar;
       s.lastActive = now;
+      // bị thầy giám thị đưa ra ngoài rồi quay lại: xếp cuối hàng chờ ghế
+      if (s.out) {
+        s.out = false;
+        s.seatAt = now;
+        s.prio = 0;
+      }
     }
     return s;
   }
@@ -545,7 +572,8 @@ export class Classroom {
   seats(n = GAME.seats): Student[] {
     const away = (s: Student) => (this.clock - s.lastActive > GAME.seatActiveMs ? 1 : 0);
     return [...this.students.values()]
-      .sort((a, b) => b.score - a.score || away(a) - away(b) || a.reachedAt - b.reachedAt || b.session - a.session || a.joinedAt - b.joinedAt)
+      .filter((s) => !s.out)
+      .sort((a, b) => b.score - a.score || away(a) - away(b) || b.prio - a.prio || a.reachedAt - b.reachedAt || b.session - a.session || a.seatAt - b.seatAt)
       .slice(0, n);
   }
   /** giờ của nhịp gần nhất (để xếp ghế biết ai đã im lâu) */
@@ -1018,6 +1046,7 @@ export class Classroom {
 
   /** Cộng tương tác hôm nay (bảng Top tương tác, không hiện cách tính) */
   private addTalk(s: Student, n: number) {
+    s.talk += n;
     const d = this.talkDelta.get(s.username) ?? { nickname: s.nickname, points: 0 };
     d.nickname = s.nickname;
     d.points += n;
@@ -1086,10 +1115,13 @@ export class Classroom {
   }
 
   /** Tim: giờ ra chơi "thả tim" thì đếm; ngoài ra đủ mốc thì cả lớp vỗ tay */
-  like(count: number, now: number, reachedClap: boolean): Say[] {
+  like(count: number, now: number, reachedClap: boolean, who?: Pick<Person, 'username' | 'spoken' | 'nickname'>): Say[] {
     this.lastSeenAt = now;
-    if (this.recess?.game === 'heart' && this.recess.stage === 'play') {
-      this.recess.hearts += count * GAME.heartBoost;
+    // giờ nhảy múa / thả tim cả lớp: máy đếm tim thật (không nhân, không mốc: thả bao nhiêu nhảy bấy nhiêu), nhớ ai thả nhiều nhất để cảm ơn
+    if ((this.recess?.game === 'dance' || this.recess?.game === 'heart') && this.recess.stage === 'play') {
+      this.recess.hearts += count;
+      if (who) this.recess.likers.set(who.username, (this.recess.likers.get(who.username) ?? 0) + count);
+      if (who) this.likerNames.set(who.username, { spoken: who.spoken, nickname: who.nickname });
       return [];
     }
     if (!reachedClap) return [];
@@ -1164,7 +1196,7 @@ export class Classroom {
     for (const s of this.students.values()) if (s.standLeft > 0) s.standLeft--;
     let free = GAME.standMax - [...this.students.values()].filter((s) => s.standLeft > 0).length;
     const sentUp: Student[] = [];
-    for (const u of this.wrong) {
+    for (const u of GAME.standWrong ? this.wrong : []) {
       if (free <= 0) break;
       const s = this.students.get(u);
       if (!s || s.standLeft > 0) continue;
@@ -1224,8 +1256,10 @@ export class Classroom {
 
   // ---------- giờ ra chơi ----------
   private startRecess(now: number, forced?: RecessGame): Say[] {
-    const choices = RECESS_GAMES.filter((g) => g !== this.lastRecess);
-    let game = forced ?? choices[Math.floor(this.rand() * choices.length)];
+    // nhảy múa thả tim (cài đặt lớp): 'always' mọi giờ ra chơi, 'mix' bốc chung với các trò khác
+    const pool: RecessGame[] = this.dance === 'mix' ? [...RECESS_GAMES, 'dance'] : RECESS_GAMES;
+    const choices = pool.filter((g) => g !== this.lastRecess);
+    let game = forced ?? (this.dance === 'always' ? 'dance' : choices[Math.floor(this.rand() * choices.length)]);
     let callTarget: Student | null = null;
     let callQ: Question | null = null;
     if (game === 'callup') {
@@ -1250,15 +1284,18 @@ export class Classroom {
       votes: new Map(),
       roll: [],
       hearts: 0,
+      likers: new Map(),
+      cheered: false,
     };
-    this.setPhase('recess', now, GAME.recessPlaySec[game]);
+    this.setPhase('recess', now, game === 'dance' ? this.danceSec : GAME.recessPlaySec[game]);
     const out: Say[] = [this.line0('recessIntro')];
     const r = this.recess;
     if (game === 'rps') out.push(this.line0('rpsIntro'));
     if (game === 'callup') out.push(this.t(this.line('callUp', callTarget!.spoken)), this.t(`${callQ!.kind} ${callQ!.clue}`));
     if (game === 'pick') out.push(this.t(this.line('pickIntro', r.pick[0], r.pick[1])));
     if (game === 'roll') out.push(this.line0('rollIntro'));
-    if (game === 'heart') out.push(this.t(this.line('heartIntro', String(GAME.heartTarget))));
+    if (game === 'heart') out.push(this.line0('heartIntro'));
+    if (game === 'dance') return this.mainOf([this.line0('danceIntro')]);
     return this.mainOf(out);
   }
 
@@ -1326,12 +1363,18 @@ export class Classroom {
       const names = first.slice(0, 3).map((a) => this.students.get(a.username)?.spoken ?? 'bạn');
       out.push(first.length ? this.t(this.line('rollResult', names.join(', '))) : this.line0('rollNobody'));
     }
+    // thả tim cả lớp (chủ kênh 2026-11-07): bỏ mốc 300, chỉ đếm, hết giờ đọc tổng số tim + cảm ơn bạn thả nhiều nhất
     if (r.game === 'heart') {
-      if (r.hearts >= GAME.heartTarget) {
-        for (const s of this.students.values()) if (now - s.lastActive < 600_000) this.award(s, 1, now, false);
-        out.push(this.line0('heartWin'));
+      if (r.hearts > 0) {
+        out.push(this.t(this.line('heartDone', String(r.hearts), this.topLiker())));
         this.clapUntil = now + GAME.clapSec * 1000;
-      } else out.push(this.t(this.line('heartFail', String(r.hearts))));
+      } else out.push(this.line0('heartNobody'));
+    }
+    if (r.game === 'dance') {
+      if (r.hearts > 0) {
+        out.push(this.t(this.line('danceThanks', String(r.hearts), this.topLiker())));
+        this.clapUntil = now + GAME.clapSec * 1000;
+      } else out.push(this.line0('danceNobody'));
     }
     return this.mainOf([...out, ...this.checkMonitor()]);
   }
@@ -1821,6 +1864,11 @@ export class Classroom {
   }
 
   /** Nút "Ra chơi ngay" ở trang điều khiển: chơi luôn 1 trò */
+  /** Nút thử ở trang điều khiển: thầy giám thị vào ngay, đưa bạn im lâu nhất ra (cần có bạn đang chờ ghế) */
+  forceEscort(now: number): Say[] {
+    return this.supervisorTick(now, true);
+  }
+
   forceRecess(game: RecessGame, now: number): Say[] {
     return this.startRecess(now, game);
   }
@@ -1838,6 +1886,13 @@ export class Classroom {
       if (this.rand() < 0.5) extra.push({ ...this.line0('quietHalfway'), ttl: 5000 });
     }
     extra.push(...this.engageTick(now));
+    extra.push(...this.supervisorTick(now));
+    // giờ nhảy múa: được nửa giờ thì cô đọc số tim, khen bạn thả nhiều nhất (đồng hồ vẫn chạy)
+    const rc = this.recess;
+    if (this.phase === 'recess' && rc?.game === 'dance' && rc.stage === 'play' && !rc.cheered && now - this.phaseStartedAt >= this.danceSec * 500) {
+      rc.cheered = true;
+      extra.push({ ...this.t(this.line('danceCheer', String(rc.hearts), this.topLiker())), warn: true });
+    }
     extra.push(...this.announce.splice(0)); // chúc mừng lên lớp / huy hiệu mới
     // còn 5 giây: cô nhắc sắp hết giờ (đồng hồ vẫn chạy)
     const asking = this.phase === 'question' || this.phase === 'bonus';
@@ -1896,6 +1951,51 @@ export class Classroom {
       case 'vote':
         return this.newRound(now);
     }
+  }
+
+  /** tên đọc được của bạn thả tim nhiều nhất giờ nhảy múa (rỗng: chưa ai, hoặc tên không đọc được) */
+  private topLiker() {
+    const top = [...(this.recess?.likers ?? [])].sort((a, b) => b[1] - a[1])[0];
+    const name = top ? (this.likerNames.get(top[0])?.spoken ?? '') : '';
+    return name === 'bạn' ? '' : name;
+  }
+  private likerNames = new Map<string, { spoken: string; nickname: string }>();
+
+  /**
+   * Thầy giám thị (2026-11-07): bạn đang ngồi mà im quá supervisorIdleMs (chủ kênh chỉnh số phút) thì thầy vào lớp đưa ra ngoài,
+   * mỗi lần 1 bạn, im lâu nhất trước. Bạn đang chờ ghế còn tương tác vào thay: điểm tiết cao nhất, rồi tương tác nhiều nhất.
+   * Không ai chờ thì thôi (không để ghế trống). Bị đưa ra thì bình luận lại là về hàng chờ.
+   */
+  private supervisorTick(now: number, force = false): Say[] {
+    if (this.escort && now - this.escort.at >= GAME.escortMs) this.escort = null;
+    if (!force && (!this.supervisorOn || this.escort || now - this.lastEscortAt < GAME.escortGapMs)) return [];
+    if (this.escort) return [];
+    if (this.phase === 'show' || this.phase === 'team' || (this.phase === 'recess' && this.recess?.game === 'dance')) return [];
+    const seated = this.seats();
+    const idle = (s: Student) => now - s.lastActive;
+    const busy = new Set([this.walk?.username, this.recess?.callTarget?.username]);
+    const victim = seated
+      .filter((s) => (force || idle(s) > this.supervisorIdleMs) && s.standLeft === 0 && !busy.has(s.username))
+      .sort((a, b) => a.lastActive - b.lastActive)[0];
+    if (!victim) return [];
+    const inSeat = new Set(seated.map((s) => s.username));
+    const waiting = [...this.students.values()].filter((s) => !s.out && !inSeat.has(s.username) && (force || idle(s) <= this.supervisorIdleMs));
+    // tự động: không ai chờ ghế thì thôi (không để ghế trống). Nút thử ở trang điều khiển: vẫn đưa ra, ghế để trống
+    if (!waiting.length && !force) return [];
+    const top = Math.max(...waiting.map((s) => s.score));
+    const pick = waiting.filter((s) => s.score === top).sort((a, b) => b.talk - a.talk || b.lastActive - a.lastActive)[0];
+    const seat = seated.indexOf(victim);
+    victim.out = true;
+    if (pick) {
+      pick.prio = 1;
+      pick.seatAt = Math.min(pick.seatAt, victim.seatAt);
+    }
+    const newcomer = this.seats().find((s) => !inSeat.has(s.username)) ?? null;
+    this.escort = { at: now, out: victim, seat, in: newcomer };
+    this.lastEscortAt = now;
+    // đọc liền (không chờ lúc rảnh như câu nói thêm, kẻo bị bỏ), đồng hồ vẫn chạy
+    const text = newcomer ? this.line('escort', victim.spoken, newcomer.spoken) : this.line('escortAlone', victim.spoken);
+    return [{ ...this.t(text, true), warn: true }];
   }
 
   /**
@@ -2102,6 +2202,14 @@ export class Classroom {
       gifts: this.giftPile,
       lastFlowerAt: this.lastFlowerAt,
       clapping: now < this.clapUntil,
+      // thầy giám thị đang đưa 1 bạn ra cửa (seat: ghế cũ), bạn mới đi vào ghế inSeat
+      escort: this.escort && {
+        at: this.escort.at,
+        seat: this.escort.seat,
+        out: { username: this.escort.out.username, nickname: this.escort.out.nickname, girl: this.escort.out.girl },
+        in: this.escort.in && { username: this.escort.in.username, nickname: this.escort.in.nickname, girl: this.escort.in.girl },
+        inSeat: this.escort.in ? seated.indexOf(this.escort.in) : -1,
+      },
       recess: r && {
         game: r.game,
         stage: r.stage,
@@ -2118,6 +2226,10 @@ export class Classroom {
         roll: r.roll.slice(0, GAME.rollWinners).map((a) => a.nickname),
         hearts: r.hearts,
         heartTarget: GAME.heartTarget,
+        topLiker: (() => {
+          const top = [...r.likers].sort((a, b) => b[1] - a[1])[0];
+          return top ? { nickname: this.likerNames.get(top[0])?.nickname ?? '', n: top[1] } : null;
+        })(),
       },
     };
   }

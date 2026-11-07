@@ -14,12 +14,12 @@ Game tương tác cho TikTok LIVE. Màn hình là một lớp học 2D có cô g
 - Xếp ai nhanh nhất theo giờ TikTok ghi lúc người xem bấm gửi, không theo lúc máy nhận. Bảng **Top 5 nhanh nhất** ghi thời gian tới mili giây.
 - Top 5 được 10 / 7 / 5 / 3 / 3 điểm, chậm hơn +1 (chép đáp án trên khung chat chỉ được 1 điểm). Đúng liền 5, 12, 17 câu được thưởng thêm.
 - Phải gõ có dấu; kiểu bỏ dấu cũ và mới ("hóa" / "hoá") đều đúng. Nói chuyện thường không bị tính là trả lời sai.
-- Gõ sai thì lên đứng phạt giơ tay cạnh cô 3 câu.
 
 **Lớp học sống động**
-- Bình luận là có ghế (30 ghế trên 4 dãy bàn), chia 4 tổ thi đua, lớp trưởng mỗi tiết, bảng "Học sinh xuất sắc trong tiết", bảng "Top tương tác" (làm lại mỗi buổi live).
+- Bình luận là có ghế (45 ghế trên 4 dãy bàn, bảng tên vẫn đọc rõ), chia 4 tổ thi đua, lớp trưởng mỗi tiết, bảng "Học sinh xuất sắc trong tiết", bảng "Top tương tác" (làm lại mỗi buổi live).
 - Học bạ cả đời: điểm cộng dồn để lên lớp 1 tới lớp 12 rồi tốt nghiệp, huy hiệu theo số câu đúng. Đi học nhiều ngày liền thì cô nhớ mặt. Gõ "sinh nhật" thì có bánh kem.
-- Giờ ra chơi (oẳn tù tì, kiểm tra miệng, chọn phe, điểm danh, thả tim) và 2 game lớn **Đường lên đỉnh Everest**, **Rung Chuông Đồng** (trắc nghiệm A/B/C/D, nhạc nền tự tạo).
+- **Thầy giám thị**: bạn ngồi im quá vài phút (chỉnh được) thì thầy vào lớp đưa ra ngoài, bạn đang chờ ghế tương tác nhiều nhất vào thay. Bình luận lại là về hàng chờ.
+- Giờ ra chơi (oẳn tù tì, kiểm tra miệng, chọn phe, điểm danh, thả tim có máy đếm, **nhảy múa thả tim**: cả lớp lên bảng nhảy, máy đếm tổng số tim, cô cảm ơn bạn thả nhiều nhất) và 2 game lớn **Đường lên đỉnh Everest**, **Rung Chuông Đồng** (trắc nghiệm A/B/C/D, nhạc nền tự tạo).
 - Cô Ngân có 3 bộ trang phục, đổi sau mỗi tiết, nhiều tư thế theo tình huống. Giọng nữ Edge TTS tiếng Việt, vài trăm câu thoại: khen "thần đồng" khi trả lời siêu nhanh, trêu nhẹ khi sai, chào theo giờ.
 
 **Quà chỉ để cảm ơn**
@@ -82,8 +82,12 @@ Dùng OBS cũng được: thêm nguồn **Browser**, cùng đường dẫn và k
 
 - **Tên lớp**: đổi chữ trên bảng hiệu.
 - **🏫 Cài đặt lớp** (đổi là màn hình đổi ngay, không cần tải lại, tắt máy vẫn nhớ):
-  - **Tên cô giáo**: bảng tên trên ngực và những câu cô tự xưng tên.
-  - **Giọng cô giáo**: nữ (HoaiMy) hoặc nam (NamMinh).
+  - **Người đứng lớp**: cô Ngân hoặc thầy giáo. Chọn thầy thì giọng nam hết (kể cả từ tiếng Anh), lời thoại và chữ trên màn hình tự đổi "cô" thành "thầy".
+  - **Tên cô / thầy giáo**: bảng tên trên ngực và những câu tự xưng tên.
+  - **Giọng đọc**: nữ (HoaiMy) hoặc nam (NamMinh) cho cô Ngân.
+  - **👮 Giám thị**: bật tắt, số phút ngồi im thì bị đưa ra ngoài.
+  - **💃 Nhảy múa**: tắt / xen kẽ với trò ra chơi khác / mọi giờ ra chơi; số giây nhảy; dòng thông báo trên màn hình.
+  - **🎂 Biểu ngữ SN**: chữ trên biểu ngữ sinh nhật, gõ `{ten}` để chèn tên bạn đó.
   - **Chữ bảng đỏ**: dòng khẩu hiệu phía trên bảng đen, tối đa 40 ký tự.
   - **Cuộc thi**: bật tắt Everest, Rung Chuông Đồng ngay trong buổi live. Tắt cả 2 thì chỉ có giờ ra chơi. Game đang chơi dở vẫn chơi hết.
   - **Nền lớp học**: chọn ảnh dọc 9:16 (PNG, JPG, WEBP, tối đa 12 MB). Game tự vẽ tấm bảng đen lên ảnh mới. Bấm **Về nền gốc** để trả lại.

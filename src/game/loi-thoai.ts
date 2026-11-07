@@ -1012,23 +1012,59 @@ export const LINES = {
     'Điểm danh mà không ai trả lời. Cả lớp trốn học hết rồi.',
   ] as L0,
 
+  // thả tim cả lớp (chủ kênh 2026-11-07): không còn mốc 300, máy chỉ đếm, thả bao nhiêu nhảy bấy nhiêu
   heartIntro: [
-    (t) => `Thử thách thả tim! Ba mươi giây, cả lớp thả đủ ${t} tim thì ai cũng được một điểm.`,
-    (t) => `Cả lớp thả tim đi! Đủ ${t} tim trong ba mươi giây là có quà.`,
-    (t) => `Tim nào tim nào! Cần ${t} tim trong ba mươi giây.`,
-    (t) => `Thả tim lẹ lên cả lớp, đủ ${t} tim cô cộng điểm cả lớp.`,
-  ] as L1,
-  heartWin: [
-    'Đủ tim rồi! Cả lớp mỗi người một điểm.',
-    'Lớp mình đoàn kết quá. Một điểm cho tất cả!',
-    'Thành công! Cô cộng mỗi bạn một điểm.',
-    'Tim đầy rồi, cả lớp được điểm. Cô vui quá.',
+    'Thả tim cả lớp! Chạm màn hình thả tim đi nào, thả bao nhiêu máy đếm bấy nhiêu.',
+    'Giờ ra chơi thả tim! Cả lớp thả thật nhiều, xem lớp mình được bao nhiêu tim nha.',
+    'Tim nào tim nào! Ai cũng chạm màn hình thả tim đi, cô đếm hết.',
+    'Thả tim tiếp sức cho lớp nào! Máy đếm đang chạy rồi đó.',
   ] as L0,
-  heartFail: [
-    (c) => `Mới được ${c} tim thôi, chưa đủ. Lần sau thả mạnh tay hơn nha.`,
-    (c) => `${c} tim, thiếu chút xíu. Tiếc quá cả lớp ơi.`,
-    (c) => `Chỉ có ${c} tim. Ngón tay lớp mình yếu quá.`,
-    (c) => `${c} tim thôi hả? Cô buồn nhẹ.`,
+  // c = tổng tim, n = bạn thả nhiều nhất (rỗng thì thôi)
+  heartDone: [
+    (c, n) => `Cả lớp thả được ${c} tim! ${n ? `Cảm ơn ${n} thả nhiều tim nhất, ` : ''}cảm ơn cả lớp nhiều nha.`,
+    (c, n) => `Wow, ${c} tim luôn! ${n ? `${n} là cây thả tim số một. ` : ''}Cô cảm ơn cả lớp nha.`,
+    (c, n) => `Tổng kết: ${c} tim! Lớp mình đoàn kết quá. ${n ? `Đặc biệt cảm ơn ${n} nha.` : ''}`,
+  ] as L2,
+  heartNobody: [
+    'Chưa có tim nào hết. Lần sau nhớ chạm màn hình thả tim cho lớp nha.',
+    'Không ai thả tim hả? Cô buồn nhẹ, lần sau thả cho cô với nha.',
+  ] as L0,
+
+  // ---------- Giờ ra chơi nhảy múa thả tim (2026-11-07) ----------
+  danceIntro: [
+    'Giờ ra chơi! Cả lớp lên bảng nhảy múa hát ca nào. Bên ngoài thả tim tăng cường sức khoẻ cho lớp mình nha!',
+    'Nhạc lên! Các bạn lên bảng quẩy đi, ai ở ngoài thì thả tim cổ vũ cho cả lớp khoẻ re nào.',
+    'Ngồi học mỏi lưng rồi, đứng dậy nhảy một bài cho khoẻ nha cả lớp! Thả tim tiếp sức cho các bạn đi nào.',
+    'Giờ ra chơi bung xoã! Cả lớp lên nhảy, tim bay càng nhiều cả lớp càng khoẻ.',
+  ] as L0,
+  // giữa giờ nhảy: c = số tim tới giờ, n = bạn thả nhiều nhất (rỗng thì chưa ai)
+  danceCheer: [
+    (c, n) => `Đã được ${c} tim rồi! ${n ? `${n} thả tim nhiệt tình quá. ` : ''}Thả tiếp nữa nào cả lớp!`,
+    (c, n) => `${c} tim rồi nha, nhảy tiếp đi! ${n ? `Cô thấy ${n} thả tim không nghỉ luôn.` : 'Ai chưa thả thì chạm màn hình liền nha.'}`,
+    (c, n) => `Máy đếm báo ${c} tim! ${n ? `${n} đang dẫn đầu thả tim đó. ` : ''}Quẩy lên cả lớp ơi!`,
+  ] as L2,
+  // hết giờ nhảy: c = tổng tim, n = bạn thả nhiều nhất
+  danceThanks: [
+    (c, n) => `Hết giờ ra chơi! Cả lớp thả được ${c} tim, khoẻ re luôn. ${n ? `Cảm ơn ${n} thả nhiều tim nhất, ` : ''}cảm ơn cả lớp nhiều nha!`,
+    (c, n) => `Tổng kết: ${c} tim! Cô cảm ơn cả lớp đã tiếp sức. ${n ? `Đặc biệt cảm ơn ${n} nha.` : ''} Về chỗ học tiếp thôi nào.`,
+    (c, n) => `Wow, ${c} tim! Lớp mình nhảy đẹp mà tim cũng nhiều. ${n ? `${n} là cây thả tim số một hôm nay. ` : ''}Cảm ơn cả lớp nha!`,
+  ] as L2,
+  danceNobody: [
+    'Nhảy mà không ai thả tim hết. Thôi về chỗ học tiếp, lần sau nhớ tiếp sức cho lớp nha.',
+    'Không có tim nào luôn, cô nhảy một mình hơi quê. Về chỗ thôi cả lớp.',
+  ] as L0,
+
+  // ---------- Thầy giám thị đưa bạn ngồi im lâu ra ngoài (2026-11-07): a = bạn ra, b = bạn vào ----------
+  escort: [
+    (a, b) => `Thầy giám thị tới rồi kìa! ${a} ngồi im lâu quá nên thầy mời ra ngoài hít thở chút nha. Mời ${b} vào lớp ngồi thay.`,
+    (a, b) => `Ối, giám thị đi tuần! ${a} ngủ quên rồi, ra ngoài rửa mặt nha. ${b} tương tác nhiệt tình, vào lớp ngồi đi.`,
+    (a, b) => `${a} im lặng lâu quá, thầy giám thị mời ra ngoài rồi. Chỗ trống dành cho ${b} nha, vào đi bạn.`,
+    (a, b) => `Giám thị bắt được ${a} ngồi im rồi! Ra ngoài một lát, muốn vào lại thì bình luận nha. Mời ${b} vào lớp.`,
+  ] as L2,
+  // không ai chờ ghế (chủ kênh bấm nút thử): chỉ đưa bạn ra
+  escortAlone: [
+    (a) => `Thầy giám thị đi tuần! ${a} ngồi im lâu quá, ra ngoài hít thở chút nha. Muốn vào lại thì bình luận một câu là được.`,
+    (a) => `Ối, giám thị bắt được ${a} ngủ gật rồi! Ra ngoài rửa mặt đi, bình luận là thầy cho vào lại.`,
   ] as L1,
 };
 

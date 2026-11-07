@@ -23,6 +23,7 @@ const NAMES: SfxName[] = ['ting', 'drum', 'go', 'tick', 'bell', 'pop', 'clap', '
 /** Nhạc nền 2 game lớn: Everest 128 BPM La thứ, Rung Chuông Đồng 140 BPM Rê thứ. Mỗi ô là 1 nốt móc kép (1/16) */
 const TRACKS = {
   everest: { bpm: 128, chords: [[220, 261.6, 329.6], [174.6, 220, 261.6], [261.6, 329.6, 392], [196, 246.9, 293.7]] },
+  nhay: { bpm: 124, chords: [[261.6, 329.6, 392], [220, 261.6, 329.6], [174.6, 220, 261.6], [196, 246.9, 293.7]] }, // giờ ra chơi nhảy múa
   chuong: { bpm: 140, chords: [[293.7, 349.2, 440], [233.1, 293.7, 349.2], [174.6, 220, 261.6], [261.6, 329.6, 392]] },
 } as const;
 

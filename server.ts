@@ -71,12 +71,27 @@ let activeConn: InstanceType<typeof TikTokLiveConnection> | null = null;
 let lastRateControl: { action: string; text: string } | null = null;
 
 // Tên kênh (giọng đọc + tiêu đề) lưu ở settings.json cạnh file này, tắt server mở lại vẫn còn
-const SETTINGS_FILE = path.join(__dirname, 'settings.json');
+// SETTINGS_FILE: chạy thử dùng file khác (vd data-thu/settings.json) để không tự nối TikTok thật, không đụng cài đặt lớp thật
+const SETTINGS_FILE = process.env.SETTINGS_FILE || path.join(__dirname, 'settings.json');
 let lastNameControl: { action: string; text: string } | null = null;
 // tài khoản TikTok đang cần giữ kết nối: rớt thì tự kết nối lại, tắt server bật lại cũng tự kết nối
 let wantUser = '';
 // cài đặt lớp ở trang điều khiển: tên + giọng cô giáo, chữ bảng đỏ, bật tắt 2 game lớn, ảnh nền riêng (thiếu mục nào thì dùng GAME.defaultRoom)
-type RoomSettings = { teacherName?: string; teacherVoice?: 'nu' | 'nam'; motto?: string; everest?: boolean; chuong?: boolean; bg?: string };
+type RoomSettings = {
+  teacherName?: string;
+  teacherVoice?: 'nu' | 'nam';
+  motto?: string;
+  everest?: boolean;
+  chuong?: boolean;
+  bg?: string;
+  teacher?: 'co' | 'thay';
+  supervisor?: boolean;
+  supervisorMin?: number;
+  dance?: 'off' | 'mix' | 'always';
+  danceText?: string;
+  danceSec?: number;
+  birthdayText?: string;
+};
 let settings: { channelName?: string; tiktokUser?: string; room?: RoomSettings } = {};
 try {
   settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
@@ -477,12 +492,12 @@ app.get('/api/tts', async (req, res) => {
     const hype = req.query.hype === '1';
     // Giọng nữ, giọng nam (chọn ở trang điều khiển), thêm giọng tiếng Anh để đọc từ tiếng Anh cho chuẩn.
     // Chỉ nhận các giọng này, không cho truyền tên giọng tuỳ ý.
-    const voiceName = req.query.v === 'f' ? 'vi-VN-HoaiMyNeural' : req.query.v === 'm' ? 'vi-VN-NamMinhNeural' : req.query.v === 'en' ? 'en-US-AnaNeural' : TTS_VOICE;
+    const voiceName = req.query.v === 'f' ? 'vi-VN-HoaiMyNeural' : req.query.v === 'm' ? 'vi-VN-NamMinhNeural' : req.query.v === 'en' ? 'en-US-AnaNeural' : req.query.v === 'enm' ? 'en-US-GuyNeural' : TTS_VOICE;
     const key = `${voiceName}|${rate}|${hype}|${text}`;
     let audio = ttsCache.get(key);
     let fallback = false;
     if (!audio) {
-      const english = req.query.v === 'en';
+      const english = req.query.v === 'en' || req.query.v === 'enm';
       try {
         audio = await edgeTts(text, rate, hype, voiceName); // đã tự thử lại 4 lần bên trong
       } catch (err) {
@@ -546,6 +561,21 @@ app.post('/api/room-settings', (req, res) => {
   }
   if (typeof b.everest === 'boolean') patch.everest = b.everest;
   if (typeof b.chuong === 'boolean') patch.chuong = b.chuong;
+  if (b.teacher === 'co' || b.teacher === 'thay') patch.teacher = b.teacher;
+  if (typeof b.supervisor === 'boolean') patch.supervisor = b.supervisor;
+  if (b.supervisorMin !== undefined) patch.supervisorMin = Math.min(60, Math.max(1, Math.round(Number(b.supervisorMin)) || 4));
+  if (b.dance === 'off' || b.dance === 'mix' || b.dance === 'always') patch.dance = b.dance;
+  if (b.danceSec !== undefined) patch.danceSec = Math.min(120, Math.max(10, Math.round(Number(b.danceSec)) || 30));
+  if (typeof b.danceText === 'string') {
+    const t = cleanText(b.danceText, 80);
+    if (!t) return res.status(400).json({ success: false, error: 'Chưa nhập thông báo nhảy múa' });
+    patch.danceText = t;
+  }
+  if (typeof b.birthdayText === 'string') {
+    const t = cleanText(b.birthdayText, 60);
+    if (!t) return res.status(400).json({ success: false, error: 'Chưa nhập chữ biểu ngữ sinh nhật' });
+    patch.birthdayText = t;
+  }
   saveRoom(patch);
   res.json({ success: true, room: settings.room });
 });

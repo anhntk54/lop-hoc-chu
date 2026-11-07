@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { GameState, StageView } from './useGame';
-import { GAME } from './config';
+import { GAME, shownTeacherName } from './config';
+import { thayHoa } from './xung-ho';
 import { Hair } from './Hair';
 import { giftOf } from './quiz';
 import './stage.css';
@@ -15,13 +16,16 @@ const K = 1080 / 941;
 // Bàn dài + ghế băng vẽ đè lên dãy bàn lẻ trong ảnh nền (đo trên ảnh gốc): mép trên mặt bàn y, mép dưới b, 2 đầu bàn x1..x2.
 // n = số bạn ngồi mỗi dãy (chủ kênh chốt 2026-11-04: 7–8 bạn một dãy, các bạn nhỏ lại một chút). Dãy cuối nằm dưới giao diện TikTok nên để trống.
 const ROWS = [
-  { y: 812, b: 922, x1: 100, x2: 838, n: GAME.rowSeats[0], s: 0.92 },
-  { y: 942, b: 1069, x1: 72, x2: 870, n: GAME.rowSeats[1], s: 0.98 },
-  { y: 1093, b: 1232, x1: 45, x2: 902, n: GAME.rowSeats[2], s: 1.04 },
-  { y: 1253, b: 1414, x1: 28, x2: 922, n: GAME.rowSeats[3], s: 1.1 },
+  // 2026-11-07: 45 ghế, bàn kéo dài ra 2 bên cho đủ chỗ
+  { y: 812, b: 922, x1: 62, x2: 880, n: GAME.rowSeats[0], s: 0.92 },
+  { y: 942, b: 1069, x1: 40, x2: 902, n: GAME.rowSeats[1], s: 0.98 },
+  { y: 1093, b: 1232, x1: 20, x2: 921, n: GAME.rowSeats[2], s: 1.04 },
+  { y: 1253, b: 1414, x1: 8, x2: 933, n: GAME.rowSeats[3], s: 1.1 },
   { y: 1458, b: 1646, x1: 5, x2: 938, n: 0, s: 1.16 },
 ];
-const KID = 0.82; // các bạn nhỏ hơn bản ghế lẻ để ngồi vừa bàn dài
+const KID = 0.7; // các bạn nhỏ lại để 1 dãy ngồi 11–12 bạn (2026-11-07, trước 0.82 cho 7–8 bạn)
+// bảng tên KHÔNG thu nhỏ theo người: cỡ chữ theo dãy (dãy trên 15px, dãy dưới 18px), bằng hoặc to hơn hồi 30 ghế
+const NAME_FONT = 16.5;
 const SEAT_ROW: number[] = ROWS.flatMap((r, ri) => Array.from({ length: r.n }, () => ri));
 const SPRITE_H = 250; // chiều cao cả người
 const SHOW = 0.5; // ngồi ghế: chỉ hiện phần trên (đầu tới hông)
@@ -80,6 +84,43 @@ const ALL_IMGS = [
   ...CHUONG_POSES.map((p) => `/assets/nv/co-ngan/chuong/${p}.webp`),
 ];
 
+// Đứng lớp là thầy giáo (cài đặt lớp): chữ trên màn hình đổi "cô" thành "thầy". GameStage đặt cờ này mỗi lần vẽ, trước các khung con
+let THAY = false;
+const X = (s: string) => (THAY ? thayHoa(s) : s);
+
+// Thầy giáo (2026-11-07): 8 tư thế, ảnh gốc nhan-vat/thay-giao, tách nền ra public/assets/nv/thay (tools/tach-nen.mjs).
+// Tư thế cô Ngân (16 kiểu) đổi sang tư thế thầy gần nghĩa nhất. Bảng đen ở bên phải nên chỉ bảng = chỉ phải.
+const THAY_POSE: Record<string, string> = {
+  '01-dung': '01-dung',
+  '02-gioi-thieu': '02-giang-bai',
+  '03-chi-bang': '04-chi-phai',
+  '04-vay-chao': '08-vay-chao',
+  '05-dang-tay': '02-giang-bai',
+  '06-cuoi': '05-vui-mung',
+  '07-tay-nguc': '05-vui-mung',
+  '08-ngon-cai': '05-vui-mung',
+  '09-mung': '05-vui-mung',
+  '10-vo-tay': '05-vui-mung',
+  '11-nhun-vai': '06-buon',
+  '12-gai-dau': '07-suy-nghi',
+  '13-ngac-nhien': '07-suy-nghi',
+  '14-ngon-tro': '02-giang-bai',
+  '15-chong-hong': '01-dung',
+  '16-chi-trai': '03-chi-trai',
+};
+const THAY_IMGS = [...new Set(Object.values(THAY_POSE))].map((p) => `/assets/nv/thay/${p}.webp`);
+/** 2 game lớn khi thầy đứng lớp: thầy chỉ có 1 bộ đồ, chọn tư thế theo bước */
+function thayShowPose(v: StageView, now: number): string {
+  const sh = v.show!;
+  const alt = now % 6000 < 3000;
+  if (now - v.lastFlowerAt < 3000 || v.walk || v.clapping) return '05-vui-mung';
+  if (sh.step === 'gather') return '08-vay-chao';
+  if (sh.step === 'honor') return '05-vui-mung';
+  if (sh.stage === 'reveal' || sh.step === 'codeReveal') return sh.lastRight > 0 || sh.code?.solved ? '05-vui-mung' : '06-buon';
+  if (!(sh.stage === 'ask' && v.boardShown)) return '02-giang-bai';
+  return alt ? '04-chi-phai' : '07-suy-nghi';
+}
+
 function useNow(ms = 250) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -91,10 +132,11 @@ function useNow(ms = 250) {
 
 export function GameStage({ game }: { game: GameState }) {
   const now = useNow();
-  useEffect(() => {
-    for (const src of ALL_IMGS) new Image().src = src;
-  }, []);
   const v = game.view;
+  THAY = v?.cfg.teacher === 'thay';
+  useEffect(() => {
+    for (const src of [...(THAY ? THAY_IMGS : ALL_IMGS), ...GIAM_THI_IMGS]) new Image().src = src;
+  }, [THAY]);
   if (!v) {
     return (
       <div className="flex h-full items-center justify-center bg-black/60 p-20 text-center text-[48px] text-white">
@@ -129,7 +171,10 @@ export function GameStage({ game }: { game: GameState }) {
         {v.phase !== 'show' && <SeatHint now={now} asking={v.phase === 'question' || v.phase === 'bonus'} />}
         <Students v={v} now={now} />
         <FlowerWalk v={v} />
+        <Dancers v={v} />
+        <Escort v={v} />
       </motion.div>
+      <DanceBanner v={v} />
       <GiftBanner gift={game.lastGift} now={now} />
       <BirthdayBanner v={v} />
       <GoodbyeBanner v={v} />
@@ -175,11 +220,11 @@ function GiftMenu() {
   return (
     // cột hẹp bên phải bảng đen (như Quỹ lớp), mỗi món 1 dòng: không đè lên câu hỏi
     <div className="absolute right-[8px] top-[484px] z-[8] w-[168px] rotate-1 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-2 pb-1 pt-[2px] text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
-      <div className="whitespace-nowrap text-center text-[16px] font-extrabold leading-tight text-[#be185d]">🎁 Gửi tặng cô 💕</div>
+      <div className="whitespace-nowrap text-center text-[16px] font-extrabold leading-tight text-[#be185d]">{X('🎁 Gửi tặng cô 💕')}</div>
       {GAME.giftMenu.map((g) => (
         <div key={g.label} className="flex items-center gap-[2px] whitespace-nowrap text-[15px] font-semibold leading-[24px]">
           <span className="w-6 text-center text-[19px]">{g.icon}</span>
-          {g.caption}
+          {X(g.caption)}
         </div>
       ))}
     </div>
@@ -212,7 +257,7 @@ function FundParty({ v }: { v: StageView }) {
           className="absolute left-1/2 top-[650px] z-[70] w-[880px] -translate-x-1/2 rounded-[30px] border-4 border-white bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 px-6 py-4 text-center font-extrabold text-white shadow-2xl"
         >
           <div className="text-[44px] leading-tight">🎆 Quỹ lớp đủ {v.fund.party} bông hoa! 🎆</div>
-          <div className="text-[30px]">Cô cảm ơn cả lớp nhiều lắm 💕</div>
+          <div className="text-[30px]">{X('Cô cảm ơn cả lớp nhiều lắm 💕')}</div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -256,7 +301,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
         <div className="flex h-full flex-col items-center justify-center text-center">
           <div className="text-[64px] leading-none">Sắp vào học!</div>
           <div className="mt-6 text-[36px] leading-snug">
-            Cô xáo chữ, cả lớp đoán từ.
+            {X('Cô xáo chữ, cả lớp đoán từ.')}
             <br />
             Gõ đáp án vào <b className="text-[#ffe680]">bình luận</b>
             <br />
@@ -318,7 +363,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
                 transition={{ duration: 1.4, repeat: Infinity }}
                 className="mt-6 text-[40px] text-[#ffe680]"
               >
-                👂 Nghe cô đọc đề nè…
+                {X('👂 Nghe cô đọc đề nè…')}
               </motion.div>
             </div>
             )
@@ -352,7 +397,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
           {v.boardShown && <Slots slots={v.slots} reveal={v.phase === 'reveal'} />}
           {v.boardShown && v.math && v.phase !== 'reveal' && <div className="mt-2 text-center text-[28px] opacity-80">Gõ số vào bình luận</div>}
           {v.phase === 'bonus' && (
-            <div className="mt-auto text-center text-[28px] text-[#ffe680]">{v.math ? 'Thêm 10 giây, nhẩm lẹ lên!' : 'Cô mở thêm 1 chữ, thêm 10 giây!'}</div>
+            <div className="mt-auto text-center text-[28px] text-[#ffe680]">{v.math ? 'Thêm 10 giây, nhẩm lẹ lên!' : X('Cô mở thêm 1 chữ, thêm 10 giây!')}</div>
           )}
         </div>
       )}
@@ -459,7 +504,7 @@ function Vote({ v, left }: { v: StageView; left: number }) {
 function Praise({ v }: { v: StageView }) {
   return (
     <div className="flex h-full flex-col items-center">
-      <div className="text-[50px] leading-none text-[#ffe680]">🎁 Cô phát quà nè!</div>
+      <div className="text-[50px] leading-none text-[#ffe680]">{X('🎁 Cô phát quà nè!')}</div>
       <div className="mt-1 text-[28px] opacity-80">Bạn nhỏ giỏi nhất sau {v.qNo} câu</div>
       <div className="mt-4 w-full space-y-2">
         {v.praiseTop.map((s, i) => (
@@ -477,7 +522,7 @@ function Praise({ v }: { v: StageView }) {
           </motion.div>
         ))}
       </div>
-      <div className="mt-auto text-[30px] text-[#ffe680]">Chào cô, thả tim để được quà nha! 💕</div>
+      <div className="mt-auto text-[30px] text-[#ffe680]">{X('Chào cô, thả tim để được quà nha! 💕')}</div>
     </div>
   );
 }
@@ -537,7 +582,7 @@ function TeamPick({ v, left }: { v: StageView; left: number }) {
         ))}
       </div>
       <div className="mt-auto text-[24px] leading-tight opacity-85">
-        {v.noTeam > 0 ? `${v.noTeam} bạn chưa chọn, hết giờ cô xếp giùm` : 'Chưa chọn thì cô tự xếp vào tổ ít người'}
+        {X(v.noTeam > 0 ? `${v.noTeam} bạn chưa chọn, hết giờ cô xếp giùm` : 'Chưa chọn thì cô tự xếp vào tổ ít người')}
       </div>
     </div>
   );
@@ -852,7 +897,7 @@ function BellBoard({ v }: { v: StageView }) {
 }
 
 // ---------- Giờ ra chơi ----------
-const RECESS_TITLE = { rps: 'Oẳn tù tì với cô', callup: 'Kiểm tra miệng', pick: 'Chọn phe', roll: 'Điểm danh siêu tốc', heart: 'Thả tim cả lớp' };
+const RECESS_TITLE = { rps: 'Oẳn tù tì với cô', callup: 'Kiểm tra miệng', pick: 'Chọn phe', roll: 'Điểm danh siêu tốc', heart: 'Thả tim cả lớp', dance: '💃 Nhảy múa thả tim' };
 
 function Recess({ v, left }: { v: StageView; left: number }) {
   const r = v.recess!;
@@ -866,7 +911,7 @@ function Recess({ v, left }: { v: StageView; left: number }) {
         </span>
         {playing && <Timer left={left} />}
       </div>
-      {r.game !== 'callup' && <div className="mt-1 shrink-0 text-[48px] leading-tight text-[#ffe680]">{RECESS_TITLE[r.game]}</div>}
+      {r.game !== 'callup' && <div className="mt-1 shrink-0 text-[48px] leading-tight text-[#ffe680]">{X(RECESS_TITLE[r.game])}</div>}
       {r.game === 'rps' && (
         <>
           <div className="mt-3 flex w-full justify-center gap-6 text-[34px]">
@@ -882,7 +927,7 @@ function Recess({ v, left }: { v: StageView; left: number }) {
               </div>
             ))}
           </div>
-          <div className="mt-3 text-[32px]">{playing ? 'Gõ: búa, kéo hoặc bao' : r.teacher ? `Cô ra: ${r.teacher}` : 'Không ai chơi'}</div>
+          <div className="mt-3 text-[32px]">{playing ? 'Gõ: búa, kéo hoặc bao' : r.teacher ? X(`Cô ra: ${r.teacher}`) : 'Không ai chơi'}</div>
         </>
       )}
       {r.game === 'callup' && (
@@ -929,15 +974,28 @@ function Recess({ v, left }: { v: StageView; left: number }) {
           </div>
         </>
       )}
+      {r.game === 'dance' && (
+        <>
+          <div className="mt-1 text-[32px]">Thả tim tiếp sức cho cả lớp nào!</div>
+          <HeartCounter n={r.hearts} />
+          {r.topLiker && r.topLiker.nickname && (
+            <div className="mt-1 max-w-full truncate px-4 text-[28px] text-[#ffb3c8]">
+              👑 Thả tim nhiều nhất: {r.topLiker.nickname} · {r.topLiker.n}
+            </div>
+          )}
+          {!playing && <div className="mt-1 text-[32px] text-[#9df29d]">Cảm ơn cả lớp! 💕</div>}
+        </>
+      )}
+      {/* thả tim cả lớp (chủ kênh 2026-11-07): không còn mốc 0/300, máy chỉ đếm số tim thật */}
       {r.game === 'heart' && (
         <>
-          <div className="mt-4 text-[90px] leading-none">❤️</div>
-          <div className="mt-2 h-[40px] w-[460px] overflow-hidden rounded-full bg-white/20">
-            <div className="h-full rounded-full bg-[#ff5d8f] transition-all duration-300" style={{ width: `${Math.min(100, (r.hearts / r.heartTarget) * 100)}%` }} />
-          </div>
-          <div className="mt-2 text-[36px]">
-            {r.hearts}/{r.heartTarget} tim
-          </div>
+          <div className="mt-2 text-[32px]">Chạm màn hình thả tim nào!</div>
+          <HeartCounter n={r.hearts} />
+          {r.topLiker && r.topLiker.nickname && (
+            <div className="mt-1 max-w-full truncate px-4 text-[28px] text-[#ffb3c8]">
+              👑 Thả tim nhiều nhất: {r.topLiker.nickname} · {r.topLiker.n}
+            </div>
+          )}
         </>
       )}
     </div>
@@ -1093,6 +1151,7 @@ function showPose(v: StageView, now: number): string {
 
 function Teacher({ v, now }: { v: StageView; now: number }) {
   const gotFlower = now - v.lastFlowerAt < 3000;
+  if (THAY) return <TeacherThay v={v} now={now} gotFlower={gotFlower} />;
   // trang phục: bộ trắng ở thư mục gốc, bộ khác ở thư mục con; 2 game lớn mặc bộ của game
   const src = v.show
     ? `/assets/nv/co-ngan/${v.show.kind}/${showPose(v, now)}.webp`
@@ -1120,6 +1179,207 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/** Thầy giáo đứng lớp: cùng chỗ đứng với cô, bảng tên xanh */
+function TeacherThay({ v, now, gotFlower }: { v: StageView; now: number; gotFlower: boolean }) {
+  const pose = v.show ? thayShowPose(v, now) : (THAY_POSE[teacherPose(v, now)] ?? '01-dung');
+  return (
+    <div className="absolute left-[86px] top-[410px] h-[490px] w-[320px]">
+      <img src={`/assets/nv/thay/${pose}.webp`} className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_8px_rgba(0,0,0,0.25)]" />
+      <div className="absolute left-1/2 top-[118px] z-10 -translate-x-1/2 -rotate-3 whitespace-nowrap rounded-full border-[3px] border-[#fff6dd] bg-gradient-to-b from-[#3b82f6] to-[#1d4ed8] px-3 py-[1px] text-[22px] font-extrabold text-white shadow-[0_3px_0_#1e3a8a]">
+        📘 {shownTeacherName(v.cfg)}
+      </div>
+      <AnimatePresence>
+        {gotFlower && (
+          <motion.div key={v.lastFlowerAt} initial={{ scale: 0, y: 80 }} animate={{ scale: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute left-[130px] top-[150px] text-[80px]">
+            💐
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ---------- Thầy giám thị (2026-11-07) ----------
+// Ảnh riêng bỏ vào nhan-vat/thay-giam-thi rồi chạy: node tools/tach-nen.mjs thay-giam-thi giam-thi (cần có 01-dung.png).
+// Chưa có ảnh thì mượn ảnh thầy giáo, đổi màu áo + băng đỏ "GIÁM THỊ" cho khác người đứng lớp.
+const GIAM_THI_IMGS = ['/assets/nv/giam-thi/01-dung.webp', '/assets/nv/thay/01-dung.webp'];
+const DOOR: [number, number] = [1000, 690]; // cửa lớp bên phải (toạ độ góc trên trái nhân vật)
+function GiamThi({ h }: { h: number }) {
+  const [own, setOwn] = useState(true);
+  return (
+    <div className="relative" style={{ width: h * 0.62, height: h }}>
+      <img
+        src={own ? GIAM_THI_IMGS[0] : GIAM_THI_IMGS[1]}
+        onError={() => setOwn(false)}
+        className="h-full w-full object-contain object-bottom drop-shadow-[0_6px_5px_rgba(0,0,0,0.35)]"
+        style={own ? undefined : { filter: 'hue-rotate(185deg) saturate(1.6) brightness(0.92)' }}
+      />
+      <div className="absolute left-1/2 top-[26%] -translate-x-1/2 -rotate-6 whitespace-nowrap rounded-md border-2 border-white bg-[#dc2626] px-2 text-[17px] font-extrabold text-white shadow">
+        👮 GIÁM THỊ
+      </div>
+    </div>
+  );
+}
+
+/** Thầy giám thị đi từ cửa tới ghế bạn ngồi im lâu, dắt bạn ra cửa; bạn đang chờ đi từ cửa vào ghế trống */
+function Escort({ v }: { v: StageView }) {
+  const e = v.escort;
+  if (!e) return null;
+  const T = GAME.escortMs / 1000;
+  const H = 300;
+  const seat = seatBox(Math.max(0, e.seat));
+  // đứng trên sàn cạnh ghế (bên phải ghế cho khỏi khuất sau người đứng lớp ở góc trái)
+  const at: [number, number] = [seat.x + seat.w * 0.6, seat.y + seat.show + 30 - H];
+  const kidH = 150;
+  const g = e.out.girl ? 'nu' : 'nam';
+  const target = e.inSeat >= 0 ? seatBox(e.inSeat) : null;
+  const gi = e.in?.girl ? 'nu' : 'nam';
+  return (
+    <>
+      <motion.div
+        key={`gt${e.at}`}
+        initial={{ left: DOOR[0], top: DOOR[1], opacity: 0 }}
+        animate={{ left: [DOOR[0], at[0], at[0], DOOR[0]], top: [DOOR[1], at[1], at[1], DOOR[1]], opacity: [1, 1, 1, 0] }}
+        transition={{ duration: T * 0.85, times: [0, 0.4, 0.55, 1], ease: 'easeInOut' }}
+        className="pointer-events-none absolute z-30"
+      >
+        <GiamThi h={H} />
+      </motion.div>
+      {/* bạn bị đưa ra: đứng dậy ở ghế, đi theo thầy ra cửa */}
+      <motion.div
+        key={`out${e.at}`}
+        initial={{ left: seat.x, top: seat.y - 30, opacity: 0 }}
+        animate={{ left: [seat.x, seat.x, DOOR[0] + 20, DOOR[0] + 20], top: [seat.y - 30, seat.y - 30, DOOR[1] + 70, DOOR[1] + 70], opacity: [0, 1, 1, 0] }}
+        transition={{ duration: T * 0.85, times: [0, 0.45, 0.95, 1], ease: 'easeInOut' }}
+        className="pointer-events-none absolute z-30"
+        style={{ width: kidH * 0.47, height: kidH }}
+      >
+        <img src={`/assets/nv/${g}/${POSE[g].buon}.webp`} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
+        <div className="nametag" style={{ fontSize: 15, maxWidth: 120 }}>
+          <span className="truncate">💤 {e.out.nickname}</span>
+        </div>
+      </motion.div>
+      {/* bạn mới vào lớp: từ cửa đi vào ghế */}
+      {e.in && target && (
+        <motion.div
+          key={`in${e.at}`}
+          initial={{ left: DOOR[0], top: DOOR[1] + 70, opacity: 0 }}
+          animate={{ left: [DOOR[0], DOOR[0], target.x, target.x], top: [DOOR[1] + 70, DOOR[1] + 70, target.y - 30, target.y - 30], opacity: [0, 1, 1, 0] }}
+          transition={{ duration: T, times: [0, 0.6, 0.95, 1], ease: 'easeInOut' }}
+          className="pointer-events-none absolute z-30"
+          style={{ width: kidH * 0.47, height: kidH }}
+        >
+          <img src={`/assets/nv/${gi}/${POSE[gi].chao}.webp`} className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]" />
+          <div className="nametag" style={{ fontSize: 15, maxWidth: 120 }}>
+            <span className="truncate">🙋 {e.in.nickname}</span>
+          </div>
+        </motion.div>
+      )}
+    </>
+  );
+}
+
+// ---------- Giờ ra chơi nhảy múa thả tim (2026-11-07) ----------
+/** bạn đang ngồi lên bảng nhảy: tối đa GAME.dancers bạn còn tương tác, theo thứ tự ghế (điểm cao trước) */
+function dancersOf(v: StageView) {
+  if (v.phase !== 'recess' || v.recess?.game !== 'dance') return [];
+  return v.seats.filter((s) => !s.sleeping).slice(0, GAME.dancers);
+}
+// khoảng sàn trước bảng đen (giữa cô và dãy bàn đầu), 2 hàng so le: [giữa người, chân]
+const DANCE_SPOTS: [number, number][] = [
+  [445, 915], [550, 915], [655, 915], [760, 915], [865, 915],
+  [497, 845], [602, 845], [707, 845], [812, 845], [917, 845],
+];
+function Dancers({ v }: { v: StageView }) {
+  const list = dancersOf(v);
+  return (
+    <>
+      {list.map((s, i) => {
+        const H = i < 5 ? 190 : 170;
+        const [cx, feet] = DANCE_SPOTS[i];
+        const g = s.girl ? 'nu' : 'nam';
+        const pose = (['vui', 'tay', 'chao'] as const)[i % 3];
+        return (
+          <motion.div
+            key={s.username}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="pointer-events-none absolute"
+            style={{ left: cx - (H * 0.47) / 2, top: feet - H, width: H * 0.47, height: H, zIndex: i < 5 ? 31 : 30 }}
+          >
+            <motion.img
+              src={`/assets/nv/${g}/${POSE[g][pose]}.webp`}
+              animate={{ y: [0, -22, 0, -10, 0], rotate: [-8, 8, -8], scaleX: [1, 1, -1, -1, 1] }}
+              transition={{ duration: 1.3 + (i % 3) * 0.15, repeat: Infinity, ease: 'easeInOut', delay: i * 0.12 }}
+              style={{ transformOrigin: 'bottom center' }}
+              className="h-full w-full drop-shadow-[0_4px_3px_rgba(0,0,0,0.3)]"
+            />
+            <motion.div
+              animate={{ y: [0, -30], opacity: [0, 1, 0] }}
+              transition={{ duration: 1.6, repeat: Infinity, delay: i * 0.3 }}
+              className="absolute -top-6 left-1/2 text-[28px]"
+            >
+              {['🎵', '🎶', '✨'][i % 3]}
+            </motion.div>
+            <div className="nametag" style={{ fontSize: 14, maxWidth: 110 }}>
+              <span className="truncate">{s.nickname}</span>
+            </div>
+          </motion.div>
+        );
+      })}
+    </>
+  );
+}
+
+/** máy đếm tim: số to, mỗi lần tăng thì nảy lên */
+function HeartCounter({ n }: { n: number }) {
+  return (
+    <div className="mt-2 flex items-center gap-3 rounded-[24px] border-4 border-[#ff8fb1] bg-[#3b0a1e]/70 px-6 py-1 shadow-[0_0_24px_rgba(255,93,143,0.6)]">
+      <motion.span animate={{ scale: [1, 1.25, 1] }} transition={{ duration: 0.8, repeat: Infinity }} className="text-[70px] leading-none">
+        ❤️
+      </motion.span>
+      <motion.span key={n} initial={{ scale: 1.4 }} animate={{ scale: 1 }} className="font-mono text-[84px] font-extrabold leading-none text-[#ffd1de] tabular-nums">
+        {n.toLocaleString('vi-VN')}
+      </motion.span>
+      <span className="text-[34px] text-[#ffd1de]">tim</span>
+    </div>
+  );
+}
+
+/** băng thông báo giờ nhảy múa trên đầu màn hình + tim bay từ dưới lên */
+function DanceBanner({ v }: { v: StageView }) {
+  const on = v.phase === 'recess' && v.recess?.game === 'dance' && v.recess.stage === 'play';
+  return (
+    <AnimatePresence>
+      {on && (
+        <motion.div key="dance" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pointer-events-none absolute inset-0 z-40">
+          <motion.div
+            initial={{ y: -60 }}
+            animate={{ y: 0, scale: [1, 1.04, 1] }}
+            transition={{ scale: { duration: 0.9, repeat: Infinity } }}
+            className="absolute left-[110px] top-[140px] w-[860px] rounded-[30px] border-4 border-white bg-gradient-to-r from-fuchsia-500 via-pink-500 to-amber-400 px-6 py-2 text-center font-extrabold text-white shadow-2xl"
+          >
+            <div className="text-[40px] leading-tight">💃 GIỜ RA CHƠI · CẢ LỚP LÊN NHẢY 🕺</div>
+            <div className="line-clamp-2 text-[28px] leading-tight">{v.cfg.danceText}</div>
+          </motion.div>
+          {Array.from({ length: 12 }, (_, i) => (
+            <motion.div
+              key={i}
+              initial={{ y: 1500, opacity: 0 }}
+              animate={{ y: 600, opacity: [0, 1, 0] }}
+              transition={{ duration: 2.6, delay: (i % 6) * 0.35, repeat: Infinity }}
+              className="absolute text-[60px]"
+              style={{ left: 30 + i * 88 }}
+            >
+              {i % 3 === 0 ? '💖' : '❤️'}
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -1231,6 +1491,13 @@ function studentPose(s: StageView['seats'][number], v: StageView, rank: number, 
   return now - s.lastActive < 2500 ? 'tay' : 'dung';
 }
 
+/** bạn ngồi đầu / cuối dãy: bảng tên neo vào phía trong cho khỏi tràn ra ngoài mép màn hình */
+function edgeTag(k: number, n: number): React.CSSProperties {
+  if (k === 0) return { left: 0, transform: 'none' };
+  if (k === n - 1) return { left: 'auto', right: 0, transform: 'none' };
+  return {};
+}
+
 /** Vị trí ghế thứ i (khung nửa trên người ngồi, toạ độ stage) */
 function seatBox(i: number) {
   const ri = SEAT_ROW[i] ?? ROWS.length - 1;
@@ -1280,6 +1547,7 @@ function LongDesk({ ri }: { ri: number }) {
 function Students({ v, now }: { v: StageView; now: number }) {
   const asking = v.phase === 'question' || v.phase === 'bonus';
   const first = asking ? v.correctTop[0]?.username : undefined;
+  const dancing = new Set(dancersOf(v).map((s) => s.username));
   return (
     <>
       {ROWS.map((_, ri) => (
@@ -1294,7 +1562,9 @@ function Students({ v, now }: { v: StageView; now: number }) {
         const hd = HEAD[g];
         const called = v.recess?.game === 'callup' && v.recess.callUser === s.username;
         // đang lên bục (tặng hoa / bị phạt): ghế trống, nhân vật vẽ ở chỗ khác
-        const away = s.standing || v.walk?.username === s.username;
+        // đang nhảy múa trước bảng, hoặc đang được thầy giám thị cho vào lớp (chưa đi tới ghế): ghế trống
+        const entering = v.escort?.in?.username === s.username && now - v.escort.at < GAME.escortMs * 0.95;
+        const away = s.standing || v.walk?.username === s.username || dancing.has(s.username) || entering;
         return (
           <motion.div
             key={s.username}
@@ -1337,7 +1607,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
               </motion.div>
             )}
             {s.bubble && <ChatBubble text={s.bubble} scale={scale} />}
-            <div className="nametag" style={{ fontSize: 19 * scale, maxWidth: 2 * gap - 8, bottom: low ? `calc(100% - ${4 + 27 * scale}px)` : undefined, zIndex: low ? 2 : 1 }}>
+            <div className="nametag" style={{ ...edgeTag(k, ROWS[ri].n), fontSize: NAME_FONT * ROWS[ri].s, maxWidth: 2 * gap - 6, padding: '1px 6px', bottom: low ? `calc(100% - ${4 + 1.45 * NAME_FONT * ROWS[ri].s}px)` : undefined, zIndex: low ? 2 : 1 }}>
               {s.team > 0 && (
                 <span className="mr-1 shrink-0 rounded-full px-[5px] font-extrabold text-white" style={{ background: TEAM_COLOR[s.team - 1] }}>
                   {s.team}
@@ -1544,7 +1814,7 @@ function GiftBanner({ gift, now }: { gift: GameState['lastGift']; now: number })
           exit={{ opacity: 0 }}
           className="absolute left-[24px] top-[470px] z-50 max-w-[560px] rounded-[26px] bg-gradient-to-r from-pink-500 to-rose-400 px-6 py-3 text-[30px] font-bold text-white shadow-xl"
         >
-          {giftOf(gift.giftName)?.icon ?? '💐'} <span className="inline-block max-w-[300px] truncate align-bottom">{gift.nickname}</span> tặng cô {gift.repeatCount > 1 ? `${gift.repeatCount} × ` : ''}
+          {giftOf(gift.giftName)?.icon ?? '💐'} <span className="inline-block max-w-[300px] truncate align-bottom">{gift.nickname}</span> {X('tặng cô')} {gift.repeatCount > 1 ? `${gift.repeatCount} × ` : ''}
           {giftOf(gift.giftName)?.say ?? gift.giftName}
         </motion.div>
       )}
@@ -1570,7 +1840,7 @@ function LoveHearts({ n }: { n: number }) {
         </motion.div>
       ))}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-pink-500 px-5 py-1 text-[30px] font-bold text-white shadow-lg">
-        💕 {n} bạn yêu cô
+        💕 {n} {X('bạn yêu cô')}
       </div>
     </div>
   );
@@ -1614,8 +1884,15 @@ function BirthdayBanner({ v }: { v: StageView }) {
           transition={{ type: 'spring', stiffness: 200, damping: 14 }}
           className="absolute left-1/2 top-[620px] z-50 w-[900px] -translate-x-1/2 rounded-[30px] border-4 border-white bg-gradient-to-r from-pink-500 via-fuchsia-500 to-amber-400 px-6 py-4 text-center font-extrabold text-white shadow-2xl"
         >
-          <div className="text-[46px] leading-tight">🎉 Chúc mừng sinh nhật 🎂</div>
-          <div className="mt-1 truncate text-[54px] leading-tight drop-shadow">{v.birthday.nickname}</div>
+          {/* chữ biểu ngữ đổi ở trang điều khiển; có {ten} thì chèn tên vào câu */}
+          {v.cfg.birthdayText.includes('{ten}') ? (
+            <div className="line-clamp-2 text-[50px] leading-tight drop-shadow">{v.cfg.birthdayText.split('{ten}').join(v.birthday.nickname)}</div>
+          ) : (
+            <>
+              <div className="text-[46px] leading-tight">{v.cfg.birthdayText}</div>
+              <div className="mt-1 truncate text-[54px] leading-tight drop-shadow">{v.birthday.nickname}</div>
+            </>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

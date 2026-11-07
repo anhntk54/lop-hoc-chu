@@ -101,7 +101,8 @@ class Voice {
   }
 
   private urlOf(p: { who: Who; hype: boolean; text: string }) {
-    const v = p.who === 'F' ? `&v=${this.teacher}` : p.who === 'E' ? '&v=en' : '';
+    // thầy giáo / giọng nam: từ tiếng Anh cũng đọc giọng nam
+    const v = p.who === 'F' ? `&v=${this.teacher}` : p.who === 'E' ? (this.teacher === 'm' ? '&v=enm' : '&v=en') : '';
     return `/api/tts?rate=${this.rate}${p.hype ? '&hype=1' : ''}${v}&text=${encodeURIComponent(p.text)}`;
   }
 
