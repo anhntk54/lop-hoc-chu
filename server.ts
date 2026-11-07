@@ -255,7 +255,8 @@ async function connectTikTok(cleanUser: string) {
       avatar: avatarOf(data),
       timestamp: Date.now(),
       // giờ TikTok gắn lúc người xem gửi (ms): xếp ai trả lời nhanh nhất theo giờ này, không theo lúc bot nhận
-      createTime: Number(data?.common?.createTime) || Date.now(),
+      // thiếu giờ TikTok thì để trống (trang stage tự dùng giờ máy, không đo độ lệch đồng hồ từ bình luận này)
+      createTime: Number(data?.common?.createTime) || undefined,
     });
   });
 
@@ -389,7 +390,7 @@ const TEST_EVENTS = ['chat', 'gift', 'member', 'follow', 'share', 'like'];
 app.post('/api/test/emit', (req, res) => {
   const { type, data } = req.body || {};
   if (!TEST_EVENTS.includes(type)) return res.status(400).json({ success: false, error: 'Loại sự kiện không hợp lệ' });
-  const event = { timestamp: Date.now(), avatar: '', ...(data || {}) };
+  const event = { timestamp: Date.now(), avatar: '', ...(data || {}), test: true };
   if (type === 'like') {
     liveStats.totalLikes += Number(event.likeCount) || 1;
     event.totalLikes = liveStats.totalLikes;

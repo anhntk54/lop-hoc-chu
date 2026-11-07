@@ -204,6 +204,9 @@ export interface ChatIn {
   createTime: number;
   /** false: bình luận có từ cấm, không hiện bong bóng */
   safe?: boolean;
+  /** false: bình luận không có giờ TikTok thật (nút thử ở trang điều khiển, TikTok gửi thiếu giờ): createTime là giờ máy,
+   *  KHÔNG dùng để đo độ lệch đồng hồ (trước 2026-11-07 nó kéo độ lệch về 0, làm đáp án đúng bị coi là "gửi sớm" và bỏ) */
+  realTime?: boolean;
 }
 
 type Person = Pick<ChatIn, 'username' | 'nickname' | 'spoken' | 'avatar'>;
@@ -325,7 +328,8 @@ export class Classroom {
   private tried = new Set<string>(); // ai đã trả lời câu này (đúng hay sai)
   private wrong = new Set<string>();
   private seq = 0;
-  stats = { received: 0, attempts: 0 };
+  /** câu đang hỏi: bot nhận / lượt trả lời / đáp án gửi lúc cô còn đọc (bỏ) / đúng chữ mà thiếu dấu (chưa tính, gõ lại được) */
+  stats = { received: 0, attempts: 0, early: 0, noMarks: 0 };
   flowers = 0;
   lastFlowerAt = 0;
   clapUntil = 0;
@@ -440,6 +444,7 @@ export class Classroom {
   /** thầy giám thị đang đưa 1 bạn ra ngoài, bạn khác vào thay */
   escort: { at: number; out: Student; seat: number; in: Student | null } | null = null;
   private lastEscortAt = -Infinity;
+  private lastEscortSayAt = -Infinity;
   /** 2 game lớn đang bật (trang điều khiển) */
   showsOn: Record<ShowKind, boolean> = { everest: true, chuong: true };
   /** game lớn kế tiếp: xen kẽ, game nào tắt thì bỏ qua; tắt cả 2 thì null (thay bằng giờ ra chơi) */
@@ -870,7 +875,7 @@ export class Classroom {
     this.correct = [];
     this.tried = new Set();
     this.wrong = new Set();
-    this.stats = { received: 0, attempts: 0 };
+    this.stats = { received: 0, attempts: 0, early: 0, noMarks: 0 };
     this.setPhase('question', now, GAME.questionSec);
     this.answerStartAt = now;
     const out: Say[] = [...back];
@@ -904,6 +909,14 @@ export class Classroom {
     return [q.answer, ...(q.acceptedAnswers ?? [])].some((a) => key(a) === typed);
   }
 
+  /** gõ HOÀN TOÀN không dấu mà đúng chữ ("rang" cho RĂNG). Gõ sai dấu ("rắng") không tính vào đây: vẫn là trả lời sai */
+  private matchesPlain(q: Question | null, comment: string) {
+    if (!q) return false;
+    const typed = plain(comment);
+    if (compactVi(comment) !== typed) return false; // có dấu (dù sai dấu)
+    return [q.answer, ...(q.acceptedAnswers ?? [])].some((a) => plain(a) === typed);
+  }
+
   /** Comment có phải là câu trả lời không: dài đúng bằng đáp án (không tính khoảng trắng). Nói chuyện thường không bị tính sai */
   private isAttempt(q: Question | null, comment: string) {
     const n = compactVi(comment).length;
@@ -916,7 +929,7 @@ export class Classroom {
     this.lastChatAt = now;
     // độ lệch đồng hồ TikTok so với máy: lấy mức nhỏ nhất gần đây (ít trễ mạng nhất), nhích lên dần để theo kịp nếu đồng hồ trôi
     const sample = now - e.createTime;
-    if (Number.isFinite(sample) && Math.abs(sample) < 10 * 60_000) {
+    if (e.realTime !== false && Number.isFinite(sample) && Math.abs(sample) < 10 * 60_000) {
       this.clockSkew = this.skewSamples++ === 0 ? sample : Math.min(sample, this.clockSkew + 5);
     }
     // bong bóng chat: không hiện câu trả lời (lộ đáp án cho bạn khác) và câu có từ cấm
@@ -953,8 +966,26 @@ export class Classroom {
     if (GAME.quickRead && !this.boardShown) return [];
     // gửi lúc cô còn đang đọc mà bình luận tới trễ (sau khi bảng hiện): xét theo giờ gửi TikTok (đổi sang giờ máy), không tính,
     // không mất lượt. Người xem thật thấy bảng trên điện thoại trễ hơn máy vài giây nên luôn gửi sau mốc này (chủ kênh 2026-11-05)
-    if (GAME.quickRead && this.phase === 'question' && this.skewSamples > 1 && e.createTime + this.clockSkew < this.boardShownAt - GAME.earlySendGraceMs) return [];
+    // Chỉ xét bình luận tới trong vài giây đầu sau khi bảng hiện (bình luận gửi trước đó chỉ trễ vì mạng, vài giây là tới hết):
+    // lỡ độ lệch đồng hồ đo sai thì cũng chỉ ảnh hưởng mấy giây đầu, không bỏ nhầm đáp án cả câu (sửa 2026-11-07)
+    if (
+      GAME.quickRead &&
+      this.phase === 'question' &&
+      e.realTime !== false &&
+      this.skewSamples > 1 &&
+      now - this.boardShownAt < GAME.earlyCheckWindowMs &&
+      e.createTime + this.clockSkew < this.boardShownAt - GAME.earlySendGraceMs
+    ) {
+      if (this.isAttempt(this.q, e.comment)) this.stats.early++;
+      return [];
+    }
     if (!this.isAttempt(this.q, e.comment) || this.tried.has(e.username)) return [];
+    // đúng chữ mà thiếu dấu ("rang" cho RĂNG): chưa tính, KHÔNG mất lượt, gõ lại có dấu là được (2026-11-07: trước đây mất lượt luôn,
+    // người xem tưởng mình đúng mà không được ghi nhận)
+    if (GAME.requireDiacritics && !this.matches(this.q, e.comment) && this.matchesPlain(this.q, e.comment)) {
+      this.stats.noMarks++;
+      return [];
+    }
     this.tried.add(e.username);
     this.stats.attempts++;
     if (!this.matches(this.q, e.comment)) {
@@ -1117,6 +1148,9 @@ export class Classroom {
   /** Tim: giờ ra chơi "thả tim" thì đếm; ngoài ra đủ mốc thì cả lớp vỗ tay */
   like(count: number, now: number, reachedClap: boolean, who?: Pick<Person, 'username' | 'spoken' | 'nickname'>): Say[] {
     this.lastSeenAt = now;
+    // thả tim cũng là tương tác: thầy giám thị không coi là ngồi im, không ngủ gật (2026-11-07)
+    const liker = who && this.students.get(who.username);
+    if (liker) liker.lastActive = Math.max(liker.lastActive, now);
     // giờ nhảy múa / thả tim cả lớp: máy đếm tim thật (không nhân, không mốc: thả bao nhiêu nhảy bấy nhiêu), nhớ ai thả nhiều nhất để cảm ơn
     if ((this.recess?.game === 'dance' || this.recess?.game === 'heart') && this.recess.stage === 'play') {
       this.recess.hearts += count;
@@ -1834,6 +1868,7 @@ export class Classroom {
       s.streak = 0;
       s.standLeft = 0; // tiết mới: bạn đang đứng phạt về chỗ hết
       s.reachedAt = 0;
+      s.prio = 0; // ưu tiên ghế do thầy giám thị cho vào chỉ trong tiết đó
       s.desk = [];
       // chịu tải hàng ngàn người: bạn đã rời live lâu (im quá GAME.forgetAfterMs) thì xoá khỏi lớp cho nhẹ.
       // Điểm hôm nay, tuần, học bạ đã lưu trên server; quay lại thì vào lớp như bạn mới, học bạ lấy lại từ server
@@ -1993,9 +2028,13 @@ export class Classroom {
     const newcomer = this.seats().find((s) => !inSeat.has(s.username)) ?? null;
     this.escort = { at: now, out: victim, seat, in: newcomer };
     this.lastEscortAt = now;
-    // đọc liền (không chờ lúc rảnh như câu nói thêm, kẻo bị bỏ), đồng hồ vẫn chạy
     const text = newcomer ? this.line('escort', victim.spoken, newcomer.spoken) : this.line('escortAlone', victim.spoken);
-    return [{ ...this.t(text, true), warn: true }];
+    // nút thử: đọc liền (đồng hồ vẫn chạy). Tự động: phòng đông có thể vài chục giây thầy vào 1 lần, nên cô chỉ báo tối đa
+    // GAME.escortSayEveryMs 1 lần, nói lúc rảnh như câu nói thêm (tính vào trần câu nói thêm); lần khác thầy làm im lặng (2026-11-07)
+    if (force) return [{ ...this.t(text, true), warn: true }];
+    if (now - this.lastEscortSayAt < GAME.escortSayEveryMs) return [];
+    this.lastEscortSayAt = now;
+    return [{ ...this.t(text), ttl: 15_000 }];
   }
 
   /**

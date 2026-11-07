@@ -1083,6 +1083,51 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.deepEqual(rounds, ['team', 'intro', 'intro', 'intro', 'team']);
 }
 
+// ---------- 2026-11-07: sửa lỗi "gõ đúng mà không được ghi nhận" ----------
+{
+  Object.assign(GAME, FAST);
+  const ask = (c: Classroom) => {
+    c.newRound(t);
+    while (c.phase !== 'question') c.tick((t += 500));
+    c.showBoard(t);
+  };
+  // 1) bình luận không có giờ TikTok thật (nút thử, TikTok gửi thiếu giờ) không được kéo độ lệch đồng hồ về 0
+  const c = new Classroom([mk('BẢNG ĐEN')], t);
+  const SKEW = 5000; // đồng hồ máy chạy nhanh hơn giờ TikTok 5 giây
+  for (let i = 0; i < 5; i++) c.chat({ ...who(100 + i), comment: 'chào', createTime: t - SKEW - 300 }, t);
+  c.chat({ ...who(200), comment: 'thử', createTime: t, realTime: false }, t); // nút thử: giờ máy
+  ask(c);
+  t += 4000; // người xem thấy bảng trễ vài giây rồi mới gõ
+  c.chat({ ...who(1), comment: 'bảng đen', createTime: t - SKEW - 300 }, t + 300);
+  assert.equal(c.correct.length, 1, 'đáp án gửi sau khi bảng hiện được tính, dù có bình luận thử làm nhiễu');
+  // 2) lỡ độ lệch đo sai: bình luận tới sau vài giây đầu thì luôn được tính
+  const d = new Classroom([mk('BẢNG ĐEN')], t);
+  for (let i = 0; i < 3; i++) d.chat({ ...who(100 + i), comment: 'chào', createTime: t }, t); // độ lệch đo được = 0
+  ask(d);
+  t += GAME.earlyCheckWindowMs + 500;
+  d.chat({ ...who(1), comment: 'bảng đen', createTime: t - 20_000 }, t); // giờ TikTok lệch 20 giây (máy chạy nhanh)
+  assert.equal(d.correct.length, 1, 'tới sau 3 giây đầu: luôn tính');
+  // gửi thật sự lúc cô còn đọc, tới ngay khi bảng hiện: vẫn không tính, không mất lượt
+  const e = new Classroom([mk('BẢNG ĐEN')], t);
+  for (let i = 0; i < 3; i++) e.chat({ ...who(100 + i), comment: 'chào', createTime: t - 200 }, t);
+  ask(e);
+  e.chat({ ...who(1), comment: 'bảng đen', createTime: t - 4000 }, t + 100);
+  assert.equal(e.correct.length, 0, 'gửi lúc cô còn đọc: không tính');
+  assert.equal(e.stats.early, 1, 'đếm số đáp án gửi sớm bị bỏ');
+  e.chat({ ...who(1), comment: 'bảng đen', createTime: t + 500 }, t + 700);
+  assert.equal(e.correct.length, 1, 'không mất lượt: gõ lại được tính');
+  // 3) gõ không dấu: chưa tính, KHÔNG mất lượt; gõ sai dấu vẫn mất lượt
+  const f = new Classroom([mk('BẢNG ĐEN')], t);
+  ask(f);
+  chat(f, 1, 'bang den', t, (t += 10));
+  assert.equal(f.stats.noMarks, 1);
+  chat(f, 1, 'bảng đen', t, (t += 10));
+  assert.ok(f.correct.some((a) => a.username === 'u1'), 'gõ lại có dấu được tính');
+  chat(f, 2, 'bảng đên', t, (t += 10));
+  chat(f, 2, 'bảng đen', t, (t += 10));
+  assert.ok(!f.correct.some((a) => a.username === 'u2'), 'sai dấu vẫn mất lượt');
+}
+
 // ---------- 2026-11-07: tắt đứng phạt, thầy giáo, thầy giám thị, giờ ra chơi nhảy múa ----------
 GAME.standWrong = STAND;
 GAME.teamPickSec = 0;
@@ -1131,11 +1176,30 @@ const many = () => Array.from({ length: 30 }, (_, i) => mk('BẢNG ĐEN' + 'ABCD
   assert.ok(c.escort, 'giám thị vào lớp');
   assert.equal(c.escort!.out.username, 'u1', 'đưa bạn im lâu nhất ra');
   assert.equal(c.escort!.in?.username, 'u5', 'bạn chờ tương tác nhiều nhất vào thay');
-  assert.ok(said.some((l) => l.priority && /giám thị/i.test(l.text)), 'cô báo giám thị tới');
+  assert.ok(said.some((l) => !l.priority && !l.warn && !l.main && /giám thị/i.test(l.text)), 'tự động: cô báo giám thị tới lúc rảnh (câu nói thêm)');
   assert.ok(!c.seats().some((s) => s.username === 'u1') && c.seats().some((s) => s.username === 'u5'));
   assert.equal(c.view(t).escort?.inSeat, c.seats().findIndex((s) => s.username === 'u5'));
   chat(c, 1, 'em quay lại', (t += 1000), t);
   assert.ok(!c.students.get('u1')!.out, 'bình luận lại thì vào hàng chờ');
+  // lần sau trong vòng 2 phút: thầy vẫn vào nhưng cô không báo nữa (phòng đông khỏi nói liên tục)
+  t += 4 * 60_000 + 10_000; // bạn 2, 3 ngồi im quá 4 phút
+  (c as unknown as { lastEscortSayAt: number }).lastEscortSayAt = t - 60_000; // cô vừa báo 1 phút trước
+  chat(c, 6, 'cho em vào', t, t);
+  for (const u of [5, 6, 1]) c.students.get('u' + u)!.lastActive = t;
+  let said2: ReturnType<Classroom['tick']> = [];
+  for (let k = 0; k < 4 && (!c.escort || c.escort.at < t); k++) said2 = said2.concat(c.tick((t += 200)));
+  assert.ok(c.escort && c.escort.at >= t - 1000, 'thầy vào lần 2');
+  assert.ok(!said2.some((l) => /giám thị/i.test(l.text)), 'trong 2 phút: cô không báo lại');
+  // thả tim cũng là tương tác: không bị coi là ngồi im
+  const lk = new Classroom(many(), t);
+  lk.supervisorOn = true;
+  lk.supervisorIdleMs = 60_000;
+  lk.newRound(t);
+  chat(lk, 1, 'chào', t, t);
+  t += 50_000;
+  lk.like(3, t, false, { username: 'u1', spoken: 'Bạn 1', nickname: 'Bạn 1' });
+  t += 30_000;
+  assert.ok(t - lk.students.get('u1')!.lastActive < 60_000, 'thả tim làm mới lần tương tác');
   // tắt giám thị: không ai bị đưa ra
   const d = new Classroom(many(), t);
   d.newRound(t);

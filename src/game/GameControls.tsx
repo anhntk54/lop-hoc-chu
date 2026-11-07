@@ -201,6 +201,9 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
           </div>
           <div>
             Bot nhận câu này: <b>{view.stats.received}</b> comment · {view.stats.attempts} lượt trả lời · {view.correctCount} đúng
+            {/* để biết vì sao đáp án không được tính: gửi lúc cô còn đọc đề (bỏ, không mất lượt) / gõ không dấu (chưa tính, gõ lại được) */}
+            {(view.stats.early ?? 0) > 0 && <span className="text-amber-300"> · {view.stats.early} gửi lúc cô còn đọc</span>}
+            {(view.stats.noMarks ?? 0) > 0 && <span className="text-amber-300"> · {view.stats.noMarks} gõ thiếu dấu</span>}
           </div>
           <div>
             Đang chơi: <b>{view.players}</b> bạn

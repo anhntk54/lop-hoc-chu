@@ -49,7 +49,8 @@ export const GAME = {
   defaultThayName: 'Thầy Minh', // đổi sang thầy giáo mà tên vẫn là "Cô ..." thì dùng tên này
   // ---------- Thầy giám thị (2026-11-07) ----------
   escortMs: 9000, // thầy đi vào, đưa bạn ra cửa, bạn mới đi vào ghế
-  escortGapMs: 25_000, // 2 lần thầy vào lớp cách nhau ít nhất chừng này
+  escortGapMs: 40_000, // 2 lần thầy vào lớp cách nhau ít nhất chừng này (tăng từ 25 giây, 2026-11-07)
+  escortSayEveryMs: 120_000, // tự động: cô báo "thầy giám thị tới" tối đa 2 phút 1 lần, các lần khác thầy làm im lặng
   // ---------- Giờ ra chơi nhảy múa (2026-11-07) ----------
   dancers: 10, // số bạn lên bảng nhảy (bạn đang ngồi, còn tương tác)
 
@@ -76,6 +77,7 @@ export const GAME = {
   closeAfterTopN: 5, // đủ chừng này bạn đúng (top có điểm cao) thì chốt câu sau closeAfterTopSec giây. 0 = tắt
   closeAfterTopSec: 3,
   earlySendGraceMs: 500, // đáp án gửi sớm hơn lúc bảng hiện quá chừng này ms (theo giờ gửi TikTok) thì không tính
+  earlyCheckWindowMs: 3000, // ...nhưng chỉ xét bình luận tới trong chừng này ms đầu sau khi bảng hiện; tới sau đó luôn tính (2026-11-07)
   dhFirstLetters: true, // đuổi hình bắt chữ: hiện sẵn chữ cái đầu mỗi chữ trong ô đáp án (hình emoji đôi khi trừu tượng)
   praiseShort: true, // điểm danh giữa tiết chỉ 1 câu đọc top 3
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)
@@ -201,9 +203,9 @@ export const GAME = {
   forgetAfterMs: 2 * 60 * 60_000,
 
   // ---------- Lớp ----------
-  seats: 45, // 4 dãy bàn dài trên cùng (11, 11, 11, 12 bạn); dãy cuối nằm dưới giao diện TikTok nên để trống
-  // số bạn mỗi dãy, cộng lại = seats. 2026-11-07 chủ kênh chọn 45 ghế, vẫn hiện đủ tên (trước 7, 7, 8, 8 = 30 ghế)
-  rowSeats: [11, 11, 11, 12],
+  seats: 30, // 4 dãy bàn dài trên cùng (7, 7, 8, 8 bạn); dãy cuối nằm dưới giao diện TikTok nên để trống
+  // số bạn mỗi dãy, cộng lại = seats (chủ kênh chốt 2026-11-04: bàn dài, các bạn nhỏ lại). 2026-11-07 thử 45 ghế rồi quay lại 30
+  rowSeats: [7, 7, 8, 8],
   // hết ghế: không vẽ đám đông đứng 2 bên cửa nữa (chủ kênh bỏ 2026-11-04), các bạn vẫn chơi, tính điểm,
   // hiện ở bảng "Sĩ số · Đang chờ vào lớp"
   standing: 0,

@@ -146,7 +146,8 @@ export function useGame() {
       if (!room) return;
       const p = person(e);
       const isNew = !room.students.has(e.username);
-      say(room.chat({ ...p, comment: e.comment, createTime: e.createTime ?? e.timestamp, safe: !containsBanned(e.comment) }, Date.now()));
+      // realTime: có giờ TikTok thật (server gửi createTime) thì mới dùng để đo độ lệch đồng hồ
+      say(room.chat({ ...p, comment: e.comment, createTime: e.createTime ?? e.timestamp, realTime: e.createTime != null && !e.test, safe: !containsBanned(e.comment) }, Date.now()));
       if (isNew && p.spoken !== 'bạn' && GAME.joinKeywords.includes(plain(e.comment))) talk.greeter.add(e.username, p.spoken);
       // chuyên cần: lần đầu bình luận trong buổi thì báo server, server trả về số ngày đi học liền
       if (isNew && IS_STAGE) {
@@ -269,6 +270,14 @@ export function useGame() {
         flowersSaved = Number(d.flowersToday) || 0; // quỹ hoa hôm nay (mở lại trang không mất)
       } catch {
         // server cũ chưa có sổ: chơi bình thường, chỉ không nhớ câu đã hỏi
+      }
+      // cài đặt lớp (tên cô, thầy giáo, giám thị...) đọc TRƯỚC khi vào học: trước đây câu đầu buổi còn đọc tên mặc định "cô Ngân"
+      // vì cài đặt từ server tới sau (sửa 2026-11-07)
+      try {
+        const rc = await (await fetch('/api/room-settings')).json();
+        cfg.current = { ...GAME.defaultRoom, ...rc };
+      } catch {
+        // server cũ: dùng cài đặt mặc định, khi server gửi cài đặt thì đổi sau
       }
       if (stop) return;
       const room = new Classroom(QUESTIONS, Date.now(), Math.random, used, banned);
