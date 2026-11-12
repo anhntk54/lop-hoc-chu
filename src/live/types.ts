@@ -16,7 +16,8 @@ export interface ChatEvent {
   comment: string;
   avatar: string;
   timestamp: number;
-  createTime?: number; // giờ TikTok gắn (ms)
+  createTime?: number; // giờ TikTok gắn (ms); không có thì TikTok gửi thiếu giờ
+  test?: boolean; // sự kiện giả lập từ nút thử ở trang điều khiển (không phải TikTok thật)
 }
 
 export interface GiftEvent {

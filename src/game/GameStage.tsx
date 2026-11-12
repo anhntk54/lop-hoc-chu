@@ -16,16 +16,13 @@ const K = 1080 / 941;
 // Bàn dài + ghế băng vẽ đè lên dãy bàn lẻ trong ảnh nền (đo trên ảnh gốc): mép trên mặt bàn y, mép dưới b, 2 đầu bàn x1..x2.
 // n = số bạn ngồi mỗi dãy (chủ kênh chốt 2026-11-04: 7–8 bạn một dãy, các bạn nhỏ lại một chút). Dãy cuối nằm dưới giao diện TikTok nên để trống.
 const ROWS = [
-  // 2026-11-07: 45 ghế, bàn kéo dài ra 2 bên cho đủ chỗ
-  { y: 812, b: 922, x1: 62, x2: 880, n: GAME.rowSeats[0], s: 0.92 },
-  { y: 942, b: 1069, x1: 40, x2: 902, n: GAME.rowSeats[1], s: 0.98 },
-  { y: 1093, b: 1232, x1: 20, x2: 921, n: GAME.rowSeats[2], s: 1.04 },
-  { y: 1253, b: 1414, x1: 8, x2: 933, n: GAME.rowSeats[3], s: 1.1 },
+  { y: 812, b: 922, x1: 100, x2: 838, n: GAME.rowSeats[0], s: 0.92 },
+  { y: 942, b: 1069, x1: 72, x2: 870, n: GAME.rowSeats[1], s: 0.98 },
+  { y: 1093, b: 1232, x1: 45, x2: 902, n: GAME.rowSeats[2], s: 1.04 },
+  { y: 1253, b: 1414, x1: 28, x2: 922, n: GAME.rowSeats[3], s: 1.1 },
   { y: 1458, b: 1646, x1: 5, x2: 938, n: 0, s: 1.16 },
 ];
-const KID = 0.7; // các bạn nhỏ lại để 1 dãy ngồi 11–12 bạn (2026-11-07, trước 0.82 cho 7–8 bạn)
-// bảng tên KHÔNG thu nhỏ theo người: cỡ chữ theo dãy (dãy trên 15px, dãy dưới 18px), bằng hoặc to hơn hồi 30 ghế
-const NAME_FONT = 16.5;
+const KID = 0.82; // các bạn nhỏ hơn bản ghế lẻ để ngồi vừa bàn dài (2026-11-07 thử 45 ghế KID 0.7 rồi quay lại)
 const SEAT_ROW: number[] = ROWS.flatMap((r, ri) => Array.from({ length: r.n }, () => ri));
 const SPRITE_H = 250; // chiều cao cả người
 const SHOW = 0.5; // ngồi ghế: chỉ hiện phần trên (đầu tới hông)
@@ -1607,7 +1604,7 @@ function Students({ v, now }: { v: StageView; now: number }) {
               </motion.div>
             )}
             {s.bubble && <ChatBubble text={s.bubble} scale={scale} />}
-            <div className="nametag" style={{ ...edgeTag(k, ROWS[ri].n), fontSize: NAME_FONT * ROWS[ri].s, maxWidth: 2 * gap - 6, padding: '1px 6px', bottom: low ? `calc(100% - ${4 + 1.45 * NAME_FONT * ROWS[ri].s}px)` : undefined, zIndex: low ? 2 : 1 }}>
+            <div className="nametag" style={{ ...edgeTag(k, ROWS[ri].n), fontSize: 19 * scale, maxWidth: 2 * gap - 8, bottom: low ? `calc(100% - ${4 + 27 * scale}px)` : undefined, zIndex: low ? 2 : 1 }}>
               {s.team > 0 && (
                 <span className="mr-1 shrink-0 rounded-full px-[5px] font-extrabold text-white" style={{ background: TEAM_COLOR[s.team - 1] }}>
                   {s.team}

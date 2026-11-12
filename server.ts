@@ -91,6 +91,7 @@ type RoomSettings = {
   danceText?: string;
   danceSec?: number;
   birthdayText?: string;
+  standWrong?: boolean;
 };
 
 type WebhookSettings = {
@@ -276,7 +277,8 @@ async function connectTikTok(cleanUser: string) {
       avatar: avatarOf(data),
       timestamp: Date.now(),
       // giờ TikTok gắn lúc người xem gửi (ms): xếp ai trả lời nhanh nhất theo giờ này, không theo lúc bot nhận
-      createTime: Number(data?.common?.createTime) || Date.now(),
+      // thiếu giờ TikTok thì để trống (trang stage tự dùng giờ máy, không đo độ lệch đồng hồ từ bình luận này)
+      createTime: Number(data?.common?.createTime) || undefined,
     });
   });
 
@@ -410,7 +412,7 @@ const TEST_EVENTS = ['chat', 'gift', 'member', 'follow', 'share', 'like'];
 app.post('/api/test/emit', (req, res) => {
   const { type, data } = req.body || {};
   if (!TEST_EVENTS.includes(type)) return res.status(400).json({ success: false, error: 'Loại sự kiện không hợp lệ' });
-  const event = { timestamp: Date.now(), avatar: '', ...(data || {}) };
+  const event = { timestamp: Date.now(), avatar: '', ...(data || {}), test: true };
   if (type === 'like') {
     liveStats.totalLikes += Number(event.likeCount) || 1;
     event.totalLikes = liveStats.totalLikes;
@@ -584,6 +586,7 @@ app.post('/api/room-settings', (req, res) => {
   if (typeof b.chuong === 'boolean') patch.chuong = b.chuong;
   if (b.teacher === 'co' || b.teacher === 'thay') patch.teacher = b.teacher;
   if (typeof b.supervisor === 'boolean') patch.supervisor = b.supervisor;
+  if (typeof b.standWrong === 'boolean') patch.standWrong = b.standWrong;
   if (b.supervisorMin !== undefined) patch.supervisorMin = Math.min(60, Math.max(1, Math.round(Number(b.supervisorMin)) || 4));
   if (b.dance === 'off' || b.dance === 'mix' || b.dance === 'always') patch.dance = b.dance;
   if (b.danceSec !== undefined) patch.danceSec = Math.min(120, Math.max(10, Math.round(Number(b.danceSec)) || 30));

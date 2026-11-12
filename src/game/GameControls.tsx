@@ -106,6 +106,17 @@ function RoomSettings() {
         </label>
       </div>
       <div className={row}>
+        <span className={label}>😅 Đứng phạt</span>
+        <label className="flex items-center gap-1">
+          <input
+            type="checkbox"
+            checked={cfg.standWrong}
+            onChange={(e) => save({ standWrong: e.target.checked }, e.target.checked ? 'Đã bật đứng phạt' : 'Đã tắt đứng phạt (các bạn đang đứng về chỗ)')}
+          />
+          Gõ sai thì lên bục đứng phạt {GAME.standQuestions} câu (tối đa {GAME.standMax} bạn)
+        </label>
+      </div>
+      <div className={row}>
         <span className={label}>👮 Giám thị</span>
         <label className="flex items-center gap-1">
           <input type="checkbox" checked={cfg.supervisor} onChange={(e) => save({ supervisor: e.target.checked }, e.target.checked ? 'Đã bật thầy giám thị' : 'Đã tắt thầy giám thị')} />
@@ -370,6 +381,9 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
           </div>
           <div>
             Bot nhận câu này: <b>{view.stats.received}</b> comment · {view.stats.attempts} lượt trả lời · {view.correctCount} đúng
+            {/* để biết vì sao đáp án không được tính: gửi lúc cô còn đọc đề (bỏ, không mất lượt) / gõ không dấu (chưa tính, gõ lại được) */}
+            {(view.stats.early ?? 0) > 0 && <span className="text-amber-300"> · {view.stats.early} gửi lúc cô còn đọc</span>}
+            {(view.stats.noMarks ?? 0) > 0 && <span className="text-amber-300"> · {view.stats.noMarks} gõ thiếu dấu</span>}
           </div>
           <div>
             Đang chơi: <b>{view.players}</b> bạn
