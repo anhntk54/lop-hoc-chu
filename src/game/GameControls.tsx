@@ -156,6 +156,174 @@ function RoomSettings() {
   );
 }
 
+type WebhookCfg = {
+  enabled: boolean;
+  url: string;
+  action: 'comment' | 'like';
+  sendAnswer: boolean;
+  duration: number;
+  maxResponses: number;
+  count: number;
+};
+
+const defaultWebhookCfg: WebhookCfg = {
+  enabled: true,
+  url: 'http://127.0.0.1:8000/api/webhook',
+  action: 'comment',
+  sendAnswer: true,
+  duration: 15,
+  maxResponses: 2,
+  count: 20,
+};
+
+function WebhookControls() {
+  const [cfg, setCfg] = useState<WebhookCfg>(defaultWebhookCfg);
+  const [msg, setMsg] = useState('');
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/webhook-settings')
+      .then((r) => r.json())
+      .then((data) => setCfg((prev) => ({ ...prev, ...data })))
+      .catch(() => {});
+  }, []);
+
+  const save = async (patch: Partial<WebhookCfg>, note = 'Đã lưu') => {
+    const next = { ...cfg, ...patch };
+    setCfg(next);
+    setMsg('Đang lưu...');
+    try {
+      const res = await fetch('/api/webhook-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMsg(note);
+        setTimeout(() => setMsg(''), 3000);
+        return true;
+      }
+      setMsg(data.error || 'Lỗi');
+      return false;
+    } catch {
+      setMsg('Lỗi mạng');
+      return false;
+    }
+  };
+
+  const testWebhook = async () => {
+    setTesting(true);
+    setMsg('Đang gửi thử...');
+    try {
+      const res = await fetch('/api/webhook/test', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setMsg(`✅ Bot nhận: ${data.data?.message || 'OK'}`);
+      } else if (data.status === 400) {
+        setMsg(`⚠️ ${data.data?.detail || 'Chưa bấm Bắt đầu seeding trên Dashboard'}`);
+      } else {
+        setMsg(`❌ Lỗi: ${data.error || 'Không kết nối được Bot'}`);
+      }
+    } catch (e: any) {
+      setMsg(`❌ Lỗi: ${e.message}`);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const row = 'flex items-center gap-1.5 flex-wrap';
+  const label = 'w-24 shrink-0 text-slate-400';
+  const input = 'rounded-lg bg-slate-800 px-2 py-1 text-white ring-1 ring-slate-700';
+
+  return (
+    <div className="space-y-2 rounded-2xl bg-slate-900 p-3 text-xs ring-1 ring-slate-800">
+      <div className="flex justify-between font-semibold text-slate-200">
+        <span>🤖 Webhook Seeding Bot (Port 8000)</span>
+        <span className="font-normal text-amber-300">{msg}</span>
+      </div>
+      <div className={row}>
+        <span className={label}>Trạng thái</span>
+        <label className="flex items-center gap-1.5 font-medium text-white cursor-pointer">
+          <input
+            type="checkbox"
+            checked={cfg.enabled}
+            onChange={(e) => save({ enabled: e.target.checked }, e.target.checked ? 'Đã bật Webhook' : 'Đã tắt Webhook')}
+          />
+          Tự động gửi khi cô đọc xong câu hỏi
+        </label>
+        <button
+          onClick={testWebhook}
+          disabled={testing}
+          className="ml-auto rounded-lg bg-indigo-600 px-2.5 py-1 text-white hover:bg-indigo-500 disabled:opacity-50"
+        >
+          {testing ? 'Đang gửi...' : '⚡ Thử gửi Webhook ngay'}
+        </button>
+      </div>
+      {cfg.enabled && (
+        <>
+          <div className={row}>
+            <span className={label}>Chế độ</span>
+            <select
+              className={input}
+              value={cfg.action === 'like' ? 'like' : cfg.sendAnswer ? 'answer' : 'spintax'}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'like') save({ action: 'like' });
+                else if (val === 'answer') save({ action: 'comment', sendAnswer: true });
+                else save({ action: 'comment', sendAnswer: false });
+              }}
+            >
+              <option value="answer">💬 Gửi đáp án câu hỏi (Bot trả lời câu đố)</option>
+              <option value="spintax">📝 Gửi kịch bản Bot (Spintax trên Dashboard)</option>
+              <option value="like">❤️ Thả tim tự động (Like)</option>
+            </select>
+          </div>
+          {cfg.action === 'comment' && (
+            <div className={row}>
+              <span className={label}>Phân bổ</span>
+              <span className="text-slate-400">Thời gian:</span>
+              <input
+                className="w-14 rounded-lg bg-slate-800 px-2 py-1 text-white"
+                type="number"
+                min={1}
+                max={60}
+                value={cfg.duration}
+                onChange={(e) => save({ duration: Number(e.target.value) || 15 })}
+              />
+              <span className="text-slate-400">giây</span>
+              <span className="ml-3 text-slate-400">Tối đa:</span>
+              <input
+                className="w-14 rounded-lg bg-slate-800 px-2 py-1 text-white"
+                type="number"
+                min={1}
+                max={20}
+                value={cfg.maxResponses}
+                onChange={(e) => save({ maxResponses: Number(e.target.value) || 2 })}
+              />
+              <span className="text-slate-400">tài khoản</span>
+            </div>
+          )}
+          {cfg.action === 'like' && (
+            <div className={row}>
+              <span className={label}>Số lượng</span>
+              <input
+                className="w-16 rounded-lg bg-slate-800 px-2 py-1 text-white"
+                type="number"
+                min={5}
+                max={200}
+                value={cfg.count}
+                onChange={(e) => save({ count: Number(e.target.value) || 20 })}
+              />
+              <span className="text-slate-400">tim mỗi tài khoản</span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export function GameControls({ view, stageCount = 0 }: { view: StageView | null; stageCount?: number }) {
   const [sent, setSent] = useState(0);
   const [running, setRunning] = useState(false);
@@ -191,6 +359,7 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
     <div className="space-y-3">
       {stageCount > 1 && <div className="rounded-lg bg-red-600 p-2 text-white">Đang mở {stageCount} trang stage, sẽ có 2 giọng. Đóng bớt đi.</div>}
       <RoomSettings />
+      <WebhookControls />
       {view && (
         <div className="rounded-lg bg-slate-800 p-3 text-sm leading-6">
           <div>

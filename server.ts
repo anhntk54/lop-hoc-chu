@@ -92,7 +92,28 @@ type RoomSettings = {
   danceSec?: number;
   birthdayText?: string;
 };
-let settings: { channelName?: string; tiktokUser?: string; room?: RoomSettings } = {};
+
+type WebhookSettings = {
+  enabled?: boolean;
+  url?: string;
+  action?: 'comment' | 'like';
+  sendAnswer?: boolean;
+  duration?: number;
+  maxResponses?: number;
+  count?: number;
+};
+
+const defaultWebhook: WebhookSettings = {
+  enabled: process.env.WEBHOOK_ENABLED !== undefined ? process.env.WEBHOOK_ENABLED !== 'false' : true,
+  url: process.env.WEBHOOK_URL || 'http://127.0.0.1:8000/api/webhook',
+  action: (process.env.WEBHOOK_ACTION as 'comment' | 'like') || 'comment',
+  sendAnswer: process.env.WEBHOOK_SEND_ANSWER !== undefined ? process.env.WEBHOOK_SEND_ANSWER !== 'false' : true,
+  duration: process.env.WEBHOOK_DURATION ? parseInt(process.env.WEBHOOK_DURATION, 10) : 15,
+  maxResponses: process.env.WEBHOOK_MAX_RESPONSES ? parseInt(process.env.WEBHOOK_MAX_RESPONSES, 10) : 2,
+  count: process.env.WEBHOOK_COUNT ? parseInt(process.env.WEBHOOK_COUNT, 10) : 20,
+};
+
+let settings: { channelName?: string; tiktokUser?: string; room?: RoomSettings; webhook?: WebhookSettings } = {};
 try {
   settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
   if (typeof settings.channelName === 'string' && settings.channelName.trim()) {
@@ -578,6 +599,114 @@ app.post('/api/room-settings', (req, res) => {
   }
   saveRoom(patch);
   res.json({ success: true, room: settings.room });
+});
+
+// ---------- Webhook Seeding Bot (/api/webhook) ----------
+let lastSentWebhookKey = '';
+let lastSentWebhookTime = 0;
+
+async function sendBotWebhook(questionData: {
+  key?: string;
+  answer?: string;
+  clue?: string;
+  qNo?: number;
+  kind?: string;
+  isTest?: boolean;
+}) {
+  const cfg = { ...defaultWebhook, ...settings.webhook };
+  if (!cfg.enabled && !questionData.isTest) {
+    return { skipped: true, reason: 'disabled' };
+  }
+
+  // Deduplication: không gửi trùng cho cùng 1 câu trong 6 giây
+  const now = Date.now();
+  const key = questionData.key || `${questionData.qNo}-${questionData.answer}`;
+  if (!questionData.isTest && key === lastSentWebhookKey && now - lastSentWebhookTime < 6000) {
+    return { skipped: true, reason: 'duplicate' };
+  }
+  lastSentWebhookKey = key;
+  lastSentWebhookTime = now;
+
+  const payload: Record<string, any> = {
+    action: cfg.action || 'comment',
+    account_id: 'all',
+  };
+
+  if (cfg.action === 'like') {
+    payload.count = cfg.count || 20;
+  } else {
+    // action: comment
+    if (cfg.sendAnswer && questionData.answer) {
+      payload.text = questionData.answer;
+    }
+    payload.duration = cfg.duration || 15;
+    if (cfg.maxResponses) {
+      payload.max_responses = cfg.maxResponses;
+    }
+  }
+
+  const targetUrl = process.env.WEBHOOK_URL || cfg.url || 'http://127.0.0.1:8000/api/webhook';
+  console.log(`[Webhook Bot] 📤 Gửi tới ${targetUrl}:`, JSON.stringify(payload));
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    const data = (await resp.json().catch(() => ({}))) as Record<string, any>;
+    if (resp.ok) {
+      console.log(`[Webhook Bot] ✅ Thành công:`, data.message || 'OK');
+      return { success: true, status: resp.status, data };
+    } else {
+      console.warn(`[Webhook Bot] ⚠️ Bot báo lỗi (${resp.status}):`, data.detail || data.message || data);
+      return { success: false, status: resp.status, data };
+    }
+  } catch (err: any) {
+    const msg = err.name === 'AbortError' ? 'Timeout (quá 5s)' : err.message;
+    console.warn(`[Webhook Bot] ❌ Không kết nối được tới Bot (${targetUrl}): ${msg}`);
+    return { success: false, error: msg };
+  }
+}
+
+app.get('/api/webhook-settings', (_req, res) => {
+  res.json({ ...defaultWebhook, ...settings.webhook });
+});
+
+app.post('/api/webhook-settings', (req, res) => {
+  const b = req.body || {};
+  const patch: WebhookSettings = {};
+  if (typeof b.enabled === 'boolean') patch.enabled = b.enabled;
+  if (typeof b.url === 'string' && b.url.trim()) patch.url = b.url.trim();
+  if (b.action === 'comment' || b.action === 'like') patch.action = b.action;
+  if (typeof b.sendAnswer === 'boolean') patch.sendAnswer = b.sendAnswer;
+  if (b.duration !== undefined) patch.duration = Math.min(120, Math.max(1, Math.round(Number(b.duration)) || 15));
+  if (b.maxResponses !== undefined) patch.maxResponses = Math.min(50, Math.max(1, Math.round(Number(b.maxResponses)) || 2));
+  if (b.count !== undefined) patch.count = Math.min(200, Math.max(1, Math.round(Number(b.count)) || 20));
+
+  settings.webhook = { ...defaultWebhook, ...settings.webhook, ...patch };
+  saveSettings({ webhook: settings.webhook });
+  res.json({ success: true, webhook: settings.webhook });
+});
+
+app.post('/api/game/question-ready', async (req, res) => {
+  const result = await sendBotWebhook(req.body || {});
+  res.json(result);
+});
+
+app.post('/api/webhook/test', async (_req, res) => {
+  const result = await sendBotWebhook({
+    answer: 'BÁNH MÌ',
+    clue: 'Món ăn sáng quốc dân',
+    qNo: 1,
+    isTest: true,
+  });
+  res.json(result);
 });
 // Tải ảnh nền lên: chỉ nhận PNG, JPG, WEBP (xét cả nội dung file), tên file do server đặt
 const imageExt = (b: Buffer) => {

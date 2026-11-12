@@ -79,6 +79,49 @@ export function useGame() {
   // - Câu nói thêm (chào, cảm ơn, cà khịa) giữ ở đây, chỉ nói khi đang chờ học sinh trả lời và còn hơn 5 giây.
   const mainSpeaking = useRef(0);
   const chatter = useRef<{ text: string; priority: boolean; until: number }[]>([]);
+  const lastWebhookQ = useRef<string>('');
+
+  function triggerQuestionWebhook() {
+    const room = roomRef.current;
+    if (!room) return;
+    if (room.phase === 'question' && room.q) {
+      const qKey = `q-${room.round}-${room.qNo}-${room.q.answer}`;
+      if (lastWebhookQ.current === qKey) return;
+      lastWebhookQ.current = qKey;
+      fetch('/api/game/question-ready', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: qKey,
+          round: room.round,
+          qNo: room.qNo,
+          answer: room.q.answer,
+          clue: room.q.clue,
+          kind: room.q.kind,
+          math: !!room.q.math,
+        }),
+      }).catch(() => {});
+    } else if (room.phase === 'show' && room.show?.stage === 'ask') {
+      const sh = room.show;
+      const step = sh.steps[sh.i];
+      const answer = step?.k === 'mc' && sh.mc ? ['A', 'B', 'C', 'D'][sh.mc.ans] : step?.k === 'code' && sh.code ? sh.code.answer : '';
+      const qKey = `show-${sh.kind}-${sh.i}-${answer}`;
+      if (lastWebhookQ.current === qKey) return;
+      lastWebhookQ.current = qKey;
+      fetch('/api/game/question-ready', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: qKey,
+          round: room.round,
+          qNo: sh.i + 1,
+          answer,
+          kind: sh.kind,
+        }),
+      }).catch(() => {});
+    }
+  }
+
   function say(lines: Say[]) {
     const now = Date.now();
     for (const l of lines) {
@@ -88,6 +131,7 @@ export function useGame() {
         const onStart = l.go
           ? () => {
               roomRef.current?.showBoard();
+              triggerQuestionWebhook();
               dirty.current = true;
             }
           : undefined;
@@ -96,6 +140,7 @@ export function useGame() {
           ? () => {
               mainSpeaking.current--;
               roomRef.current?.showBoard();
+              triggerQuestionWebhook();
               dirty.current = true;
             }
           : () => mainSpeaking.current--;
@@ -293,6 +338,9 @@ export function useGame() {
           lastTick = now;
           say(room.tick(now));
           flushChatter(room, now);
+          if (room.boardShown && (room.phase === 'question' || (room.phase === 'show' && room.show?.stage === 'ask'))) {
+            triggerQuestionWebhook();
+          }
           // game lớn: tích tắc 5 giây cuối như câu hỏi tiết học
           sfx.clock(room.showAsking() ? 'question' : room.phase, room.boardShown, room.phaseEndsAt, now);
           // nhạc nền EDM game lớn: cô đang đọc thì nhạc lùi xa cho rõ giọng; chờ trả lời thì sập sình, 5 giây cuối dồn dập
